@@ -161,7 +161,7 @@ The project plans to include:
 
 ## Team
 
-COMP90018  
+COMP90018
 Group **T01/05 - 03**
 
 ## Contributing
