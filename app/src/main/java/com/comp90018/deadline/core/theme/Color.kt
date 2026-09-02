@@ -1,4 +1,4 @@
-package com.comp90018.deadline.ui.theme
+package com.comp90018.deadline.core.theme
 
 import androidx.compose.ui.graphics.Color
 

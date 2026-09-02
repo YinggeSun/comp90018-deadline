@@ -1,4 +1,4 @@
-package com.comp90018.deadline.ui.theme
+package com.comp90018.deadline.core.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
