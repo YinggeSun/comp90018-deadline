@@ -4,10 +4,14 @@ import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.model.TrayState
+import com.comp90018.deadline.domain.game.model.Tile
+import com.comp90018.deadline.domain.game.model.TilePosition
+import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultGameEngineTest {
@@ -34,8 +38,6 @@ class DefaultGameEngineTest {
         val engine: GameEngine = DefaultGameEngine(FixedLevels.SAMPLE_LEVEL)
         val initialState = engine.state
 
-        engine.selectTile(initialState.board.tiles.first().id)
-        assertSame(initialState, engine.state)
         engine.selectTile("unknown-tile")
         assertSame(initialState, engine.state)
         engine.undo()
@@ -50,8 +52,8 @@ class DefaultGameEngineTest {
         val engine = DefaultGameEngine(level)
         val expectedState = GameState(board = level.board)
 
-        // No public action changes state yet. Seed runtime state through reflection
-        // to exercise a real reset without adding a production mutation API.
+        // Tray insertion and status transitions are deferred. Seed them through reflection
+        // to exercise their reset without adding a production mutation API.
         val stateField = DefaultGameEngine::class.java.getDeclaredField("currentState")
         stateField.isAccessible = true
         for (status in listOf(GameStatus.WON, GameStatus.LOST)) {
@@ -79,4 +81,59 @@ class DefaultGameEngineTest {
             assertEquals(expectedState, engine.state)
         }
     }
+
+    @Test
+    fun selectionPreservesOldSnapshotTrayAndStatusAndRejectsUnavailableIds() {
+        val engine = engineWith(tile("lower", 0), tile("upper", 1), tile("other", 0, 8))
+        val initial = engine.state
+        assertFalse(engine.isTileSelectable("lower"))
+        assertFalse(engine.isTileSelectable("unknown"))
+        engine.selectTile("lower")
+        engine.selectTile("unknown")
+        assertSame(initial, engine.state)
+
+        engine.selectTile("upper")
+        val afterRemoval = engine.state
+        assertEquals(listOf("lower", "other"), afterRemoval.board.tiles.map { it.id })
+        assertEquals(3, initial.board.tiles.size)
+        assertSame(initial.taskTray, afterRemoval.taskTray)
+        assertEquals(initial.status, afterRemoval.status)
+        assertTrue(engine.isTileSelectable("lower"))
+        assertFalse(engine.isTileSelectable("upper"))
+        engine.selectTile("upper")
+        assertSame(afterRemoval, engine.state)
+        engine.selectTile("lower")
+        engine.selectTile("other")
+        assertTrue(engine.state.board.tiles.isEmpty())
+        assertEquals(GameStatus.RUNNING, engine.state.status)
+        assertSame(initial.taskTray, engine.state.taskTray)
+    }
+
+    @Test
+    fun restartRestoresMultipleBlockersAndAvailabilityAcrossRepeatedRuns() {
+        val engine = engineWith(tile("lower", 0), tile("a", 1), tile("b", 1))
+        val initial = engine.state
+        repeat(2) {
+            assertFalse(engine.isTileSelectable("lower"))
+            assertTrue(engine.isTileSelectable("a"))
+            assertTrue(engine.isTileSelectable("b"))
+            engine.selectTile("a")
+            assertFalse(engine.isTileSelectable("lower"))
+            engine.selectTile("b")
+            assertTrue(engine.isTileSelectable("lower"))
+            engine.selectTile("lower")
+            engine.restart()
+            assertEquals(initial, engine.state)
+            assertTrue(engine.state.taskTray.tiles.isEmpty())
+            assertEquals(GameStatus.RUNNING, engine.state.status)
+            assertFalse(engine.isTileSelectable("lower"))
+        }
+    }
+
+    private fun tile(id: String, layer: Int, column: Int = 0) =
+        Tile(id, TileType.DEFAULT, TilePosition(0, column, layer))
+
+    private fun engineWith(vararg tiles: Tile): GameEngine = DefaultGameEngine(
+        FixedLevels.SAMPLE_LEVEL.copy(board = Board(tiles.toList()))
+    )
 }
