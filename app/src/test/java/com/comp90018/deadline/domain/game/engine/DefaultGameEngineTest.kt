@@ -52,8 +52,8 @@ class DefaultGameEngineTest {
         val engine = DefaultGameEngine(level)
         val expectedState = GameState(board = level.board)
 
-        // Tray insertion and status transitions are deferred. Seed them through reflection
-        // to exercise their reset without adding a production mutation API.
+        // Seed terminal status and custom capacity through reflection to exercise their
+        // reset without adding a production mutation API.
         val stateField = DefaultGameEngine::class.java.getDeclaredField("currentState")
         stateField.isAccessible = true
         for (status in listOf(GameStatus.WON, GameStatus.LOST)) {
@@ -83,7 +83,7 @@ class DefaultGameEngineTest {
     }
 
     @Test
-    fun selectionPreservesOldSnapshotTrayAndStatusAndRejectsUnavailableIds() {
+    fun selectionMovesExactTilePreservesSnapshotsAndStatusAndRejectsUnavailableIds() {
         val engine = engineWith(tile("lower", 0), tile("upper", 1), tile("other", 0, 8))
         val initial = engine.state
         assertFalse(engine.isTileSelectable("lower"))
@@ -96,7 +96,9 @@ class DefaultGameEngineTest {
         val afterRemoval = engine.state
         assertEquals(listOf("lower", "other"), afterRemoval.board.tiles.map { it.id })
         assertEquals(3, initial.board.tiles.size)
-        assertSame(initial.taskTray, afterRemoval.taskTray)
+        assertTrue(initial.taskTray.tiles.isEmpty())
+        assertEquals(listOf(initial.board.tiles[1]), afterRemoval.taskTray.tiles)
+        assertSame(initial.board.tiles[1], afterRemoval.taskTray.tiles.single())
         assertEquals(initial.status, afterRemoval.status)
         assertTrue(engine.isTileSelectable("lower"))
         assertFalse(engine.isTileSelectable("upper"))
@@ -106,7 +108,9 @@ class DefaultGameEngineTest {
         engine.selectTile("other")
         assertTrue(engine.state.board.tiles.isEmpty())
         assertEquals(GameStatus.RUNNING, engine.state.status)
-        assertSame(initial.taskTray, engine.state.taskTray)
+        assertEquals(listOf("upper", "lower", "other"), engine.state.taskTray.tiles.map { it.id })
+        assertEquals(listOf("upper"), afterRemoval.taskTray.tiles.map { it.id })
+        assertEquals(listOf("lower", "other"), afterRemoval.board.tiles.map { it.id })
     }
 
     @Test
@@ -127,6 +131,71 @@ class DefaultGameEngineTest {
             assertTrue(engine.state.taskTray.tiles.isEmpty())
             assertEquals(GameStatus.RUNNING, engine.state.status)
             assertFalse(engine.isTileSelectable("lower"))
+        }
+    }
+
+    @Test
+    fun trayPreservesSelectionOrderWithoutMatchingIdenticalTypes() {
+        val a = tile("z", 0, 8)
+        val b = tile("a", 0, 4)
+        val c = tile("m", 0, 0)
+        val engine = engineWith(c, a, b)
+
+        for (selected in listOf(a, b, c)) engine.selectTile(selected.id)
+
+        assertEquals(listOf(a, b, c), engine.state.taskTray.tiles)
+        assertEquals(GameStatus.RUNNING, engine.state.status)
+    }
+
+    @Test
+    fun sevenTilesFillTrayAndEighthSelectionLeavesBoardGraphTrayAndStatusUnchanged() {
+        val fillers = (1..TrayState.DEFAULT_CAPACITY).map { tile("fill-$it", 0, it * 4) }
+        val upper = tile("eighth", 1)
+        val lower = tile("lower", 0)
+        val engine = engineWith(*(fillers + upper + lower).toTypedArray())
+        for (selected in fillers) engine.selectTile(selected.id)
+
+        val fullState = engine.state
+        assertEquals(7, fullState.taskTray.tiles.size)
+        assertTrue(fullState.taskTray.isFull)
+        assertEquals(fillers, fullState.taskTray.tiles)
+        assertEquals(GameStatus.RUNNING, fullState.status)
+        assertTrue(engine.isTileSelectable(upper.id))
+        assertFalse(engine.isTileSelectable(lower.id))
+
+        repeat(2) {
+            engine.selectTile(upper.id)
+            assertSame(fullState, engine.state)
+            assertEquals(listOf(upper, lower), engine.state.board.tiles)
+            assertEquals(fillers, engine.state.taskTray.tiles)
+            assertTrue(engine.isTileSelectable(upper.id))
+            // The rejected upper tile is the sole blocker: any decrement would unlock lower.
+            assertFalse(engine.isTileSelectable(lower.id))
+            assertEquals(GameStatus.RUNNING, engine.state.status)
+        }
+    }
+
+    @Test
+    fun selectionHonorsConfiguredCapacityAndPreservesExistingStatus() {
+        val first = tile("first", 0)
+        val second = tile("second", 0, 4)
+        val engine = engineWith(first, second)
+        val stateField = DefaultGameEngine::class.java.getDeclaredField("currentState")
+        stateField.isAccessible = true
+        for (status in GameStatus.values()) {
+            engine.restart()
+            stateField.set(engine, engine.state.copy(taskTray = TrayState(capacity = 1), status = status))
+
+            engine.selectTile(first.id)
+            val fullState = engine.state
+            assertEquals(listOf(first), fullState.taskTray.tiles)
+            assertEquals(1, fullState.taskTray.capacity)
+            assertTrue(fullState.taskTray.isFull)
+            assertEquals(status, fullState.status)
+
+            engine.selectTile(second.id)
+            assertSame(fullState, engine.state)
+            assertTrue(engine.isTileSelectable(second.id))
         }
     }
 

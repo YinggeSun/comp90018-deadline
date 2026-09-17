@@ -6,7 +6,7 @@ import com.comp90018.deadline.domain.level.model.Level
 
 /**
  * Base engine initialized from [Level.board], with the default empty tray and running status.
- * Selection removes tiles only; tray insertion, matching, win/loss, undo, and shuffle are deferred.
+ * Selection moves tiles into the tray; matching, win/loss, undo, and shuffle are deferred.
  * The supplied board follows the models' contract that its tile list is not mutated externally.
  */
 class DefaultGameEngine(level: Level) : GameEngine {
@@ -18,11 +18,15 @@ class DefaultGameEngine(level: Level) : GameEngine {
     override val state: GameState
         get() = currentState
 
-    /** Updates only covered neighbours, then copies the board while preserving tray and status. */
+    /** Moves the exact board tile into the tray after validating availability and capacity. */
     override fun selectTile(tileId: String) {
+        val tile = currentState.board.tiles.find { it.id == tileId } ?: return
+        if (!overlapGraph.isSelectable(tileId)) return
+        if (currentState.taskTray.isFull) return
         if (!overlapGraph.remove(tileId)) return
         currentState = currentState.copy(
-            board = Board(currentState.board.tiles.filterNot { it.id == tileId })
+            board = Board(currentState.board.tiles.filterNot { it.id == tileId }),
+            taskTray = currentState.taskTray.copy(tiles = currentState.taskTray.tiles + tile)
         )
     }
 
