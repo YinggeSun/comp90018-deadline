@@ -1,9 +1,13 @@
 package com.comp90018.deadline.domain.game.model
 
 /**
- * Placeholder until the gameplay/content specification defines concrete
- * matchable tile categories. Coffee recovery belongs to a separate item mechanic.
+ * Matchable tile categories used by the game engine.
+ *
+ * Three tiles of the same type form a match and are removed from the task tray.
  */
 enum class TileType {
-    DEFAULT
+    DEFAULT,
+    BOOK,
+    COFFEE,
+    LAPTOP
 }
