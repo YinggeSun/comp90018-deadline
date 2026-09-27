@@ -13,12 +13,12 @@ interface GameEngine {
     /** True only while running, for a tile still on the board with no active covering tiles. */
     fun isTileSelectable(tileId: String): Boolean
 
-    /** Placeholder for a later undo implementation; currently leaves state unchanged. */
+    /** Restores the latest retained selection since the last match while running; unavailable undo is a no-op. */
     fun undo()
 
     /** Placeholder for a later shuffle implementation; currently leaves state unchanged. */
     fun shuffle()
 
-    /** Restores the initial board and availability, empty tray, and running status. */
+    /** Restores the initial board and availability, empty tray, and running status; clears undo history. */
     fun restart()
 }
