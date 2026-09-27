@@ -102,13 +102,14 @@ fun Person3TestScreen(
     val sensorActions = remember {
         object : GameSensorActions {
 
-            override fun onShuffleRequested() {
+            override fun onShuffleRequested(): Boolean {
                 shakeCount += 1
                 shuffleCount += 1
 
                 board = boardShuffler.shuffle(board)
 
                 lastEvent = "Shake detected -> board shuffled"
+                return true
             }
 
             override fun onPeekChanged(amount: Float) {

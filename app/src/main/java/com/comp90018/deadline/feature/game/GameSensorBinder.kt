@@ -9,8 +9,12 @@ import com.comp90018.deadline.sensor.shake.ShakeSensorController
 import com.comp90018.deadline.sensor.tilt.TiltSensorController
 
 /**
- * One lifecycle-aware bridge from device sensors to the Game ViewModel.
- * Covers #25 (Shake-to-Shuffle) and sensor side of #27 (Tilt-to-Peek UI).
+ * Lifecycle-aware bridge from device sensors to the Game layer.
+ *
+ * #25: Accelerometer -> Shake -> GameViewModel -> GameEngine.shuffle()
+ * #27: Rotation Vector -> Tilt -> GameViewModel peek state -> Compose UI
+ *
+ * The bridge deliberately does not mutate GameState itself.
  */
 class GameSensorBinder(
     gateway: SensorGateway,
@@ -19,8 +23,10 @@ class GameSensorBinder(
 ) : DefaultLifecycleObserver {
 
     private val shakeController = ShakeSensorController(gateway) {
-        actions.onShuffleRequested()
-        haptics?.perform(GameHaptic.SHUFFLE)
+        // Only confirm the action with haptic feedback when the Game layer accepted it.
+        if (actions.onShuffleRequested()) {
+            haptics?.perform(GameHaptic.SHUFFLE)
+        }
     }
 
     private val tiltController = TiltSensorController(gateway) { amount ->
