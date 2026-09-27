@@ -2,15 +2,15 @@ package com.comp90018.deadline.domain.game.engine
 
 import com.comp90018.deadline.domain.game.model.GameState
 
-/** Pure-Kotlin session API; win/loss evaluation remains deferred. */
+/** Pure-Kotlin session API with deterministic win/loss evaluation after matching. */
 interface GameEngine {
     /** Current read-only snapshot; only the engine can replace its state. */
     val state: GameState
 
-    /** Appends a selectable tile and resolves its triple; unavailable IDs or a full tray are no-ops. */
+    /** Resolves selection, matching, then win/loss; terminal games, unavailable IDs and full trays are no-ops. */
     fun selectTile(tileId: String)
 
-    /** True only for a tile still on the board with no active covering tiles. */
+    /** True only while running, for a tile still on the board with no active covering tiles. */
     fun isTileSelectable(tileId: String): Boolean
 
     /** Placeholder for a later undo implementation; currently leaves state unchanged. */
