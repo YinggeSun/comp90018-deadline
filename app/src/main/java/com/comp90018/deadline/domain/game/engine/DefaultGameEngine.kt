@@ -3,17 +3,26 @@ package com.comp90018.deadline.domain.game.engine
 import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
-import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.level.model.Level
 
 /**
  * Base engine initialized from [Level.board], with the default empty tray and running status.
  * Selection moves tiles into the tray and immediately removes triples of the selected type.
- * Final board/tray state determines win/loss; undo and shuffle are deferred.
+ * Final board/tray state determines win/loss; shuffle is deferred.
+ * [maxUndoDepth] defaults to multi-step history (up to [Int.MAX_VALUE] moves).
+ * Zero disables undo; positive values limit retained moves, discarding the oldest first.
+ * Completed matches permanently commit their tiles and clear all undo history.
  * The supplied board follows the models' contract that its tile list is not mutated externally.
  */
-class DefaultGameEngine(level: Level) : GameEngine {
+class DefaultGameEngine(level: Level, private val maxUndoDepth: Int = Int.MAX_VALUE) : GameEngine {
+    init {
+        require(maxUndoDepth >= 0) { "Maximum undo depth must be non-negative." }
+    }
+
+    private data class UndoEntry(val state: GameState, val graph: OverlapGraph.Snapshot)
+
+    private val history = ArrayDeque<UndoEntry>()
     private val initialState = GameState(board = level.board)
     private val overlapGraph = OverlapGraph(level.board)
     private var currentState = initialState
@@ -28,15 +37,27 @@ class DefaultGameEngine(level: Level) : GameEngine {
         val tile = currentState.board.tiles.find { it.id == tileId } ?: return
         if (!overlapGraph.isSelectable(tileId)) return
         if (currentState.taskTray.isFull) return
+        val entry = if (maxUndoDepth > 0) UndoEntry(currentState, overlapGraph.snapshot()) else null
         if (!overlapGraph.remove(tileId)) return
         val board = Board(currentState.board.tiles.filterNot { it.id == tileId })
         val appendedTray = currentState.taskTray.copy(tiles = currentState.taskTray.tiles + tile)
-        val tray = resolveMatch(appendedTray, tile.type)
+        val matched = appendedTray.tiles.count { it.type == tile.type } == 3
+        val tray = if (matched) {
+            appendedTray.copy(tiles = appendedTray.tiles.filterNot { it.type == tile.type })
+        } else {
+            appendedTray
+        }
         currentState = currentState.copy(
             board = board,
             taskTray = tray,
             status = determineStatus(board, tray)
         )
+        if (matched) {
+            history.clear()
+        } else if (entry != null) {
+            if (history.size == maxUndoDepth) history.removeFirst()
+            history.addLast(entry)
+        }
     }
 
     private fun determineStatus(board: Board, tray: TrayState): GameStatus = when {
@@ -45,19 +66,16 @@ class DefaultGameEngine(level: Level) : GameEngine {
         else -> GameStatus.RUNNING
     }
 
-    /** Only the selected type can form a new triple; filtering keeps remaining order stable. */
-    private fun resolveMatch(tray: TrayState, selectedType: TileType): TrayState =
-        if (tray.tiles.count { it.type == selectedType } == 3) {
-            tray.copy(tiles = tray.tiles.filterNot { it.type == selectedType })
-        } else {
-            tray
-        }
-
     override fun isTileSelectable(tileId: String): Boolean =
         currentState.status == GameStatus.RUNNING && overlapGraph.isSelectable(tileId)
 
-    /** Intentional no-op; no undo history is maintained in the base engine. */
-    override fun undo() = Unit
+    /** Restores one pre-selection snapshot; terminal games and empty history are no-ops. */
+    override fun undo() {
+        if (currentState.status != GameStatus.RUNNING) return
+        val entry = history.removeLastOrNull() ?: return
+        overlapGraph.restore(entry.graph)
+        currentState = entry.state
+    }
 
     /** Intentional no-op; the base engine does not randomize tiles. */
     override fun shuffle() = Unit
@@ -66,5 +84,6 @@ class DefaultGameEngine(level: Level) : GameEngine {
     override fun restart() {
         overlapGraph.reset()
         currentState = initialState
+        history.clear()
     }
 }

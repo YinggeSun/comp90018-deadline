@@ -34,6 +34,16 @@ internal class OverlapGraph(board: Board) {
 
     fun isSelectable(tileId: String): Boolean = activeBlockerCounts[tileId] == 0
 
+    internal class Snapshot internal constructor(internal val counts: Map<String, Int>)
+
+    fun snapshot(): Snapshot = Snapshot(activeBlockerCounts.toMap())
+
+    /** Restores active membership and blocker counts without rebuilding geometry. */
+    fun restore(snapshot: Snapshot) {
+        activeBlockerCounts.clear()
+        activeBlockerCounts.putAll(snapshot.counts)
+    }
+
     /** Rejected actions are no-ops. A removal updates only this tile's lower neighbours. */
     fun remove(tileId: String): Boolean {
         if (!isSelectable(tileId)) return false
