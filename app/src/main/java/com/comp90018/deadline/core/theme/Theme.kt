@@ -1,6 +1,5 @@
 package com.comp90018.deadline.core.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,33 +10,61 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = InkBlue40,
+    onPrimary = Paper,
+    primaryContainer = InkBlue90,
+    onPrimaryContainer = InkBlue10,
+    secondary = Highlighter40,
+    onSecondary = Paper,
+    secondaryContainer = Highlighter90,
+    onSecondaryContainer = Highlighter10,
+    tertiary = StickyNote40,
+    onTertiary = Paper,
+    tertiaryContainer = StickyNote90,
+    onTertiaryContainer = StickyNote10,
+    background = Paper,
+    onBackground = InkText,
+    surface = Paper,
+    onSurface = InkText,
+    surfaceVariant = PaperVariant,
+    onSurfaceVariant = InkTextVariant,
+    outline = PencilOutline
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = InkBlue80,
+    onPrimary = InkBlue20,
+    primaryContainer = InkBlue30,
+    onPrimaryContainer = InkBlue90,
+    secondary = Highlighter80,
+    onSecondary = Highlighter20,
+    secondaryContainer = Highlighter30,
+    onSecondaryContainer = Highlighter90,
+    tertiary = StickyNote80,
+    onTertiary = StickyNote20,
+    tertiaryContainer = StickyNote30,
+    onTertiaryContainer = StickyNote90,
+    background = Chalkboard,
+    onBackground = ChalkText,
+    surface = Chalkboard,
+    onSurface = ChalkText,
+    surfaceVariant = ChalkboardVariant,
+    onSurfaceVariant = ChalkTextVariant,
+    outline = ChalkOutline
+)
+
+/**
+ * App-wide Material 3 theme. Wrap every screen in this so colours, type,
+ * and shapes come from one place.
+ *
+ * Dynamic colour is off by default so the game keeps its own palette on
+ * Android 12+ instead of taking the wallpaper colours.
+ */
 @Composable
 fun DeadlineTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -53,6 +80,7 @@ fun DeadlineTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }
