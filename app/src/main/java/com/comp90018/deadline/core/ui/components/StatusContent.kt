@@ -2,9 +2,15 @@ package com.comp90018.deadline.core.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -15,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
@@ -25,13 +32,7 @@ fun LoadingContent(
     modifier: Modifier = Modifier,
     message: String = stringResource(R.string.status_loading)
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(Spacing.screenPadding),
-        verticalArrangement = Arrangement.spacedBy(Spacing.large, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    CenteredScrollableColumn(modifier = modifier, spacing = Spacing.large) {
         CircularProgressIndicator()
         Text(
             text = message,
@@ -54,13 +55,7 @@ fun ErrorContent(
     onRetry: (() -> Unit)? = null,
     retryLabel: String = stringResource(R.string.action_retry)
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(Spacing.screenPadding),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    CenteredScrollableColumn(modifier = modifier, spacing = Spacing.medium) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
@@ -76,6 +71,30 @@ fun ErrorContent(
         if (onRetry != null) {
             PrimaryButton(text = retryLabel, onClick = onRetry)
         }
+    }
+}
+
+/**
+ * Centres its content in the available space, and scrolls instead of
+ * squeezing it when large fonts or a small window make it too tall.
+ */
+@Composable
+private fun CenteredScrollableColumn(
+    modifier: Modifier,
+    spacing: Dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(Spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content
+        )
     }
 }
 
