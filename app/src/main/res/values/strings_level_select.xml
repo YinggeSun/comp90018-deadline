@@ -1,0 +1,16 @@
+<resources>
+    <!-- Level Select screen -->
+    <string name="level_select_title">Level Select</string>
+    <plurals name="level_select_tiles">
+        <item quantity="one">%d tile</item>
+        <item quantity="other">%d tiles</item>
+    </plurals>
+    <plurals name="level_select_layers">
+        <item quantity="one">%d layer</item>
+        <item quantity="other">%d layers</item>
+    </plurals>
+    <string name="level_select_best_time">Best %1$s</string>
+    <string name="level_select_no_best_time">No best time yet</string>
+    <string name="level_select_locked">Locked</string>
+    <string name="level_select_empty">No levels available.</string>
+</resources>
