@@ -28,7 +28,7 @@ class AppNavHostTest {
 
     private lateinit var navController: TestNavHostController
 
-    private val level = FixedLevels.SAMPLE_LEVEL
+    private val level = FixedLevels.LEVEL_1
     private val levelId = level.id
 
     @Before
@@ -48,7 +48,7 @@ class AppNavHostTest {
         composeRule.waitForIdle()
     }
 
-    /** Wins the sample level by selecting every tile; all of them start uncovered. */
+    /** Wins Level 1 by selecting every tile in board order; all of them start uncovered. */
     private fun finishGame() {
         level.board.tiles.forEach { tile ->
             composeRule.onNodeWithTag(tileTestTag(tile.id))
@@ -82,7 +82,7 @@ class AppNavHostTest {
     @Test
     fun gameRouteReceivesLevelId() {
         click("Play")
-        click("Start sample level")
+        click(level.name)
 
         assertEquals(Routes.GAME, currentRoute())
         assertEquals(
@@ -96,7 +96,7 @@ class AppNavHostTest {
     @Test
     fun backFromResultSkipsFinishedGame() {
         click("Play")
-        click("Start sample level")
+        click(level.name)
         finishGame()
         assertEquals(Routes.RESULT, currentRoute())
 
@@ -109,7 +109,7 @@ class AppNavHostTest {
     @Test
     fun resultActionsNavigateToExpectedScreens() {
         click("Play")
-        click("Start sample level")
+        click(level.name)
         finishGame()
 
         click("Replay")
@@ -119,7 +119,7 @@ class AppNavHostTest {
         click("Level Select")
         assertEquals(Routes.LEVEL_SELECT, currentRoute())
 
-        click("Start sample level")
+        click(level.name)
         finishGame()
         click("Home")
         assertEquals(Routes.HOME, currentRoute())

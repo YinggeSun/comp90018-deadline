@@ -79,9 +79,9 @@ fun ErrorContent(
  * squeezing it when large fonts or a small window make it too tall.
  */
 @Composable
-private fun CenteredScrollableColumn(
-    modifier: Modifier,
-    spacing: Dp,
+fun CenteredScrollableColumn(
+    modifier: Modifier = Modifier,
+    spacing: Dp = Spacing.medium,
     content: @Composable ColumnScope.() -> Unit
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {

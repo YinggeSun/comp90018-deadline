@@ -27,7 +27,7 @@ const val GAME_TIMER_TAG = "game_timer"
 fun GameHud(
     elapsedSeconds: Long,
     stress: Int,
-    maxStress: Int,
+    stressMaximum: Int,
     isHighStress: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -48,7 +48,7 @@ fun GameHud(
         )
         StressIndicator(
             stress = stress,
-            maxStress = maxStress,
+            stressMaximum = stressMaximum,
             isHighStress = isHighStress,
             modifier = Modifier.weight(1f)
         )
@@ -63,7 +63,7 @@ private fun GameHudPreview() {
             GameHud(
                 elapsedSeconds = 125,
                 stress = 40,
-                maxStress = 100,
+                stressMaximum = 100,
                 isHighStress = false,
                 modifier = Modifier.padding(Spacing.large)
             )

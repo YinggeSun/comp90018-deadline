@@ -9,10 +9,10 @@ import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.engine.GameEngine
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import com.comp90018.deadline.domain.game.model.Tile
-import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.domain.level.model.Level
 import kotlinx.coroutines.delay
@@ -33,9 +33,8 @@ import kotlinx.coroutines.flow.flow
 class GameViewModel(
     levelId: String,
     findLevel: (String) -> Level? = ::findFixedLevel,
-    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it) },
     private val timer: CompletionTimer = CompletionTimer(),
-    private val stressManager: StressManager = StressManager()
+    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it) }
 ) : ViewModel(), GameSensorActions {
 
     private val level = findLevel(levelId)
@@ -130,9 +129,7 @@ class GameViewModel(
 
     private fun GameUiState.withEngineState(engine: GameEngine): GameUiState {
         val state: GameState = engine.state
-        // Stress is not part of GameState yet (#19 / #20), so it stays at zero
-        // until the engine exposes it.
-        val stress = 0
+        val stressManager = StressManager(engine.stressConfig)
         return copy(
             boardTiles = state.board.tiles
                 .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
@@ -140,9 +137,9 @@ class GameViewModel(
             trayTiles = state.taskTray.tiles.map { it.toUiModel(isSelectable = false) },
             trayCapacity = state.taskTray.capacity,
             status = state.status,
-            stress = stress,
-            maxStress = stressManager.config.maximum,
-            isHighStress = stressManager.isHighStress(stress),
+            stress = stressManager.clamp(state.stress),
+            stressMaximum = engine.stressConfig.maximum,
+            isHighStress = stressManager.isHighStress(state.stress),
             canUndo = engine.canUndo
         )
     }

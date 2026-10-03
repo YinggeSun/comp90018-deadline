@@ -101,7 +101,7 @@ fun GameContent(
             GameHud(
                 elapsedSeconds = elapsedSeconds,
                 stress = uiState.stress,
-                maxStress = uiState.maxStress,
+                stressMaximum = uiState.stressMaximum,
                 isHighStress = uiState.isHighStress,
                 modifier = Modifier.padding(horizontal = Spacing.large)
             )

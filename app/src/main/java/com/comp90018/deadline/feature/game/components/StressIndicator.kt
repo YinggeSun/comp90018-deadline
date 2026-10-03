@@ -33,13 +33,13 @@ const val STRESS_INDICATOR_TAG = "stress_indicator"
 @Composable
 fun StressIndicator(
     stress: Int,
-    maxStress: Int,
+    stressMaximum: Int,
     isHighStress: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val progress = if (maxStress > 0) stress.toFloat() / maxStress else 0f
+    val progress = if (stressMaximum > 0) stress.toFloat() / stressMaximum else 0f
     val color = if (isHighStress) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
-    val description = stringResource(R.string.game_stress_description, stress, maxStress)
+    val description = stringResource(R.string.game_stress_description, stress, stressMaximum)
     val warning = stringResource(R.string.game_stress_high)
 
     Column(
@@ -83,8 +83,8 @@ private fun StressIndicatorPreview() {
     DeadlineTheme {
         Surface {
             Column(modifier = Modifier.padding(Spacing.large)) {
-                StressIndicator(stress = 30, maxStress = 100, isHighStress = false)
-                StressIndicator(stress = 85, maxStress = 100, isHighStress = true)
+                StressIndicator(stress = 30, stressMaximum = 100, isHighStress = false)
+                StressIndicator(stress = 85, stressMaximum = 100, isHighStress = true)
             }
         }
     }
