@@ -3,8 +3,12 @@ package com.comp90018.deadline.domain.game.engine
 import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.game.shuffle.BoardShuffler
+import com.comp90018.deadline.domain.game.stress.CoffeeRecovery
+import com.comp90018.deadline.domain.game.stress.StressConfig
+import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.Level
 
 /**
@@ -15,20 +19,34 @@ import com.comp90018.deadline.domain.level.model.Level
  * Zero disables undo; positive values limit retained moves, discarding the oldest first.
  * Completed matches permanently commit their tiles and clear all undo history.
  * The supplied board follows the models' contract that its tile list is not mutated externally.
+ *
+ * Stress lives in [GameState.stress] and changes only through selections. One accumulation
+ * step happens per accepted selection at the [week] rate, and a completed Coffee triple then
+ * applies Coffee Recovery. Rejected selections leave stress untouched, undo restores the
+ * earlier value with the rest of the snapshot, and [restart] returns it to [initialStress].
+ * [week] comes from the caller because [Level] does not yet carry its semester week;
+ * [stressConfig] carries the tuning so no gameplay number is hard-coded here.
  */
 class DefaultGameEngine(
     level: Level,
     private val maxUndoDepth: Int = Int.MAX_VALUE,
     private val boardShuffler: BoardShuffler = BoardShuffler(),
+    private val week: Int = DEFAULT_WEEK,
+    override val stressConfig: StressConfig = StressConfig(),
+    initialStress: Int = 0,
 ) : GameEngine {
     init {
         require(maxUndoDepth >= 0) { "Maximum undo depth must be non-negative." }
+        require(week > 0) { "Week must be positive." }
     }
 
     private data class UndoEntry(val state: GameState, val graph: OverlapGraph.Snapshot)
 
+    private val stressManager = StressManager(stressConfig)
+    private val coffeeRecovery = CoffeeRecovery(stressConfig)
     private val history = ArrayDeque<UndoEntry>()
-    private val initialState = GameState(board = level.board)
+    private val initialState =
+        GameState(board = level.board, stress = stressManager.clamp(initialStress))
     private val overlapGraph = OverlapGraph(level.board)
     private var currentState = initialState
 
@@ -55,7 +73,8 @@ class DefaultGameEngine(
         currentState = currentState.copy(
             board = board,
             taskTray = tray,
-            status = determineStatus(board, tray)
+            status = determineStatus(board, tray),
+            stress = stressAfterSelection(matchedType = if (matched) tile.type else null)
         )
         if (matched) {
             history.clear()
@@ -64,6 +83,17 @@ class DefaultGameEngine(
             history.addLast(entry)
         }
     }
+
+    /**
+     * Stress after one accepted selection: the week's accumulation step, then Coffee Recovery
+     * when that selection completed a Coffee triple. A null [matchedType] means no triple was
+     * completed, so only accumulation applies.
+     */
+    private fun stressAfterSelection(matchedType: TileType?): Int = coffeeRecovery.applyMatch(
+        current = stressManager.accumulate(currentState.stress, week),
+        matchedType = matchedType,
+        week = week
+    )
 
     private fun determineStatus(board: Board, tray: TrayState): GameStatus = when {
         board.tiles.isEmpty() -> GameStatus.WON
@@ -107,5 +137,10 @@ class DefaultGameEngine(
         overlapGraph.reset()
         currentState = initialState
         history.clear()
+    }
+
+    companion object {
+        /** First semester week, used until a caller supplies the level's own week. */
+        const val DEFAULT_WEEK = 1
     }
 }
