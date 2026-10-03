@@ -30,5 +30,6 @@ data class GameUiState(
     val trayTiles: List<TileUiModel> = emptyList(),
     val trayCapacity: Int = 0,
     val status: GameStatus = GameStatus.RUNNING,
-    val levelNotFound: Boolean = false
+    val levelNotFound: Boolean = false,
+    val peekAmount: Float = 0f
 )

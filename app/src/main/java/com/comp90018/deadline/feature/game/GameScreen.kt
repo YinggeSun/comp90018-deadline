@@ -11,6 +11,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.comp90018.deadline.sensor.AndroidSensorGateway
+import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -34,6 +40,19 @@ fun GameScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentOnGameFinished by rememberUpdatedState(onGameFinished)
+    val context = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    val haptics = remember(context) { HapticFeedbackManager(context.applicationContext) }
+    val binder = remember(context, viewModel) {
+        GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
+    }
+    DisposableEffect(owner, binder) {
+        owner.lifecycle.addObserver(binder)
+        onDispose {
+            owner.lifecycle.removeObserver(binder)
+            binder.stop()
+        }
+    }
 
     LaunchedEffect(uiState.status) {
         if (uiState.status != GameStatus.RUNNING) currentOnGameFinished()
@@ -41,7 +60,7 @@ fun GameScreen(
 
     GameContent(
         uiState = uiState,
-        onEvent = viewModel::onEvent,
+        onEvent = { viewModel.onEvent(it, haptics) },
         onBack = onBack
     )
 }
@@ -78,6 +97,7 @@ fun GameContent(
                 rows = uiState.boardRows,
                 columns = uiState.boardColumns,
                 onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
+                peekAmount = uiState.peekAmount,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(Spacing.large)

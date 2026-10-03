@@ -16,7 +16,11 @@ interface GameEngine {
     /** Restores the latest retained selection since the last match while running; unavailable undo is a no-op. */
     fun undo()
 
-    /** Placeholder for a later shuffle implementation; currently leaves state unchanged. */
+    /**
+     * Shuffles matchable contents across the remaining board slots while preserving
+     * board geometry, tray contents and availability relationships. Terminal games
+     * ignore shuffle requests.
+     */
     fun shuffle()
 
     /** Restores the initial board and availability, empty tray, and running status; clears undo history. */

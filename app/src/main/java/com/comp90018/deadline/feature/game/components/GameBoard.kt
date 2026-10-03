@@ -17,6 +17,7 @@ import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.feature.game.GameViewModel.Companion.TILE_SPAN
 import com.comp90018.deadline.feature.game.TileUiModel
+import com.comp90018.deadline.feature.game.tiltPeek
 
 /** Gap between neighbouring tiles, as a fraction of a tile. */
 private const val TILE_GAP_FRACTION = 0.06f
@@ -33,7 +34,8 @@ fun GameBoard(
     rows: Int,
     columns: Int,
     onTileClick: (tileId: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    peekAmount: Float = 0f
 ) {
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         if (rows <= 0 || columns <= 0) return@BoxWithConstraints
@@ -49,6 +51,10 @@ fun GameBoard(
                     modifier = Modifier.offset(
                         x = unit * tile.column + gap / 2,
                         y = unit * tile.row + gap / 2
+                    ).tiltPeek(
+                        layerIndex = tile.layer,
+                        topLayerIndex = tiles.maxOfOrNull { it.layer } ?: 0,
+                        peekAmount = peekAmount
                     )
                 )
             }

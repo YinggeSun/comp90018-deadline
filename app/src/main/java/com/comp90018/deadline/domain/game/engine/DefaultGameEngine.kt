@@ -4,18 +4,23 @@ import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.model.TrayState
+import com.comp90018.deadline.domain.game.shuffle.BoardShuffler
 import com.comp90018.deadline.domain.level.model.Level
 
 /**
  * Base engine initialized from [Level.board], with the default empty tray and running status.
  * Selection moves tiles into the tray and immediately removes triples of the selected type.
- * Final board/tray state determines win/loss; shuffle is deferred.
+ * Final board/tray state determines win/loss.
  * [maxUndoDepth] defaults to multi-step history (up to [Int.MAX_VALUE] moves).
  * Zero disables undo; positive values limit retained moves, discarding the oldest first.
  * Completed matches permanently commit their tiles and clear all undo history.
  * The supplied board follows the models' contract that its tile list is not mutated externally.
  */
-class DefaultGameEngine(level: Level, private val maxUndoDepth: Int = Int.MAX_VALUE) : GameEngine {
+class DefaultGameEngine(
+    level: Level,
+    private val maxUndoDepth: Int = Int.MAX_VALUE,
+    private val boardShuffler: BoardShuffler = BoardShuffler(),
+) : GameEngine {
     init {
         require(maxUndoDepth >= 0) { "Maximum undo depth must be non-negative." }
     }
@@ -77,8 +82,25 @@ class DefaultGameEngine(level: Level, private val maxUndoDepth: Int = Int.MAX_VA
         currentState = entry.state
     }
 
-    /** Intentional no-op; the base engine does not randomize tiles. */
-    override fun shuffle() = Unit
+    /**
+     * Redistributes tile types across the remaining board while preserving tile ids,
+     * positions and the current Task Tray. Terminal games and boards with fewer than
+     * two remaining tiles ignore shuffle requests.
+     *
+     * Because id/position pairs do not change, [overlapGraph] remains valid and does
+     * not need to be rebuilt after a shuffle.
+     */
+    override fun shuffle() {
+        if (currentState.status != GameStatus.RUNNING) return
+        if (currentState.board.tiles.size < 2) return
+
+        val shuffledBoard = boardShuffler.shuffle(currentState.board)
+        if (shuffledBoard == currentState.board) return
+
+        currentState = currentState.copy(board = shuffledBoard)
+        // Old selection snapshots contain pre-shuffle types and must not resurrect them.
+        history.clear()
+    }
 
     /** Replaces runtime state with the original level-derived snapshot. */
     override fun restart() {
