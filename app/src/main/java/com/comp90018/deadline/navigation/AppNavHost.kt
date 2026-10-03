@@ -39,6 +39,7 @@ fun AppNavHost(
         composable(Routes.HOME) {
             HomeScreen(
                 onPlay = actions::navigateToLevelSelect,
+                onContinue = actions::navigateToGame,
                 onLeaderboard = actions::navigateToLeaderboard,
                 onSettings = actions::navigateToSettings
             )
