@@ -1,5 +1,16 @@
 package com.comp90018.deadline.feature.game
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.max
+import com.comp90018.deadline.feature.game.components.minimumBoardSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,7 +81,13 @@ fun GameScreen(
     )
 }
 
-/** Stateless body of the Game screen, driven only by [uiState]. */
+/**
+ * Stateless body of the Game screen, driven only by [uiState].
+ *
+ * The board takes whatever height the header and footer leave, but never
+ * less than [minimumBoardSize]. When the window is too short for that (for
+ * example landscape with large fonts), the whole screen scrolls instead.
+ */
 @Composable
 fun GameContent(
     uiState: GameUiState,
@@ -79,7 +96,7 @@ fun GameContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    val topBar = @Composable {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,39 +111,107 @@ fun GameContent(
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
+    }
 
-        if (uiState.levelNotFound) {
+    if (uiState.levelNotFound) {
+        Column(modifier = modifier.fillMaxSize()) {
+            topBar()
             ErrorContent(message = stringResource(R.string.game_level_not_found))
-        } else {
-            GameHud(
-                elapsedSeconds = elapsedSeconds,
-                stress = uiState.stress,
-                stressMaximum = uiState.stressMaximum,
-                isHighStress = uiState.isHighStress,
-                modifier = Modifier.padding(horizontal = Spacing.large)
-            )
-            GameBoard(
-                tiles = uiState.boardTiles,
-                rows = uiState.boardRows,
-                columns = uiState.boardColumns,
-                onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
-                peekAmount = uiState.peekAmount,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(Spacing.large)
-            )
-            TaskTray(
-                tiles = uiState.trayTiles,
-                capacity = uiState.trayCapacity,
-                modifier = Modifier.padding(horizontal = Spacing.large)
-            )
-            GameActions(
-                canUndo = uiState.canUndo,
-                onUndo = { onEvent(GameUiEvent.UndoClicked) },
-                onRestart = { onEvent(GameUiEvent.RestartClicked) },
-                modifier = Modifier.padding(Spacing.medium)
-            )
+        }
+        return
+    }
+
+    val minimumBoard = minimumBoardSize(uiState.boardRows, uiState.boardColumns)
+    GameLayout(
+        minimumBoardHeight = minimumBoard.height + BoardPadding * 2,
+        modifier = modifier,
+        header = {
+            Column {
+                topBar()
+                GameHud(
+                    elapsedSeconds = elapsedSeconds,
+                    stress = uiState.stress,
+                    stressMaximum = uiState.stressMaximum,
+                    isHighStress = uiState.isHighStress,
+                    modifier = Modifier.padding(horizontal = Spacing.large)
+                )
+            }
+        },
+        board = {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                // Very wide boards scroll sideways rather than drop below the minimum tile size.
+                val boardWidth = max(maxWidth, minimumBoard.width + BoardPadding * 2)
+                Box(modifier = Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
+                    GameBoard(
+                        tiles = uiState.boardTiles,
+                        rows = uiState.boardRows,
+                        columns = uiState.boardColumns,
+                        onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
+                        peekAmount = uiState.peekAmount,
+                        modifier = Modifier
+                            .width(boardWidth)
+                            .fillMaxHeight()
+                            .padding(BoardPadding)
+                    )
+                }
+            }
+        },
+        footer = {
+            Column {
+                TaskTray(
+                    tiles = uiState.trayTiles,
+                    capacity = uiState.trayCapacity,
+                    modifier = Modifier.padding(horizontal = Spacing.large)
+                )
+                GameActions(
+                    canUndo = uiState.canUndo,
+                    onUndo = { onEvent(GameUiEvent.UndoClicked) },
+                    onRestart = { onEvent(GameUiEvent.RestartClicked) },
+                    modifier = Modifier.padding(Spacing.medium)
+                )
+            }
+        }
+    )
+}
+
+private val BoardPadding = Spacing.large
+
+/**
+ * Stacks [header], [board] and [footer]. The board fills the height left in
+ * the viewport, but at least [minimumBoardHeight]; if the total no longer
+ * fits, the column scrolls vertically.
+ */
+@Composable
+private fun GameLayout(
+    minimumBoardHeight: Dp,
+    header: @Composable () -> Unit,
+    board: @Composable () -> Unit,
+    footer: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val viewportHeight = constraints.maxHeight
+        Layout(
+            contents = listOf(header, board, footer),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) { (headerMeasurables, boardMeasurables, footerMeasurables), constraints ->
+            val width = constraints.maxWidth
+            val loose = Constraints(maxWidth = width)
+            val headers = headerMeasurables.map { it.measure(loose) }
+            val footers = footerMeasurables.map { it.measure(loose) }
+            val used = headers.sumOf { it.height } + footers.sumOf { it.height }
+            val boardHeight = maxOf(viewportHeight - used, minimumBoardHeight.roundToPx())
+            val boards = boardMeasurables.map { it.measure(Constraints.fixed(width, boardHeight)) }
+
+            layout(width, used + boardHeight) {
+                var y = 0
+                (headers + boards + footers).forEach { placeable ->
+                    placeable.placeRelative(0, y)
+                    y += placeable.height
+                }
+            }
         }
     }
 }

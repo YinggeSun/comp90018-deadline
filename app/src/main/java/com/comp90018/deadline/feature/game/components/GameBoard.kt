@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import com.comp90018.deadline.core.theme.DeadlineTheme
@@ -21,6 +22,18 @@ import com.comp90018.deadline.feature.game.tiltPeek
 
 /** Gap between neighbouring tiles, as a fraction of a tile. */
 private const val TILE_GAP_FRACTION = 0.06f
+
+/** Smallest drawn tile; matches the 48dp minimum touch target. */
+val MinTileSize = 48.dp
+
+/**
+ * Smallest board that still draws every tile at [MinTileSize] or larger.
+ * Screens with less room should scroll rather than shrink the board further.
+ */
+fun minimumBoardSize(rows: Int, columns: Int): DpSize {
+    val unit = MinTileSize / (TILE_SPAN * (1f - TILE_GAP_FRACTION))
+    return DpSize(width = unit * columns, height = unit * rows)
+}
 
 /**
  * Lays tiles out by their logical TilePosition, scaled to fit the available
