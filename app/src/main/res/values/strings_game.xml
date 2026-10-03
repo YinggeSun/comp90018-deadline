@@ -1,0 +1,25 @@
+<resources>
+    <!-- Game screen -->
+    <string name="game_level_not_found">This level could not be found.</string>
+    <string name="game_tile_default">Paper tile</string>
+    <string name="game_tile_book">Book tile</string>
+    <string name="game_tile_coffee">Coffee tile</string>
+    <string name="game_tile_laptop">Laptop tile</string>
+    <string name="game_tile_selectable">Available</string>
+    <string name="game_tile_blocked">Covered</string>
+
+    <!-- Game HUD -->
+    <string name="game_timer_description">Time %1$s</string>
+    <string name="game_stress_label">Stress</string>
+    <string name="game_stress_high">High stress!</string>
+    <string name="game_stress_description">Stress %1$d of %2$d</string>
+    <string name="game_tray_label">Task Tray</string>
+    <string name="game_tray_count">%1$d/%2$d</string>
+    <plurals name="game_tray_description">
+        <item quantity="one">Task Tray, %1$d of %2$d slot used</item>
+        <item quantity="other">Task Tray, %1$d of %2$d slots used</item>
+    </plurals>
+    <string name="game_tray_empty_slot">Empty slot</string>
+    <string name="game_action_undo">Undo</string>
+    <string name="game_action_restart">Restart</string>
+</resources>

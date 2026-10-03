@@ -104,6 +104,9 @@ class DefaultGameEngine(
     override fun isTileSelectable(tileId: String): Boolean =
         currentState.status == GameStatus.RUNNING && overlapGraph.isSelectable(tileId)
 
+    override val canUndo: Boolean
+        get() = currentState.status == GameStatus.RUNNING && history.isNotEmpty()
+
     /** Restores one pre-selection snapshot; terminal games and empty history are no-ops. */
     override fun undo() {
         if (currentState.status != GameStatus.RUNNING) return

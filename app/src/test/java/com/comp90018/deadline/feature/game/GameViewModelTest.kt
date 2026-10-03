@@ -1,9 +1,12 @@
 package com.comp90018.deadline.feature.game
 
+import com.comp90018.deadline.domain.game.engine.CompletionTimer
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.level.model.FixedLevels
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -101,6 +104,85 @@ class GameViewModelTest {
         assertTrue(viewModel.uiState.value.levelNotFound)
         viewModel.onEvent(GameUiEvent.TileTapped("anything"))
         assertTrue(viewModel.uiState.value.boardTiles.isEmpty())
+    }
+
+    private var nowNanos = 0L
+    private fun advanceSeconds(seconds: Long) {
+        nowNanos += seconds * 1_000_000_000L
+    }
+
+    private fun timedViewModel(levelId: String) =
+        GameViewModel(levelId, timer = CompletionTimer { nowNanos })
+
+    @Test
+    fun timerRunsWhileGameIsRunning() {
+        val viewModel = timedViewModel(FixedLevels.LEVEL_3.id)
+
+        advanceSeconds(5)
+
+        assertEquals(5_000L, viewModel.elapsedMillis)
+        assertEquals(5L, runBlocking { viewModel.elapsedSeconds.first() })
+    }
+
+    @Test
+    fun timerStopsWhenGameIsWon() {
+        val level = FixedLevels.SAMPLE_LEVEL
+        val viewModel = timedViewModel(level.id)
+
+        advanceSeconds(3)
+        level.board.tiles.forEach { viewModel.onEvent(GameUiEvent.TileTapped(it.id)) }
+        advanceSeconds(10)
+
+        assertEquals(GameStatus.WON, viewModel.uiState.value.status)
+        assertEquals(3_000L, viewModel.elapsedMillis)
+    }
+
+    @Test
+    fun restartResetsBoardTrayAndTimer() {
+        val viewModel = timedViewModel(FixedLevels.LEVEL_3.id)
+        advanceSeconds(7)
+        viewModel.onEvent(GameUiEvent.TileTapped("level_3_laptop_1"))
+
+        viewModel.onEvent(GameUiEvent.RestartClicked)
+        val state = viewModel.uiState.value
+
+        assertEquals(FixedLevels.LEVEL_3.board.tiles.size, state.boardTiles.size)
+        assertTrue(state.trayTiles.isEmpty())
+        assertEquals(0L, viewModel.elapsedMillis)
+        advanceSeconds(2)
+        assertEquals(2_000L, viewModel.elapsedMillis)
+    }
+
+    @Test
+    fun undoReturnsLastTileToBoard() {
+        val viewModel = GameViewModel(FixedLevels.LEVEL_3.id)
+        assertFalse(viewModel.uiState.value.canUndo)
+
+        viewModel.onEvent(GameUiEvent.TileTapped("level_3_laptop_1"))
+        assertTrue(viewModel.uiState.value.canUndo)
+
+        viewModel.onEvent(GameUiEvent.UndoClicked)
+        val state = viewModel.uiState.value
+
+        assertTrue(state.boardTiles.any { it.id == "level_3_laptop_1" })
+        assertTrue(state.trayTiles.isEmpty())
+        assertFalse(state.canUndo)
+    }
+
+    @Test
+    fun undoIsUnavailableAfterMatch() {
+        val viewModel = GameViewModel(FixedLevels.LEVEL_3.id)
+
+        listOf("level_3_laptop_1", "level_3_laptop_2", "level_3_laptop_3")
+            .forEach { viewModel.onEvent(GameUiEvent.TileTapped(it)) }
+
+        assertTrue(viewModel.uiState.value.trayTiles.isEmpty())
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun trayCapacityComesFromGameState() {
+        assertEquals(7, GameViewModel(FixedLevels.LEVEL_3.id).uiState.value.trayCapacity)
     }
 
     @Test
