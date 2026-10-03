@@ -42,6 +42,11 @@ class GameSensorBinder(
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        stop()
+    }
+
+    /** Also release subscriptions when a Compose screen leaves a still-started owner. */
+    fun stop() {
         shakeController.stop()
         tiltController.stop()
     }

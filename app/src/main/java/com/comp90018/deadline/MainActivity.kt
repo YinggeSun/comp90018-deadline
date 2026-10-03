@@ -5,26 +5,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.comp90018.deadline.core.theme.DeadlineTheme
-import com.comp90018.deadline.feature.debug.Person3TestScreen
+import com.comp90018.deadline.navigation.AppNavHost
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
-
         setContent {
             DeadlineTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Person3TestScreen(
-                        lifecycleOwner = this@MainActivity
-                    )
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    AppNavHost(modifier = Modifier.padding(innerPadding))
                 }
             }
         }

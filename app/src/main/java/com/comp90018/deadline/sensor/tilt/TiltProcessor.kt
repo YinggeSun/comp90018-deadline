@@ -16,6 +16,7 @@ class TiltProcessor(
     private var active = false
 
     fun processPitch(rawPitchDegrees: Float): Float {
+        if (!rawPitchDegrees.isFinite()) return 0f
         filteredPitch += smoothing * (rawPitchDegrees - filteredPitch)
         val magnitude = abs(filteredPitch)
 

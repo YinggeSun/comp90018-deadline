@@ -151,6 +151,7 @@ fun Person3TestScreen(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(sensorBinder)
+            sensorBinder.stop()
         }
     }
 
