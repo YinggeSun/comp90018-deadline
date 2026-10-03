@@ -8,6 +8,7 @@ import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.engine.GameEngine
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import com.comp90018.deadline.domain.game.model.Tile
@@ -96,13 +97,17 @@ class GameViewModel(
 
     private fun GameUiState.withEngineState(engine: GameEngine): GameUiState {
         val state: GameState = engine.state
+        val stressManager = StressManager(engine.stressConfig)
         return copy(
             boardTiles = state.board.tiles
                 .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
                 .map { it.toUiModel(isSelectable = engine.isTileSelectable(it.id)) },
             trayTiles = state.taskTray.tiles.map { it.toUiModel(isSelectable = false) },
             trayCapacity = state.taskTray.capacity,
-            status = state.status
+            status = state.status,
+            stress = stressManager.clamp(state.stress),
+            stressMaximum = engine.stressConfig.maximum,
+            isHighStress = stressManager.isHighStress(state.stress)
         )
     }
 

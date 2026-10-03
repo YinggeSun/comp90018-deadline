@@ -7,9 +7,10 @@ package com.comp90018.deadline.domain.game.stress
  * expected to supply final numbers later, so gameplay code must read values from a
  * config instance instead of hard-coding them.
  *
- * This type describes only *how much* stress one accumulation step adds. Deciding *when*
- * a step happens — per elapsed second, per tile selection — belongs to the game engine,
- * which keeps these rules testable without a clock.
+ * This type describes only *how much* stress one step changes, whether that step adds stress
+ * or removes it through Coffee Recovery. Deciding *when* a step happens — per elapsed second,
+ * per tile selection, per completed Coffee triple — belongs to the game engine, which keeps
+ * these rules testable without a clock.
  */
 data class StressConfig(
     val maximum: Int = DEFAULT_MAXIMUM,
@@ -20,7 +21,9 @@ data class StressConfig(
     val highStressThreshold: Int = (maximum.toLong() * 3 / 4).coerceAtLeast(1L).toInt(),
     val degradationProbability: Double = DEFAULT_DEGRADATION_PROBABILITY,
     val baseRate: Int = DEFAULT_BASE_RATE,
-    val rateGrowthPerWeek: Int = DEFAULT_RATE_GROWTH_PER_WEEK
+    val rateGrowthPerWeek: Int = DEFAULT_RATE_GROWTH_PER_WEEK,
+    val coffeeRecoveryBase: Int = DEFAULT_COFFEE_RECOVERY_BASE,
+    val coffeeRecoveryDeclinePerWeek: Int = DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK
 ) {
     init {
         require(maximum > 0) {
@@ -37,6 +40,12 @@ data class StressConfig(
         }
         require(rateGrowthPerWeek >= 0) {
             "Stress rate growth must be non-negative."
+        }
+        require(coffeeRecoveryBase >= 0) {
+            "Coffee recovery base must be non-negative."
+        }
+        require(coffeeRecoveryDeclinePerWeek >= 0) {
+            "Coffee recovery decline must be non-negative."
         }
     }
 
@@ -55,6 +64,24 @@ data class StressConfig(
         return rate.coerceAtMost(maximum.toLong()).toInt()
     }
 
+    /**
+     * Stress removed by one Coffee Recovery during [week]. It shrinks linearly from
+     * [coffeeRecoveryBase] as the semester gets busier, mirroring how [rateForWeek] grows,
+     * so a late-semester coffee buys less relief than an early-semester one. Week numbering
+     * starts at one, matching [com.comp90018.deadline.domain.level.model.WeekConfig].
+     *
+     * The result never leaves `0..`[maximum]: a late week cannot make recovery negative, and
+     * a base above the range cannot restore more than the full range.
+     */
+    fun coffeeRecoveryForWeek(week: Int): Int {
+        require(week > 0) {
+            "Week must be positive."
+        }
+        val recovery =
+            coffeeRecoveryBase.toLong() - coffeeRecoveryDeclinePerWeek.toLong() * (week - 1L)
+        return recovery.coerceIn(0L, maximum.toLong()).toInt()
+    }
+
     companion object {
         const val DEFAULT_MAXIMUM = 100
 
@@ -64,5 +91,10 @@ data class StressConfig(
         const val DEFAULT_BASE_RATE = 2
 
         const val DEFAULT_RATE_GROWTH_PER_WEEK = 1
+
+        /** A Coffee triple undoes roughly ten accumulation steps of the first week. */
+        const val DEFAULT_COFFEE_RECOVERY_BASE = 20
+
+        const val DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK = 1
     }
 }

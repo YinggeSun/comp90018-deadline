@@ -2,6 +2,7 @@ package com.comp90018.deadline.feature.game
 
 import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.model.TileType
+import com.comp90018.deadline.domain.game.stress.StressConfig
 
 /**
  * One tile as the board draws it. [row], [column] and [layer] are the logical
@@ -21,6 +22,10 @@ data class TileUiModel(
  * first so later tiles are drawn on top. [boardRows] and [boardColumns] are
  * the logical size of the starting board, so the layout does not shift as
  * tiles are removed.
+ *
+ * [stress] and [stressMaximum] describe the Stress System gauge, and
+ * [isHighStress] is the warning state the engine's configuration defines, so
+ * the HUD never has to re-derive the threshold.
  */
 data class GameUiState(
     val levelName: String = "",
@@ -31,5 +36,8 @@ data class GameUiState(
     val trayCapacity: Int = 0,
     val status: GameStatus = GameStatus.RUNNING,
     val levelNotFound: Boolean = false,
-    val peekAmount: Float = 0f
+    val peekAmount: Float = 0f,
+    val stress: Int = 0,
+    val stressMaximum: Int = StressConfig.DEFAULT_MAXIMUM,
+    val isHighStress: Boolean = false
 )

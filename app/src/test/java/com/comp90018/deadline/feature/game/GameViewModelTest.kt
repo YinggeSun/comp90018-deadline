@@ -1,6 +1,8 @@
 package com.comp90018.deadline.feature.game
 
+import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -99,5 +101,48 @@ class GameViewModelTest {
         assertTrue(viewModel.uiState.value.levelNotFound)
         viewModel.onEvent(GameUiEvent.TileTapped("anything"))
         assertTrue(viewModel.uiState.value.boardTiles.isEmpty())
+    }
+
+    @Test
+    fun stressGaugeComesFromTheEngineAndFallsWithCoffeeRecovery() {
+        val stressConfig = StressConfig(
+            maximum = 100,
+            highStressThreshold = 75,
+            baseRate = 0,
+            rateGrowthPerWeek = 0,
+            coffeeRecoveryBase = 20,
+            coffeeRecoveryDeclinePerWeek = 0
+        )
+        val viewModel = GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+            DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 80)
+        }
+
+        assertEquals(80, viewModel.uiState.value.stress)
+        assertEquals(100, viewModel.uiState.value.stressMaximum)
+        assertTrue(viewModel.uiState.value.isHighStress)
+
+        for (id in listOf("level_1_coffee_1", "level_1_coffee_2", "level_1_coffee_3")) {
+            viewModel.onEvent(GameUiEvent.TileTapped(id))
+        }
+        val state = viewModel.uiState.value
+
+        assertEquals(60, state.stress)
+        assertFalse(state.isHighStress)
+        assertTrue(state.trayTiles.isEmpty())
+    }
+
+    @Test
+    fun restartReturnsTheStressGaugeToItsStartingValue() {
+        val stressConfig = StressConfig(baseRate = 5, rateGrowthPerWeek = 0)
+        val viewModel = GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+            DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 30)
+        }
+
+        viewModel.onEvent(GameUiEvent.TileTapped("level_1_book_1"))
+        assertEquals(35, viewModel.uiState.value.stress)
+
+        viewModel.restart()
+
+        assertEquals(30, viewModel.uiState.value.stress)
     }
 }
