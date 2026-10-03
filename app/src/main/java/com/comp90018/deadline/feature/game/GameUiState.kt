@@ -1,4 +1,34 @@
 package com.comp90018.deadline.feature.game
 
-data class GameUiState(val isLoading: Boolean = false)
+import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.model.TileType
 
+/**
+ * One tile as the board draws it. [row], [column] and [layer] are the logical
+ * TilePosition coordinates; [isSelectable] comes from the game engine.
+ */
+data class TileUiModel(
+    val id: String,
+    val type: TileType,
+    val row: Int,
+    val column: Int,
+    val layer: Int,
+    val isSelectable: Boolean
+)
+
+/**
+ * Everything the Game screen renders. [boardTiles] are ordered bottom layer
+ * first so later tiles are drawn on top. [boardRows] and [boardColumns] are
+ * the logical size of the starting board, so the layout does not shift as
+ * tiles are removed.
+ */
+data class GameUiState(
+    val levelName: String = "",
+    val boardTiles: List<TileUiModel> = emptyList(),
+    val boardRows: Int = 0,
+    val boardColumns: Int = 0,
+    val trayTiles: List<TileUiModel> = emptyList(),
+    val trayCapacity: Int = 0,
+    val status: GameStatus = GameStatus.RUNNING,
+    val levelNotFound: Boolean = false
+)

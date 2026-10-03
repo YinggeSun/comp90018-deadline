@@ -7,6 +7,10 @@ import com.comp90018.deadline.domain.game.model.TileType
 
 /**
  * Fixed level definitions used for development and testing.
+ *
+ * Positions follow [TilePosition]: each tile covers 2 x 2 logical units, so
+ * neighbouring tiles on one layer are 2 apart and an odd offset on a higher
+ * layer staggers a tile by half. Layout sizes are in the same logical units.
  */
 object FixedLevels {
 
@@ -29,7 +33,7 @@ object FixedLevels {
                     type = TileType.DEFAULT,
                     position = TilePosition(
                         row = 0,
-                        column = 1,
+                        column = 2,
                         layer = 0
                     )
                 ),
@@ -37,7 +41,7 @@ object FixedLevels {
                     id = "tile_3",
                     type = TileType.DEFAULT,
                     position = TilePosition(
-                        row = 1,
+                        row = 2,
                         column = 0,
                         layer = 0
                     )
@@ -46,8 +50,8 @@ object FixedLevels {
         ),
         config = LevelConfig(
             layout = LayoutTemplate(
-                rows = 2,
-                columns = 2
+                rows = 4,
+                columns = 4
             ),
             tileCount = 3,
             maxLayer = 0
@@ -67,34 +71,34 @@ object FixedLevels {
                 Tile(
                     id = "level_1_book_2",
                     type = TileType.BOOK,
-                    position = TilePosition(row = 0, column = 1, layer = 0)
+                    position = TilePosition(row = 0, column = 2, layer = 0)
                 ),
                 Tile(
                     id = "level_1_book_3",
                     type = TileType.BOOK,
-                    position = TilePosition(row = 0, column = 2, layer = 0)
+                    position = TilePosition(row = 0, column = 4, layer = 0)
                 ),
                 Tile(
                     id = "level_1_coffee_1",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 1, column = 0, layer = 0)
+                    position = TilePosition(row = 2, column = 0, layer = 0)
                 ),
                 Tile(
                     id = "level_1_coffee_2",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 1, column = 1, layer = 0)
+                    position = TilePosition(row = 2, column = 2, layer = 0)
                 ),
                 Tile(
                     id = "level_1_coffee_3",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 1, column = 2, layer = 0)
+                    position = TilePosition(row = 2, column = 4, layer = 0)
                 )
             )
         ),
         config = LevelConfig(
             layout = LayoutTemplate(
-                rows = 2,
-                columns = 3
+                rows = 4,
+                columns = 6
             ),
             tileCount = 6,
             maxLayer = 0
@@ -114,51 +118,51 @@ object FixedLevels {
                 Tile(
                     id = "level_2_coffee_1",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 0, column = 1, layer = 0)
+                    position = TilePosition(row = 0, column = 2, layer = 0)
                 ),
                 Tile(
                     id = "level_2_laptop_1",
                     type = TileType.LAPTOP,
-                    position = TilePosition(row = 0, column = 2, layer = 0)
+                    position = TilePosition(row = 0, column = 4, layer = 0)
                 ),
 
                 Tile(
                     id = "level_2_book_2",
                     type = TileType.BOOK,
-                    position = TilePosition(row = 1, column = 0, layer = 0)
+                    position = TilePosition(row = 2, column = 0, layer = 0)
                 ),
                 Tile(
                     id = "level_2_coffee_2",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 1, column = 1, layer = 0)
+                    position = TilePosition(row = 2, column = 2, layer = 0)
                 ),
                 Tile(
                     id = "level_2_laptop_2",
                     type = TileType.LAPTOP,
-                    position = TilePosition(row = 1, column = 2, layer = 0)
+                    position = TilePosition(row = 2, column = 4, layer = 0)
                 ),
 
                 Tile(
                     id = "level_2_book_3",
                     type = TileType.BOOK,
-                    position = TilePosition(row = 2, column = 0, layer = 0)
+                    position = TilePosition(row = 4, column = 0, layer = 0)
                 ),
                 Tile(
                     id = "level_2_coffee_3",
                     type = TileType.COFFEE,
-                    position = TilePosition(row = 2, column = 1, layer = 0)
+                    position = TilePosition(row = 4, column = 2, layer = 0)
                 ),
                 Tile(
                     id = "level_2_laptop_3",
                     type = TileType.LAPTOP,
-                    position = TilePosition(row = 2, column = 2, layer = 0)
+                    position = TilePosition(row = 4, column = 4, layer = 0)
                 )
             )
         ),
         config = LevelConfig(
             layout = LayoutTemplate(
-                rows = 3,
-                columns = 3
+                rows = 6,
+                columns = 6
             ),
             tileCount = 9,
             maxLayer = 0
@@ -223,8 +227,8 @@ object FixedLevels {
         ),
         config = LevelConfig(
             layout = LayoutTemplate(
-                rows = 4,
-                columns = 5
+                rows = 5,
+                columns = 6
             ),
             tileCount = 9,
             maxLayer = 1

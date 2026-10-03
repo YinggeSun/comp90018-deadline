@@ -2,13 +2,17 @@ package com.comp90018.deadline.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.comp90018.deadline.domain.level.model.FixedLevels
+import com.comp90018.deadline.feature.game.components.tileTestTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -24,7 +28,8 @@ class AppNavHostTest {
 
     private lateinit var navController: TestNavHostController
 
-    private val levelId = FixedLevels.SAMPLE_LEVEL.id
+    private val level = FixedLevels.SAMPLE_LEVEL
+    private val levelId = level.id
 
     @Before
     fun setUp() {
@@ -41,6 +46,15 @@ class AppNavHostTest {
     private fun click(label: String) {
         composeRule.onNodeWithText(label).performClick()
         composeRule.waitForIdle()
+    }
+
+    /** Wins the sample level by selecting every tile; all of them start uncovered. */
+    private fun finishGame() {
+        level.board.tiles.forEach { tile ->
+            composeRule.onNodeWithTag(tileTestTag(tile.id))
+                .performSemanticsAction(SemanticsActions.OnClick)
+            composeRule.waitForIdle()
+        }
     }
 
     @Test
@@ -75,14 +89,15 @@ class AppNavHostTest {
             levelId,
             navController.currentBackStackEntry?.arguments?.getString(Routes.ARG_LEVEL_ID)
         )
-        composeRule.onNodeWithText("Game: $levelId").assertExists()
+        composeRule.onNodeWithText(level.name).assertExists()
+        composeRule.onNodeWithTag(tileTestTag(level.board.tiles.first().id)).assertExists()
     }
 
     @Test
     fun backFromResultSkipsFinishedGame() {
         click("Play")
         click("Start sample level")
-        click("Finish game")
+        finishGame()
         assertEquals(Routes.RESULT, currentRoute())
 
         composeRule.runOnUiThread { navController.popBackStack() }
@@ -95,17 +110,17 @@ class AppNavHostTest {
     fun resultActionsNavigateToExpectedScreens() {
         click("Play")
         click("Start sample level")
-        click("Finish game")
+        finishGame()
 
         click("Replay")
         assertEquals(Routes.GAME, currentRoute())
 
-        click("Finish game")
+        finishGame()
         click("Level Select")
         assertEquals(Routes.LEVEL_SELECT, currentRoute())
 
         click("Start sample level")
-        click("Finish game")
+        finishGame()
         click("Home")
         assertEquals(Routes.HOME, currentRoute())
         assertNull(navController.previousBackStackEntry)

@@ -3,6 +3,8 @@ package com.comp90018.deadline.domain.level.model
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.model.GameStatus
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FixedLevelsTest {
@@ -15,8 +17,8 @@ class FixedLevelsTest {
         assertEquals("Sample Level", level.name)
         assertEquals(3, level.board.tiles.size)
 
-        assertEquals(2, level.config.layout.rows)
-        assertEquals(2, level.config.layout.columns)
+        assertEquals(4, level.config.layout.rows)
+        assertEquals(4, level.config.layout.columns)
         assertEquals(3, level.config.tileCount)
         assertEquals(0, level.config.maxLayer)
     }
@@ -69,5 +71,41 @@ class FixedLevelsTest {
                 engine.state.status
             )
         }
+    }
+
+    private val allLevels = FixedLevels.ALL_LEVELS + FixedLevels.SAMPLE_LEVEL
+
+    @Test
+    fun fixedLevels_tilesFitInsideLayout() {
+        for (level in allLevels) {
+            val layout = level.config.layout
+            for (tile in level.board.tiles) {
+                assertTrue(
+                    "${tile.id} should fit inside ${level.name}'s layout",
+                    tile.position.row + TILE_SPAN <= layout.rows &&
+                        tile.position.column + TILE_SPAN <= layout.columns
+                )
+            }
+        }
+    }
+
+    @Test
+    fun fixedLevels_tilesOnSameLayerDoNotOverlap() {
+        for (level in allLevels) {
+            val tiles = level.board.tiles
+            for ((index, a) in tiles.withIndex()) {
+                for (b in tiles.drop(index + 1)) {
+                    val overlaps = a.position.layer == b.position.layer &&
+                        kotlin.math.abs(a.position.row - b.position.row) < TILE_SPAN &&
+                        kotlin.math.abs(a.position.column - b.position.column) < TILE_SPAN
+                    assertFalse("${a.id} and ${b.id} overlap in ${level.name}", overlaps)
+                }
+            }
+        }
+    }
+
+    private companion object {
+        /** Each tile covers 2 x 2 logical units (see TilePosition). */
+        const val TILE_SPAN = 2
     }
 }
