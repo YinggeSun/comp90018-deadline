@@ -2,6 +2,7 @@ package com.comp90018.deadline.feature.game
 
 import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.model.TileType
+import com.comp90018.deadline.domain.game.stress.StressConfig
 
 /**
  * One tile as the board draws it. [row], [column] and [layer] are the logical
@@ -21,6 +22,10 @@ data class TileUiModel(
  * first so later tiles are drawn on top. [boardRows] and [boardColumns] are
  * the logical size of the starting board, so the layout does not shift as
  * tiles are removed.
+ *
+ * Elapsed time is not part of this state; it is published separately by
+ * [GameViewModel.elapsedSeconds] so the whole screen does not recompose every
+ * second.
  */
 data class GameUiState(
     val levelName: String = "",
@@ -31,5 +36,9 @@ data class GameUiState(
     val trayCapacity: Int = 0,
     val status: GameStatus = GameStatus.RUNNING,
     val levelNotFound: Boolean = false,
-    val peekAmount: Float = 0f
+    val peekAmount: Float = 0f,
+    val stress: Int = 0,
+    val maxStress: Int = StressConfig.DEFAULT_MAXIMUM,
+    val isHighStress: Boolean = false,
+    val canUndo: Boolean = false
 )

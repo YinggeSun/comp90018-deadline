@@ -29,7 +29,10 @@ import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.feature.game.components.GameActions
 import com.comp90018.deadline.feature.game.components.GameBoard
+import com.comp90018.deadline.feature.game.components.GameHud
+import com.comp90018.deadline.feature.game.components.TaskTray
 
 @Composable
 fun GameScreen(
@@ -39,6 +42,7 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val elapsedSeconds by viewModel.elapsedSeconds.collectAsState(initial = 0L)
     val currentOnGameFinished by rememberUpdatedState(onGameFinished)
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -60,6 +64,7 @@ fun GameScreen(
 
     GameContent(
         uiState = uiState,
+        elapsedSeconds = elapsedSeconds,
         onEvent = { viewModel.onEvent(it, haptics) },
         onBack = onBack
     )
@@ -69,6 +74,7 @@ fun GameScreen(
 @Composable
 fun GameContent(
     uiState: GameUiState,
+    elapsedSeconds: Long,
     onEvent: (GameUiEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -92,6 +98,13 @@ fun GameContent(
         if (uiState.levelNotFound) {
             ErrorContent(message = stringResource(R.string.game_level_not_found))
         } else {
+            GameHud(
+                elapsedSeconds = elapsedSeconds,
+                stress = uiState.stress,
+                maxStress = uiState.maxStress,
+                isHighStress = uiState.isHighStress,
+                modifier = Modifier.padding(horizontal = Spacing.large)
+            )
             GameBoard(
                 tiles = uiState.boardTiles,
                 rows = uiState.boardRows,
@@ -99,8 +112,20 @@ fun GameContent(
                 onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
                 peekAmount = uiState.peekAmount,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(Spacing.large)
+            )
+            TaskTray(
+                tiles = uiState.trayTiles,
+                capacity = uiState.trayCapacity,
+                modifier = Modifier.padding(horizontal = Spacing.large)
+            )
+            GameActions(
+                canUndo = uiState.canUndo,
+                onUndo = { onEvent(GameUiEvent.UndoClicked) },
+                onRestart = { onEvent(GameUiEvent.RestartClicked) },
+                modifier = Modifier.padding(Spacing.medium)
             )
         }
     }

@@ -13,6 +13,9 @@ interface GameEngine {
     /** True only while running, for a tile still on the board with no active covering tiles. */
     fun isTileSelectable(tileId: String): Boolean
 
+    /** True while running and at least one selection since the last match can be undone. */
+    val canUndo: Boolean
+
     /** Restores the latest retained selection since the last match while running; unavailable undo is a no-op. */
     fun undo()
 
