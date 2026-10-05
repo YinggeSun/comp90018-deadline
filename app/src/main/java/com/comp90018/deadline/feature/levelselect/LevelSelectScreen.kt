@@ -35,6 +35,7 @@ import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
+import com.comp90018.deadline.core.ui.components.LoadingContent
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.core.util.TimeFormatter
 
@@ -45,7 +46,7 @@ fun levelCardTestTag(levelId: String) = "level_$levelId"
 fun LevelSelectScreen(
     onLevelSelected: (levelId: String) -> Unit,
     onBack: () -> Unit,
-    viewModel: LevelSelectViewModel = viewModel()
+    viewModel: LevelSelectViewModel = viewModel(factory = LevelSelectViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     LevelSelectContent(uiState = uiState, onLevelSelected = onLevelSelected, onBack = onBack)
@@ -75,7 +76,9 @@ fun LevelSelectContent(
             )
         }
 
-        if (uiState.levels.isEmpty()) {
+        if (uiState.isLoading) {
+            LoadingContent()
+        } else if (uiState.levels.isEmpty()) {
             ErrorContent(message = stringResource(R.string.level_select_empty))
         } else {
             LazyColumn(

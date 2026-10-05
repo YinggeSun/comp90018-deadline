@@ -29,7 +29,7 @@ fun HomeScreen(
     onContinue: (levelId: String) -> Unit,
     onLeaderboard: () -> Unit,
     onSettings: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     HomeContent(

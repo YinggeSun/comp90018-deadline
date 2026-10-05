@@ -11,4 +11,8 @@ data class LevelItemUiModel(
     val bestTimeSeconds: Long?
 )
 
-data class LevelSelectUiState(val levels: List<LevelItemUiModel> = emptyList())
+/** [isLoading] is true until stored progress has been read, so lock states are never guessed. */
+data class LevelSelectUiState(
+    val levels: List<LevelItemUiModel> = emptyList(),
+    val isLoading: Boolean = false
+)

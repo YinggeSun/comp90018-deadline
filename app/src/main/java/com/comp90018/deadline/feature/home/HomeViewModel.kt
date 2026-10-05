@@ -1,19 +1,51 @@
 package com.comp90018.deadline.feature.home
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.comp90018.deadline.app.DeadlineApp
+import com.comp90018.deadline.domain.level.model.FixedLevels
+import com.comp90018.deadline.domain.level.model.Level
+import com.comp90018.deadline.domain.progress.PlayerProgress
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 /**
- * Home screen state. Progress is not persisted yet (#35 / #36), so by
- * default there is no level to continue; [continueLevelId] is the seam for
- * the progress repository once it exists.
+ * Home screen state. Continue points at the first unlocked level the player has not
+ * cleared yet, and is hidden for a new player or once every unlocked level is cleared.
  */
 class HomeViewModel(
-    continueLevelId: () -> String? = { null }
+    private val levels: List<Level> = FixedLevels.ALL_LEVELS,
+    progress: Flow<PlayerProgress> = flowOf(PlayerProgress())
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState(continueLevelId = continueLevelId()))
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<HomeUiState> = progress
+        .map(::toUiState)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, toUiState(PlayerProgress()))
+
+    private fun toUiState(progress: PlayerProgress) = HomeUiState(
+        continueLevelId = if (progress.completedLevelIds.isEmpty()) {
+            null
+        } else {
+            levels.firstOrNull {
+                progress.isWeekUnlocked(it.week) && it.id !in progress.completedLevelIds
+            }?.id
+        }
+    )
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                HomeViewModel(progress = container.progressRepository.progress)
+            }
+        }
+    }
 }
