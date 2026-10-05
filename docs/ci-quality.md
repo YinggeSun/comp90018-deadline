@@ -2,7 +2,9 @@
 
 The `Android quality` workflow runs on every PR into `main` (including forks),
 pushes to `main`, and manual runs. It uses Java 17, Gradle 8.7 from the checked-in
-wrapper, Android SDK 34, and build tools 34.0.0. Actions are pinned to commit SHAs.
+wrapper, Android SDK 34, and build tools 34.0.0. SDK command-line tools are pinned
+to build 12266719 (16.0), compatible with this Java 17 setup. Actions use the
+Node 24 runtime and are pinned to commit SHAs.
 The workflow has read-only repository permissions and needs no secrets.
 
 ## What must pass
