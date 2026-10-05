@@ -2,8 +2,10 @@ package com.comp90018.deadline.feature.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.comp90018.deadline.app.DeadlineApp
 import com.comp90018.deadline.domain.game.engine.CompletionTimer
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.engine.GameEngine
@@ -15,6 +17,8 @@ import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.domain.level.model.Level
+import com.comp90018.deadline.domain.progress.CompletionRecorder
+import com.comp90018.deadline.domain.progress.CompletionResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,13 +32,16 @@ import kotlinx.coroutines.flow.flow
  * its state as [GameUiState]; all game rules stay in the engine.
  *
  * Also owns the session's [CompletionTimer]: it starts with the level, stops
- * once the game is won or lost, and restarts with the level.
+ * once the game is won or lost, and restarts with the level. Each win is passed to
+ * [completionRecorder] with the timer's final reading, stamped by [nowMillis].
  */
 class GameViewModel(
     levelId: String,
     findLevel: (String) -> Level? = ::findFixedLevel,
     private val timer: CompletionTimer = CompletionTimer(),
-    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it) }
+    private val completionRecorder: CompletionRecorder = CompletionRecorder.None,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) }
 ) : ViewModel(), GameSensorActions {
 
     private val level = findLevel(levelId)
@@ -121,10 +128,25 @@ class GameViewModel(
         ).withEngineState(engine)
     }
 
-    /** Republishes the engine state and stops the timer once the game has ended. */
+    /** Republishes the engine state, stops the timer once the game has ended, and records a win. */
     private fun publish(engine: GameEngine) {
+        val wasWon = _uiState.value.status == GameStatus.WON
         _uiState.value = _uiState.value.withEngineState(engine)
         if (engine.state.status != GameStatus.RUNNING) timer.stop()
+        if (!wasWon && engine.state.status == GameStatus.WON) recordWin()
+    }
+
+    private fun recordWin() {
+        val level = level ?: return
+        completionRecorder.record(
+            CompletionResult(
+                levelId = level.id,
+                week = level.week,
+                // A sub-millisecond win still counts as a completion.
+                timeMillis = timer.elapsedMillis.coerceAtLeast(1L),
+                completedAtMillis = nowMillis()
+            )
+        )
     }
 
     private fun GameUiState.withEngineState(engine: GameEngine): GameUiState {
@@ -160,7 +182,10 @@ class GameViewModel(
         private const val TIMER_TICK_MILLIS = 200L
 
         fun factory(levelId: String): ViewModelProvider.Factory = viewModelFactory {
-            initializer { GameViewModel(levelId) }
+            initializer {
+                val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                GameViewModel(levelId, completionRecorder = container.completionRecorder)
+            }
         }
     }
 }
