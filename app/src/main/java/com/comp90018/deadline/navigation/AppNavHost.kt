@@ -30,6 +30,16 @@ fun AppNavHost(
     val levelIdArgument = listOf(
         navArgument(Routes.ARG_LEVEL_ID) { type = NavType.StringType }
     )
+    val resultArguments = levelIdArgument + listOf(
+        navArgument(Routes.ARG_WON) {
+            type = NavType.BoolType
+            defaultValue = false
+        },
+        navArgument(Routes.ARG_ELAPSED_MILLIS) {
+            type = NavType.LongType
+            defaultValue = 0L
+        }
+    )
 
     NavHost(
         navController = navController,
@@ -56,16 +66,20 @@ fun AppNavHost(
             val levelId = entry.arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
             GameScreen(
                 levelId = levelId,
-                onGameFinished = { actions.navigateToResult(levelId) },
+                onGameFinished = { outcome -> actions.navigateToResult(levelId, outcome) },
                 onBack = actions::navigateUp
             )
         }
 
-        composable(Routes.RESULT, arguments = levelIdArgument) { entry ->
-            val levelId = entry.arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
+        composable(Routes.RESULT, arguments = resultArguments) { entry ->
+            val arguments = entry.arguments
+            val levelId = arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
             ResultScreen(
                 levelId = levelId,
-                onReplay = { actions.replayLevel(levelId) },
+                won = arguments?.getBoolean(Routes.ARG_WON) ?: false,
+                elapsedMillis = arguments?.getLong(Routes.ARG_ELAPSED_MILLIS) ?: 0L,
+                onRetry = { actions.playFromResult(levelId) },
+                onNextLevel = actions::playFromResult,
                 onLevelSelect = actions::backToLevelSelect,
                 onHome = actions::backToHome
             )

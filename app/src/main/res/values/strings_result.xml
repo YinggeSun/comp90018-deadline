@@ -1,0 +1,15 @@
+<resources>
+    <!-- Result screen -->
+    <string name="result_won_title">Deadline met!</string>
+    <string name="result_won_message">You cleared every task on the board.</string>
+    <string name="result_lost_title">Deadline missed</string>
+    <string name="result_lost_message">Your Task Tray filled up.</string>
+    <string name="result_time_label">Time</string>
+    <string name="result_best_label">Personal Best</string>
+    <string name="result_no_best">No best time yet</string>
+    <string name="result_new_best">New personal best!</string>
+    <string name="result_retry">Retry</string>
+    <string name="result_next_level">Next Level</string>
+    <string name="result_level_select">Level Select</string>
+    <string name="result_home">Home</string>
+</resources>

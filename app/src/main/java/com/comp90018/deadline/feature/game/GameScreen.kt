@@ -48,7 +48,7 @@ import com.comp90018.deadline.feature.game.components.TaskTray
 @Composable
 fun GameScreen(
     levelId: String,
-    onGameFinished: () -> Unit,
+    onGameFinished: (GameOutcome) -> Unit,
     onBack: () -> Unit,
     viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId))
 ) {
@@ -70,7 +70,11 @@ fun GameScreen(
     }
 
     LaunchedEffect(uiState.status) {
-        if (uiState.status != GameStatus.RUNNING) currentOnGameFinished()
+        if (uiState.status != GameStatus.RUNNING) {
+            currentOnGameFinished(
+                GameOutcome(won = uiState.status == GameStatus.WON, elapsedMillis = viewModel.elapsedMillis)
+            )
+        }
     }
 
     GameContent(
