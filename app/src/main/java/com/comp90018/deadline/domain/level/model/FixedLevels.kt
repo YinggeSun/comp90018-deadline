@@ -102,7 +102,8 @@ object FixedLevels {
             ),
             tileCount = 6,
             maxLayer = 0
-        )
+        ),
+        week = 1
     )
 
     val LEVEL_2 = Level(
@@ -166,7 +167,8 @@ object FixedLevels {
             ),
             tileCount = 9,
             maxLayer = 0
-        )
+        ),
+        week = 2
     )
 
     val LEVEL_3 = Level(
@@ -232,7 +234,8 @@ object FixedLevels {
             ),
             tileCount = 9,
             maxLayer = 1
-        )
+        ),
+        week = 3
     )
 
     val ALL_LEVELS = listOf(

@@ -8,6 +8,8 @@ package com.comp90018.deadline.domain.level.model
  */
 object SemesterDifficulty {
 
+    const val FIRST_WEEK = 1
+
     const val SEMESTER_WEEKS = 12
 
     val weeks: List<WeekConfig> = (1..SEMESTER_WEEKS).map { week ->

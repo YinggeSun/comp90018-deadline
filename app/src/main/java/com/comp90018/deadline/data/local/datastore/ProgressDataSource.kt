@@ -40,8 +40,8 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
 
     private fun read(preferences: Preferences) = PlayerProgress(
         completedLevelIds = preferences[COMPLETED].orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
-        highestUnlockedWeek = (preferences[UNLOCKED_WEEK] ?: PlayerProgress.FIRST_WEEK)
-            .coerceIn(PlayerProgress.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS),
+        highestUnlockedWeek = (preferences[UNLOCKED_WEEK] ?: SemesterDifficulty.FIRST_WEEK)
+            .coerceIn(SemesterDifficulty.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS),
         personalBests = preferences[BESTS].orEmpty()
             .mapNotNull(::decodeBest)
             .groupBy { it.levelId }
