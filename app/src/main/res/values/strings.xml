@@ -6,13 +6,4 @@
     <string name="status_error_title">Something went wrong</string>
     <string name="action_retry">Retry</string>
     <string name="action_back">Back</string>
-
-    <!-- Game screen -->
-    <string name="game_level_not_found">This level could not be found.</string>
-    <string name="game_tile_default">Paper tile</string>
-    <string name="game_tile_book">Book tile</string>
-    <string name="game_tile_coffee">Coffee tile</string>
-    <string name="game_tile_laptop">Laptop tile</string>
-    <string name="game_tile_selectable">Available</string>
-    <string name="game_tile_blocked">Covered</string>
 </resources>

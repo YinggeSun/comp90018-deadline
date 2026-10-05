@@ -76,23 +76,6 @@ fun TileView(
     }
 }
 
-/** Placeholder artwork until tile images are designed. */
-private val TileType.symbol: String
-    get() = when (this) {
-        TileType.DEFAULT -> "📄" // page
-        TileType.BOOK -> "📚" // books
-        TileType.COFFEE -> "☕" // coffee
-        TileType.LAPTOP -> "💻" // laptop
-    }
-
-private val TileType.labelRes: Int
-    get() = when (this) {
-        TileType.DEFAULT -> R.string.game_tile_default
-        TileType.BOOK -> R.string.game_tile_book
-        TileType.COFFEE -> R.string.game_tile_coffee
-        TileType.LAPTOP -> R.string.game_tile_laptop
-    }
-
 @Preview(showBackground = true)
 @Composable
 private fun TileViewPreview() {
