@@ -21,15 +21,24 @@ class SeededGenerator(
             it != TileType.DEFAULT
         }
 
-        require(matchableTypes.isNotEmpty()) {
-            "At least one matchable tile type is required."
+        require(config.tileVariety <= matchableTypes.size) {
+            "Tile variety cannot exceed the number of available matchable tile types."
         }
+
+        val selectedTypes = matchableTypes
+            .shuffled(random)
+            .take(config.tileVariety)
 
         val tripleCount = config.tileCount / MATCH_SIZE
 
         val tiles = buildList {
-            repeat(tripleCount) {
-                val type = matchableTypes.random(random)
+            for (type in selectedTypes) {
+                repeat(MATCH_SIZE) {
+                    add(type)
+                }
+            }
+            repeat(tripleCount - selectedTypes.size) {
+                val type = selectedTypes.random(random)
 
                 repeat(MATCH_SIZE) {
                     add(type)

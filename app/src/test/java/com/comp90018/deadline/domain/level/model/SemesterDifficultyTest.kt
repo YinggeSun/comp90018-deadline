@@ -48,4 +48,12 @@ class SemesterDifficultyTest {
     fun weekAboveTwelve_isRejected() {
         SemesterDifficulty.forWeek(13)
     }
+
+    @Test
+    fun tileVariety_increasesAcrossSemester() {
+        assertEquals(3, SemesterDifficulty.forWeek(1).levels.single().tileVariety)
+        assertEquals(4, SemesterDifficulty.forWeek(4).levels.single().tileVariety)
+        assertEquals(5, SemesterDifficulty.forWeek(7).levels.single().tileVariety)
+        assertEquals(6, SemesterDifficulty.forWeek(10).levels.single().tileVariety)
+    }
 }

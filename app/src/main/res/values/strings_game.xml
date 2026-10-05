@@ -5,6 +5,9 @@
     <string name="game_tile_book">Book tile</string>
     <string name="game_tile_coffee">Coffee tile</string>
     <string name="game_tile_laptop">Laptop tile</string>
+    <string name="game_tile_assignment">Assignment tile</string>
+    <string name="game_tile_quiz">Quiz tile</string>
+    <string name="game_tile_reading">Reading tile</string>
     <string name="game_tile_selectable">Available</string>
     <string name="game_tile_blocked">Covered</string>
 
