@@ -59,6 +59,23 @@ task names or artifact name. Do not use path filters: even docs-only PRs need to
 produce a check when it is required. If a merge queue is enabled later, add the
 `merge_group` trigger before making this check required for that queue.
 
+Repository rules are configured in GitHub, not by merging this file. An
+administrator must complete and verify the steps above; a contributor cannot
+activate required checks with a branch push.
+
+## Existing and stacked PRs
+
+The `pull_request.branches: [main]` filter matches the PR's **base**, not its head.
+A PR targeting another feature branch will not run this workflow on a push,
+even if its head contains the workflow file. After merging its dependency,
+retarget it to `main`, update its branch and verify a new successful check.
+
+PRs opened before this workflow exists need the workflow in their tested head.
+Merge this CI PR first, then update those branches from `main`. If the team
+wants pre-merge CI evidence, merge the CI branch into those task branches and
+push them while keeping their PR base as `main`; merge the CI PR before the
+dependent task PRs. Do not use an old green run as evidence for a new head.
+
 ## PR workflow
 
 Update from `main`, create a task branch, run relevant checks, and open a PR with
