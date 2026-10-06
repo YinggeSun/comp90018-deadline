@@ -19,7 +19,12 @@ undo, shuffle, and restart operations. An independent reference computes coverag
 from tile coordinates and stress from explicit tuned values without calling the
 production graph/stress helpers. After every operation it checks the complete
 state, public `canUndo`, availability for all original IDs, tile uniqueness, and
-previous snapshot stability. Seeds cover undo depths 0, 1, 3, and unlimited.
+stability of every previously exposed `engine.state` snapshot. Before each
+operation the test retains the actual engine state and an independent copy of
+its board/tray lists, then rechecks all retained snapshots after every subsequent
+operation. The reference state is used only as the operation oracle, not as a
+substitute for a previously exposed engine snapshot. Seeds cover undo depths
+0, 1, 3, and unlimited.
 Failure messages contain seed, step, and tile ID for reproduction.
 
 Shuffle is checked as a contract: IDs/positions and remaining type counts must
@@ -31,6 +36,8 @@ It does not assume a particular random permutation.
 the public API with four tile types, without reflection or a fake tray capacity.
 It checks loss, frozen terminal state, restart, and a Coffee triple completing in
 the seventh slot (matching and recovery before loss; committed undo history).
+The fixture supplies explicit week/stress parameters, so changing provisional
+production tuning defaults cannot silently change the capacity regression.
 Hand-built boundary boards exercise the engine contract, which currently treats
 an empty board as WON even if a malformed level leaves residual tray tiles.
 The solvability validator separately requires clearing both board and tray.

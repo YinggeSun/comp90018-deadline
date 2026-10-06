@@ -5,6 +5,7 @@ import com.comp90018.deadline.domain.game.model.GameStatus
 import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.model.TilePosition
 import com.comp90018.deadline.domain.game.model.TileType
+import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,6 +19,17 @@ class GameEngineCapacityRegressionTest {
                 board = Board(types.mapIndexed { index, type -> Tile("t$index", type, TilePosition(0, index * 2)) }),
             ),
             initialStress = 30,
+            week = 1,
+            stressConfig =
+                StressConfig(
+                    maximum = 100,
+                    highStressThreshold = 75,
+                    degradationProbability = 0.0,
+                    baseRate = 2,
+                    rateGrowthPerWeek = 0,
+                    coffeeRecoveryBase = 20,
+                    coffeeRecoveryDeclinePerWeek = 0,
+                ),
         )
 
     @Test

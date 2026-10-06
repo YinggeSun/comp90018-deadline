@@ -50,6 +50,7 @@ class GameEngineSequenceTest(private val seed: Int) {
         val initial = GameState(board = Board(tiles), stress = 50)
         var expected = initial
         val history = ArrayDeque<GameState>()
+        val exposedSnapshots = mutableListOf<Pair<GameState, GameState>>()
         val ids = tiles.map { it.id } + "missing"
 
         fun selectable(
@@ -67,11 +68,13 @@ class GameEngineSequenceTest(private val seed: Int) {
 
         repeat(200) { step ->
             val before = expected
+            val exposedBefore = engine.state
             val preservedBefore =
-                before.copy(
-                    board = Board(before.board.tiles.toList()),
-                    taskTray = before.taskTray.copy(tiles = before.taskTray.tiles.toList()),
+                exposedBefore.copy(
+                    board = Board(exposedBefore.board.tiles.toList()),
+                    taskTray = exposedBefore.taskTray.copy(tiles = exposedBefore.taskTray.tiles.toList()),
                 )
+            exposedSnapshots.add(exposedBefore to preservedBefore)
             when (random.nextInt(10)) {
                 in 0..5 -> {
                     val available = ids.filter { selectable(expected, it) }
@@ -144,7 +147,9 @@ class GameEngineSequenceTest(private val seed: Int) {
             }
             val context = "seed=$seed step=$step depth=$depth"
             assertEquals(context, expected, engine.state)
-            assertEquals("Previous snapshot mutated: $context", preservedBefore, before)
+            exposedSnapshots.forEachIndexed { snapshotStep, (exposed, preserved) ->
+                assertEquals("Engine snapshot from step=$snapshotStep mutated: $context", preserved, exposed)
+            }
             assertEquals(context, expected.status == GameStatus.RUNNING && history.isNotEmpty(), engine.canUndo)
             ids.forEach { id ->
                 assertEquals("$context id=$id", selectable(expected, id), engine.isTileSelectable(id))
