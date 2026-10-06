@@ -40,6 +40,13 @@ so it is suitable for CI rather than an unbounded fuzz search.
 
 ## Scope
 
+`SemesterDifficultyConfigurationRegressionTest` locks the current layout rows,
+columns, tile count and maximum layer for each of the 12 weeks in an explicit
+table independent of the production configuration builder. It also checks the
+single-level-per-week contract and consistency of the public semester table.
+Intentional balancing changes should update this table; the existing progression
+tests continue to check relative difficulty separately.
+
 These tests validate domain generation/solving and fallback behavior. They do not
 claim generated levels are wired into the UI, difficulty is balanced for humans,
 or a late-week fallback is as hard as the requested level. UI integration and
