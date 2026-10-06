@@ -23,7 +23,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppNavHostTest {
-
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
@@ -35,9 +34,10 @@ class AppNavHostTest {
     @Before
     fun setUp() {
         composeRule.setContent {
-            navController = TestNavHostController(LocalContext.current).apply {
-                navigatorProvider.addNavigator(ComposeNavigator())
-            }
+            navController =
+                TestNavHostController(LocalContext.current).apply {
+                    navigatorProvider.addNavigator(ComposeNavigator())
+                }
             AppNavHost(navController = navController)
         }
     }
@@ -90,7 +90,7 @@ class AppNavHostTest {
         assertEquals(Routes.GAME, currentRoute())
         assertEquals(
             levelId,
-            navController.currentBackStackEntry?.arguments?.getString(Routes.ARG_LEVEL_ID)
+            navController.currentBackStackEntry?.arguments?.getString(Routes.ARG_LEVEL_ID),
         )
         composeRule.onNodeWithText(level.name).assertExists()
         composeRule.onNodeWithTag(tileTestTag(level.board.tiles.first().id)).assertExists()

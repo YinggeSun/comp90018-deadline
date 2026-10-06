@@ -24,41 +24,44 @@ import com.comp90018.deadline.feature.settings.SettingsScreen
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
 ) {
     val actions = remember(navController) { NavigationActions(navController) }
-    val levelIdArgument = listOf(
-        navArgument(Routes.ARG_LEVEL_ID) { type = NavType.StringType }
-    )
-    val resultArguments = levelIdArgument + listOf(
-        navArgument(Routes.ARG_WON) {
-            type = NavType.BoolType
-            defaultValue = false
-        },
-        navArgument(Routes.ARG_ELAPSED_MILLIS) {
-            type = NavType.LongType
-            defaultValue = 0L
-        }
-    )
+    val levelIdArgument =
+        listOf(
+            navArgument(Routes.ARG_LEVEL_ID) { type = NavType.StringType },
+        )
+    val resultArguments =
+        levelIdArgument +
+            listOf(
+                navArgument(Routes.ARG_WON) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(Routes.ARG_ELAPSED_MILLIS) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+            )
 
     NavHost(
         navController = navController,
         startDestination = Routes.HOME,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable(Routes.HOME) {
             HomeScreen(
                 onPlay = actions::navigateToLevelSelect,
                 onContinue = actions::navigateToGame,
                 onLeaderboard = actions::navigateToLeaderboard,
-                onSettings = actions::navigateToSettings
+                onSettings = actions::navigateToSettings,
             )
         }
 
         composable(Routes.LEVEL_SELECT) {
             LevelSelectScreen(
                 onLevelSelected = actions::navigateToGame,
-                onBack = actions::navigateUp
+                onBack = actions::navigateUp,
             )
         }
 
@@ -67,7 +70,7 @@ fun AppNavHost(
             GameScreen(
                 levelId = levelId,
                 onGameFinished = { outcome -> actions.navigateToResult(levelId, outcome) },
-                onBack = actions::navigateUp
+                onBack = actions::navigateUp,
             )
         }
 
@@ -81,7 +84,7 @@ fun AppNavHost(
                 onRetry = { actions.playFromResult(levelId) },
                 onNextLevel = actions::playFromResult,
                 onLevelSelect = actions::backToLevelSelect,
-                onHome = actions::backToHome
+                onHome = actions::backToHome,
             )
         }
 

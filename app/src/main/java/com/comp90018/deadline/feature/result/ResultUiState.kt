@@ -13,5 +13,5 @@ data class ResultUiState(
     val elapsedMillis: Long = 0L,
     val bestTimeMillis: Long? = null,
     val isNewBest: Boolean = false,
-    val nextLevelId: String? = null
+    val nextLevelId: String? = null,
 )

@@ -10,7 +10,6 @@ import com.comp90018.deadline.feature.game.GameOutcome
  * [NavHostController] directly.
  */
 class NavigationActions(private val navController: NavHostController) {
-
     fun navigateToLevelSelect() {
         navController.navigate(Routes.LEVEL_SELECT) {
             launchSingleTop = true
@@ -22,7 +21,10 @@ class NavigationActions(private val navController: NavHostController) {
     }
 
     /** Replaces the finished game so Back from Result does not return to it. */
-    fun navigateToResult(levelId: String, outcome: GameOutcome) {
+    fun navigateToResult(
+        levelId: String,
+        outcome: GameOutcome,
+    ) {
         navController.navigate(Routes.result(levelId, outcome.won, outcome.elapsedMillis)) {
             popUpTo(Routes.GAME) { inclusive = true }
         }

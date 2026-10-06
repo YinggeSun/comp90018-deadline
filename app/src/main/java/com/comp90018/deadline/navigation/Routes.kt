@@ -25,6 +25,9 @@ object Routes {
 
     fun game(levelId: String): String = "game/${Uri.encode(levelId)}"
 
-    fun result(levelId: String, won: Boolean, elapsedMillis: Long): String =
-        "result/${Uri.encode(levelId)}?$ARG_WON=$won&$ARG_ELAPSED_MILLIS=$elapsedMillis"
+    fun result(
+        levelId: String,
+        won: Boolean,
+        elapsedMillis: Long,
+    ): String = "result/${Uri.encode(levelId)}?$ARG_WON=$won&$ARG_ELAPSED_MILLIS=$elapsedMillis"
 }

@@ -8,12 +8,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ResultViewModelTest {
-
     private fun state(
         levelId: String = FixedLevels.LEVEL_1.id,
         won: Boolean = true,
         elapsedMillis: Long = 60_000,
-        best: Long? = null
+        best: Long? = null,
     ) = ResultViewModel(levelId, won, elapsedMillis, bestTimeMillis = { best }).uiState.value
 
     @Test

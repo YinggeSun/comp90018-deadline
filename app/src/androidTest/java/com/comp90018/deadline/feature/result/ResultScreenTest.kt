@@ -14,7 +14,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ResultScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -28,7 +27,7 @@ class ResultScreenTest {
                     onRetry = { calls += "retry" },
                     onNextLevel = { calls += "next:$it" },
                     onLevelSelect = { calls += "levelSelect" },
-                    onHome = { calls += "home" }
+                    onHome = { calls += "home" },
                 )
             }
         }

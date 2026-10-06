@@ -22,28 +22,32 @@ class ResultViewModel(
     won: Boolean,
     elapsedMillis: Long,
     levels: List<Level> = FixedLevels.ALL_LEVELS,
-    bestTimeMillis: (levelId: String) -> Long? = { null }
+    bestTimeMillis: (levelId: String) -> Long? = { null },
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(
-        run {
-            val index = levels.indexOfFirst { it.id == levelId }
-            val best = bestTimeMillis(levelId)
-            ResultUiState(
-                levelId = levelId,
-                levelName = levels.getOrNull(index)?.name.orEmpty(),
-                won = won,
-                elapsedMillis = elapsedMillis,
-                bestTimeMillis = best,
-                isNewBest = won && best != null && elapsedMillis < best,
-                nextLevelId = if (won && index >= 0) levels.getOrNull(index + 1)?.id else null
-            )
-        }
-    )
+    private val _uiState =
+        MutableStateFlow(
+            run {
+                val index = levels.indexOfFirst { it.id == levelId }
+                val best = bestTimeMillis(levelId)
+                ResultUiState(
+                    levelId = levelId,
+                    levelName = levels.getOrNull(index)?.name.orEmpty(),
+                    won = won,
+                    elapsedMillis = elapsedMillis,
+                    bestTimeMillis = best,
+                    isNewBest = won && best != null && elapsedMillis < best,
+                    nextLevelId = if (won && index >= 0) levels.getOrNull(index + 1)?.id else null,
+                )
+            },
+        )
     val uiState: StateFlow<ResultUiState> = _uiState.asStateFlow()
 
     companion object {
-        fun factory(levelId: String, won: Boolean, elapsedMillis: Long): ViewModelProvider.Factory =
+        fun factory(
+            levelId: String,
+            won: Boolean,
+            elapsedMillis: Long,
+        ): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer { ResultViewModel(levelId, won, elapsedMillis) }
             }
