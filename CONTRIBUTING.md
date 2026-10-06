@@ -181,6 +181,10 @@ Then create a Pull Request on GitHub from the feature branch into `main`.
 
 ## Before Opening a Pull Request
 
+Run the automated quality commands and inspect the PR's `Android quality` check.
+See [CI quality checks](docs/ci-quality.md) for setup, reports, formatting baseline,
+and the administrator steps to require the check before merging.
+
 Check the following:
 
 1. The project builds successfully.
