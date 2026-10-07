@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.map
  * the level ID goes last so it may itself contain ':'.
  */
 class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
-
     val progress: Flow<PlayerProgress> =
         dataStore.safeData().map(::read).distinctUntilChanged()
 
@@ -38,26 +37,31 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
         return outcome
     }
 
-    private fun read(preferences: Preferences) = PlayerProgress(
-        completedLevelIds = preferences.typed(COMPLETED).orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
-        highestUnlockedWeek = (preferences.typed(UNLOCKED_WEEK) ?: PlayerProgress.FIRST_WEEK)
-            .coerceIn(PlayerProgress.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS),
-        personalBests = preferences.typed(BESTS).orEmpty()
-            .mapNotNull(::decodeBest)
-            .groupBy { it.levelId }
-            .mapValues { (_, bests) -> bests.minBy { it.timeMillis } },
-        lastModifiedMillis = (preferences.typed(LAST_MODIFIED) ?: 0L).coerceAtLeast(0L)
-    )
+    private fun read(preferences: Preferences) =
+        PlayerProgress(
+            completedLevelIds = preferences.typed(COMPLETED).orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
+            highestUnlockedWeek =
+                (preferences.typed(UNLOCKED_WEEK) ?: PlayerProgress.FIRST_WEEK)
+                    .coerceIn(PlayerProgress.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS),
+            personalBests =
+                preferences.typed(BESTS).orEmpty()
+                    .mapNotNull(::decodeBest)
+                    .groupBy { it.levelId }
+                    .mapValues { (_, bests) -> bests.minBy { it.timeMillis } },
+            lastModifiedMillis = (preferences.typed(LAST_MODIFIED) ?: 0L).coerceAtLeast(0L),
+        )
 
-    private fun write(preferences: MutablePreferences, progress: PlayerProgress) {
+    private fun write(
+        preferences: MutablePreferences,
+        progress: PlayerProgress,
+    ) {
         preferences[COMPLETED] = progress.completedLevelIds
         preferences[UNLOCKED_WEEK] = progress.highestUnlockedWeek
         preferences[BESTS] = progress.personalBests.values.mapTo(mutableSetOf(), ::encodeBest)
         preferences[LAST_MODIFIED] = progress.lastModifiedMillis
     }
 
-    private fun encodeBest(best: PersonalBest) =
-        "${best.timeMillis}:${best.achievedAtMillis}:${best.levelId}"
+    private fun encodeBest(best: PersonalBest) = "${best.timeMillis}:${best.achievedAtMillis}:${best.levelId}"
 
     private fun decodeBest(encoded: String): PersonalBest? {
         val parts = encoded.split(':', limit = 3)
