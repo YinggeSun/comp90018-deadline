@@ -6,7 +6,7 @@ data class LeaderboardEntry(
     val nickname: String,
     val levelId: String,
     val timeMillis: Long,
-    val submittedAtMillis: Long
+    val submittedAtMillis: Long,
 )
 
 /**
@@ -22,7 +22,7 @@ enum class LeaderboardFailure {
     REJECTED,
 
     /** Anything else; the UI offers Retry. */
-    UNKNOWN
+    UNKNOWN,
 }
 
 /**

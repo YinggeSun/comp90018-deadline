@@ -4,7 +4,7 @@ package com.comp90018.deadline.domain.progress
 data class PersonalBest(
     val levelId: String,
     val timeMillis: Long,
-    val achievedAtMillis: Long
+    val achievedAtMillis: Long,
 ) {
     init {
         require(levelId.isNotBlank()) { "Level ID must not be blank." }

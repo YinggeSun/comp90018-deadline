@@ -8,7 +8,7 @@ data class CompletionResult(
     val levelId: String,
     val week: Int,
     val timeMillis: Long,
-    val completedAtMillis: Long
+    val completedAtMillis: Long,
 ) {
     init {
         require(levelId.isNotBlank()) { "Level ID must not be blank." }
@@ -24,5 +24,5 @@ data class CompletionOutcome(
     /** Best time before this completion, or null on a first clear. */
     val previousBest: PersonalBest?,
     /** Week unlocked by this completion, or null when nothing new was unlocked. */
-    val newlyUnlockedWeek: Int?
+    val newlyUnlockedWeek: Int?,
 )
