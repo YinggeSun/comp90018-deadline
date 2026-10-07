@@ -8,11 +8,15 @@ import com.comp90018.deadline.data.local.datastore.SettingsDataSource
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
 import com.comp90018.deadline.domain.progress.CompletionRecorder
+import com.comp90018.deadline.domain.progress.PlayerProgress
 import com.comp90018.deadline.domain.repository.ProgressRepository
 import com.comp90018.deadline.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Application-level dependency container; one instance lives in [DeadlineApp]. */
@@ -33,6 +37,10 @@ class AppContainer(context: Context) {
                 .onFailure { Log.w(TAG, "Could not save completion of ${result.levelId}", it) }
         }
     }
+
+    /** Latest saved progress, for callers that must read it synchronously (e.g. at a win). */
+    val currentProgress: StateFlow<PlayerProgress> =
+        progressRepository.progress.stateIn(applicationScope, SharingStarted.Eagerly, PlayerProgress())
 
     private companion object {
         const val TAG = "AppContainer"

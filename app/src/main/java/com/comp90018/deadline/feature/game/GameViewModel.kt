@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.flow
  * Also owns the session's [CompletionTimer]: it starts with the level, stops
  * once the game is won or lost, and restarts with the level. Each win is passed to
  * [completionRecorder] with the timer's final reading, stamped by [nowMillis].
+ * [personalBestMillis] returns the level's currently saved best, if any.
  */
 class GameViewModel(
     levelId: String,
@@ -41,6 +42,7 @@ class GameViewModel(
     private val timer: CompletionTimer = CompletionTimer(),
     private val completionRecorder: CompletionRecorder = CompletionRecorder.None,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val personalBestMillis: (levelId: String) -> Long? = { null },
     createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) }
 ) : ViewModel(), GameSensorActions {
 
@@ -89,7 +91,7 @@ class GameViewModel(
             }
         }
         publish(engine)
-        if (event == GameUiEvent.RestartClicked) _uiState.value = _uiState.value.copy(peekAmount = 0f)
+        if (event == GameUiEvent.RestartClicked) _uiState.value = _uiState.value.copy(peekAmount = 0f, previousBestMillis = null)
         val after = engine.state
         if (after.board.tiles.size == before.board.tiles.size - 1) {
             haptics?.perform(when {
@@ -128,12 +130,17 @@ class GameViewModel(
         ).withEngineState(engine)
     }
 
-    /** Republishes the engine state, stops the timer once the game has ended, and records a win. */
+    /**
+     * Republishes the engine state and stops the timer once the game has ended. On a win, the
+     * previous Personal Best is read before the new time is recorded and published together
+     * with the WON status, so no observer sees the win without it.
+     */
     private fun publish(engine: GameEngine) {
-        val wasWon = _uiState.value.status == GameStatus.WON
-        _uiState.value = _uiState.value.withEngineState(engine)
+        val justWon = _uiState.value.status != GameStatus.WON && engine.state.status == GameStatus.WON
+        val previousBest = if (justWon) level?.let { personalBestMillis(it.id) } else _uiState.value.previousBestMillis
+        _uiState.value = _uiState.value.withEngineState(engine).copy(previousBestMillis = previousBest)
         if (engine.state.status != GameStatus.RUNNING) timer.stop()
-        if (!wasWon && engine.state.status == GameStatus.WON) recordWin()
+        if (justWon) recordWin()
     }
 
     private fun recordWin() {
@@ -184,7 +191,11 @@ class GameViewModel(
         fun factory(levelId: String): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as DeadlineApp).container
-                GameViewModel(levelId, completionRecorder = container.completionRecorder)
+                GameViewModel(
+                    levelId,
+                    completionRecorder = container.completionRecorder,
+                    personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
+                )
             }
         }
     }
