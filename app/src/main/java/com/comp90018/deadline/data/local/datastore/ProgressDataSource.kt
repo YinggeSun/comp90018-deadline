@@ -39,14 +39,14 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
     }
 
     private fun read(preferences: Preferences) = PlayerProgress(
-        completedLevelIds = preferences[COMPLETED].orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
-        highestUnlockedWeek = (preferences[UNLOCKED_WEEK] ?: PlayerProgress.FIRST_WEEK)
+        completedLevelIds = preferences.typed(COMPLETED).orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
+        highestUnlockedWeek = (preferences.typed(UNLOCKED_WEEK) ?: PlayerProgress.FIRST_WEEK)
             .coerceIn(PlayerProgress.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS),
-        personalBests = preferences[BESTS].orEmpty()
+        personalBests = preferences.typed(BESTS).orEmpty()
             .mapNotNull(::decodeBest)
             .groupBy { it.levelId }
             .mapValues { (_, bests) -> bests.minBy { it.timeMillis } },
-        lastModifiedMillis = (preferences[LAST_MODIFIED] ?: 0L).coerceAtLeast(0L)
+        lastModifiedMillis = (preferences.typed(LAST_MODIFIED) ?: 0L).coerceAtLeast(0L)
     )
 
     private fun write(preferences: MutablePreferences, progress: PlayerProgress) {

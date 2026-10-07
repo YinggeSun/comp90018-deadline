@@ -30,12 +30,12 @@ class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
     private fun read(preferences: Preferences): PlayerSettings {
         val defaults = PlayerSettings()
         return PlayerSettings(
-            nickname = preferences[NICKNAME]?.takeIf {
+            nickname = preferences.typed(NICKNAME)?.takeIf {
                 it.isNotBlank() && it.length <= PlayerSettings.MAX_NICKNAME_LENGTH
             },
-            hapticsEnabled = preferences[HAPTICS] ?: defaults.hapticsEnabled,
-            shakeToShuffleEnabled = preferences[SHAKE] ?: defaults.shakeToShuffleEnabled,
-            tiltToPeekEnabled = preferences[TILT] ?: defaults.tiltToPeekEnabled
+            hapticsEnabled = preferences.typed(HAPTICS) ?: defaults.hapticsEnabled,
+            shakeToShuffleEnabled = preferences.typed(SHAKE) ?: defaults.shakeToShuffleEnabled,
+            tiltToPeekEnabled = preferences.typed(TILT) ?: defaults.tiltToPeekEnabled
         )
     }
 

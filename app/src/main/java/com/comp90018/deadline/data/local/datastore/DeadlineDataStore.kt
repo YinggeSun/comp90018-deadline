@@ -37,6 +37,13 @@ object DeadlineDataStore {
     )
 }
 
+/**
+ * Value of [key] only if it is stored with the expected type, otherwise null. A readable file
+ * can still hold another type under the same name (for example after a schema change), and
+ * the plain `preferences[key]` read would then throw ClassCastException.
+ */
+internal inline fun <reified T : Any> Preferences.typed(key: Preferences.Key<T>): T? = asMap()[key] as? T
+
 /** Reads that fail with an I/O error fall back to defaults instead of crashing the screen. */
 internal fun DataStore<Preferences>.safeData(): Flow<Preferences> =
     data.catch { error ->
