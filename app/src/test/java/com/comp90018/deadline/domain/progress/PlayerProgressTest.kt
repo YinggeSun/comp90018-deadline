@@ -101,5 +101,7 @@ class PlayerProgressTest {
         }
         assertThrows(IllegalArgumentException::class.java) { result(time = 0) }
         assertThrows(IllegalArgumentException::class.java) { result(week = 0) }
+        assertThrows(IllegalArgumentException::class.java) { result(week = 13) }
+        assertThrows(IllegalArgumentException::class.java) { result(week = Int.MAX_VALUE) }
     }
 }
