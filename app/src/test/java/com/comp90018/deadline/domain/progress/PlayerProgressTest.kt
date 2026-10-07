@@ -9,9 +9,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlayerProgressTest {
-
-    private fun result(levelId: String = "level_1", week: Int = 1, time: Long = 60_000, at: Long = 1_000) =
-        CompletionResult(levelId, week, time, at)
+    private fun result(
+        levelId: String = "level_1",
+        week: Int = 1,
+        time: Long = 60_000,
+        at: Long = 1_000,
+    ) = CompletionResult(levelId, week, time, at)
 
     @Test
     fun freshProgressUnlocksOnlyWeekOne() {
@@ -98,5 +101,7 @@ class PlayerProgressTest {
         }
         assertThrows(IllegalArgumentException::class.java) { result(time = 0) }
         assertThrows(IllegalArgumentException::class.java) { result(week = 0) }
+        assertThrows(IllegalArgumentException::class.java) { result(week = 13) }
+        assertThrows(IllegalArgumentException::class.java) { result(week = Int.MAX_VALUE) }
     }
 }
