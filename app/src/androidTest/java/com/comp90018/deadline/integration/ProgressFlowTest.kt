@@ -32,7 +32,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ProgressFlowTest {
-
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
@@ -61,7 +60,7 @@ class ProgressFlowTest {
         // The save runs off the UI thread, so wait for Level Select to observe it.
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(
-                hasTestTag(levelCardTestTag(level.id)) and hasText("Best", substring = true)
+                hasTestTag(levelCardTestTag(level.id)) and hasText("Best", substring = true),
             ).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag(levelCardTestTag(FixedLevels.LEVEL_2.id)).assertIsEnabled()

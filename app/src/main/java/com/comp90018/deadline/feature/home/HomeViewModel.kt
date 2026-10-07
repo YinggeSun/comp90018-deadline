@@ -23,29 +23,32 @@ import kotlinx.coroutines.flow.stateIn
  */
 class HomeViewModel(
     private val levels: List<Level> = FixedLevels.ALL_LEVELS,
-    progress: Flow<PlayerProgress> = flowOf(PlayerProgress())
+    progress: Flow<PlayerProgress> = flowOf(PlayerProgress()),
 ) : ViewModel() {
+    val uiState: StateFlow<HomeUiState> =
+        progress
+            .map(::toUiState)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, toUiState(PlayerProgress()))
 
-    val uiState: StateFlow<HomeUiState> = progress
-        .map(::toUiState)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, toUiState(PlayerProgress()))
-
-    private fun toUiState(progress: PlayerProgress) = HomeUiState(
-        continueLevelId = if (progress.completedLevelIds.isEmpty()) {
-            null
-        } else {
-            levels.firstOrNull {
-                progress.isWeekUnlocked(it.week) && it.id !in progress.completedLevelIds
-            }?.id
-        }
-    )
+    private fun toUiState(progress: PlayerProgress) =
+        HomeUiState(
+            continueLevelId =
+                if (progress.completedLevelIds.isEmpty()) {
+                    null
+                } else {
+                    levels.firstOrNull {
+                        progress.isWeekUnlocked(it.week) && it.id !in progress.completedLevelIds
+                    }?.id
+                },
+        )
 
     companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val container = (this[APPLICATION_KEY] as DeadlineApp).container
-                HomeViewModel(progress = container.progressRepository.progress)
+        val Factory: ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                    HomeViewModel(progress = container.progressRepository.progress)
+                }
             }
-        }
     }
 }

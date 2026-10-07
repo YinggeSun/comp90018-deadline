@@ -13,7 +13,6 @@ import org.junit.Rule
 import org.junit.Test
 
 class HomeViewModelTest {
-
     @get:Rule
     val mainDispatcher = MainDispatcherRule()
 
@@ -23,21 +22,23 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun continuesAtFirstUnlockedUnclearedLevel() = runBlocking {
-        val repository = FakeProgressRepository()
-        val viewModel = HomeViewModel(progress = repository.progress)
+    fun continuesAtFirstUnlockedUnclearedLevel() =
+        runBlocking {
+            val repository = FakeProgressRepository()
+            val viewModel = HomeViewModel(progress = repository.progress)
 
-        repository.recordCompletion(CompletionResult(FixedLevels.LEVEL_1.id, 1, 30_000, 1))
+            repository.recordCompletion(CompletionResult(FixedLevels.LEVEL_1.id, 1, 30_000, 1))
 
-        assertEquals(FixedLevels.LEVEL_2.id, viewModel.uiState.value.continueLevelId)
-    }
+            assertEquals(FixedLevels.LEVEL_2.id, viewModel.uiState.value.continueLevelId)
+        }
 
     @Test
     fun nothingToContinueWhenEveryUnlockedLevelIsCleared() {
-        val progress = PlayerProgress(
-            completedLevelIds = setOf(FixedLevels.LEVEL_1.id),
-            highestUnlockedWeek = 1
-        )
+        val progress =
+            PlayerProgress(
+                completedLevelIds = setOf(FixedLevels.LEVEL_1.id),
+                highestUnlockedWeek = 1,
+            )
 
         assertNull(HomeViewModel(progress = flowOf(progress)).uiState.value.continueLevelId)
     }

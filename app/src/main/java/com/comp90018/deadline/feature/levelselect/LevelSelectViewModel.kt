@@ -24,34 +24,37 @@ import kotlinx.coroutines.flow.stateIn
  */
 class LevelSelectViewModel(
     private val levels: List<Level> = FixedLevels.ALL_LEVELS,
-    progress: Flow<PlayerProgress> = flowOf(PlayerProgress())
+    progress: Flow<PlayerProgress> = flowOf(PlayerProgress()),
 ) : ViewModel() {
+    val uiState: StateFlow<LevelSelectUiState> =
+        progress
+            .map(::toUiState)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, LevelSelectUiState(isLoading = true))
 
-    val uiState: StateFlow<LevelSelectUiState> = progress
-        .map(::toUiState)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, LevelSelectUiState(isLoading = true))
-
-    private fun toUiState(progress: PlayerProgress) = LevelSelectUiState(
-        levels = levels.map { level ->
-            LevelItemUiModel(
-                id = level.id,
-                name = level.name,
-                tileCount = level.board.tiles.size,
-                layerCount = level.board.tiles.map { it.position.layer }.distinct().size,
-                isLocked = !progress.isWeekUnlocked(level.week),
-                bestTimeSeconds = progress.bestFor(level.id)?.let { it.timeMillis / MILLIS_PER_SECOND }
-            )
-        }
-    )
+    private fun toUiState(progress: PlayerProgress) =
+        LevelSelectUiState(
+            levels =
+                levels.map { level ->
+                    LevelItemUiModel(
+                        id = level.id,
+                        name = level.name,
+                        tileCount = level.board.tiles.size,
+                        layerCount = level.board.tiles.map { it.position.layer }.distinct().size,
+                        isLocked = !progress.isWeekUnlocked(level.week),
+                        bestTimeSeconds = progress.bestFor(level.id)?.let { it.timeMillis / MILLIS_PER_SECOND },
+                    )
+                },
+        )
 
     companion object {
         private const val MILLIS_PER_SECOND = 1_000L
 
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val container = (this[APPLICATION_KEY] as DeadlineApp).container
-                LevelSelectViewModel(progress = container.progressRepository.progress)
+        val Factory: ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                    LevelSelectViewModel(progress = container.progressRepository.progress)
+                }
             }
-        }
     }
 }

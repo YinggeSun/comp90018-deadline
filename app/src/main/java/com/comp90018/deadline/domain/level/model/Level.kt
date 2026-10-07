@@ -14,7 +14,7 @@ data class Level(
     val name: String,
     val board: Board,
     val config: LevelConfig,
-    val week: Int = SemesterDifficulty.FIRST_WEEK
+    val week: Int = SemesterDifficulty.FIRST_WEEK,
 ) {
     init {
         require(week in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {

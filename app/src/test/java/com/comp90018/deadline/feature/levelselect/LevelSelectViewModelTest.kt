@@ -17,7 +17,6 @@ import org.junit.Rule
 import org.junit.Test
 
 class LevelSelectViewModelTest {
-
     @get:Rule
     val mainDispatcher = MainDispatcherRule()
 
@@ -49,10 +48,11 @@ class LevelSelectViewModelTest {
 
     @Test
     fun usesSuppliedProgress() {
-        val progress = PlayerProgress(
-            highestUnlockedWeek = 2,
-            personalBests = mapOf(FixedLevels.LEVEL_1.id to PersonalBest(FixedLevels.LEVEL_1.id, 42_900, 0))
-        )
+        val progress =
+            PlayerProgress(
+                highestUnlockedWeek = 2,
+                personalBests = mapOf(FixedLevels.LEVEL_1.id to PersonalBest(FixedLevels.LEVEL_1.id, 42_900, 0)),
+            )
         val levels = LevelSelectViewModel(progress = flowOf(progress)).uiState.value.levels.associateBy { it.id }
 
         assertFalse(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
@@ -62,16 +62,17 @@ class LevelSelectViewModelTest {
     }
 
     @Test
-    fun updatesWhenALevelIsCompleted() = runBlocking {
-        val repository = FakeProgressRepository()
-        val viewModel = LevelSelectViewModel(progress = repository.progress)
+    fun updatesWhenALevelIsCompleted() =
+        runBlocking {
+            val repository = FakeProgressRepository()
+            val viewModel = LevelSelectViewModel(progress = repository.progress)
 
-        repository.recordCompletion(CompletionResult(FixedLevels.LEVEL_1.id, 1, 30_000, 1))
-        val levels = viewModel.uiState.value.levels.associateBy { it.id }
+            repository.recordCompletion(CompletionResult(FixedLevels.LEVEL_1.id, 1, 30_000, 1))
+            val levels = viewModel.uiState.value.levels.associateBy { it.id }
 
-        assertFalse(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
-        assertEquals(30L, levels.getValue(FixedLevels.LEVEL_1.id).bestTimeSeconds)
-    }
+            assertFalse(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
+            assertEquals(30L, levels.getValue(FixedLevels.LEVEL_1.id).bestTimeSeconds)
+        }
 
     @Test
     fun loadingUntilStoredProgressArrives() {

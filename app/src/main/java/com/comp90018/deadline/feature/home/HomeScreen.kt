@@ -29,7 +29,7 @@ fun HomeScreen(
     onContinue: (levelId: String) -> Unit,
     onLeaderboard: () -> Unit,
     onSettings: () -> Unit,
-    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     HomeContent(
@@ -37,7 +37,7 @@ fun HomeScreen(
         onPlay = onPlay,
         onContinue = onContinue,
         onLeaderboard = onLeaderboard,
-        onSettings = onSettings
+        onSettings = onSettings,
     )
 }
 
@@ -52,20 +52,20 @@ fun HomeContent(
     onContinue: (levelId: String) -> Unit,
     onLeaderboard: () -> Unit,
     onSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     CenteredScrollableColumn(modifier = modifier) {
         Text(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.semantics { heading() }
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             text = stringResource(R.string.home_tagline),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(Spacing.extraLarge))
 
@@ -73,7 +73,7 @@ fun HomeContent(
         if (continueLevelId != null) {
             PrimaryButton(
                 text = stringResource(R.string.home_continue),
-                onClick = { onContinue(continueLevelId) }
+                onClick = { onContinue(continueLevelId) },
             )
             SecondaryButton(text = stringResource(R.string.home_play), onClick = onPlay)
         } else {

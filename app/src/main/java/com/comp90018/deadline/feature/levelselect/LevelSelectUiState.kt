@@ -8,11 +8,11 @@ data class LevelItemUiModel(
     val layerCount: Int,
     val isLocked: Boolean,
     /** Personal Best completion time, or null when the level has not been completed. */
-    val bestTimeSeconds: Long?
+    val bestTimeSeconds: Long?,
 )
 
 /** [isLoading] is true until stored progress has been read, so lock states are never guessed. */
 data class LevelSelectUiState(
     val levels: List<LevelItemUiModel> = emptyList(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
 )

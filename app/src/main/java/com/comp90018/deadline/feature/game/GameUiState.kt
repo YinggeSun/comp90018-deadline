@@ -14,7 +14,7 @@ data class TileUiModel(
     val row: Int,
     val column: Int,
     val layer: Int,
-    val isSelectable: Boolean
+    val isSelectable: Boolean,
 )
 
 /**
@@ -50,5 +50,5 @@ data class GameUiState(
     val stressMaximum: Int = StressConfig.DEFAULT_MAXIMUM,
     val isHighStress: Boolean = false,
     val canUndo: Boolean = false,
-    val previousBestMillis: Long? = null
+    val previousBestMillis: Long? = null,
 )

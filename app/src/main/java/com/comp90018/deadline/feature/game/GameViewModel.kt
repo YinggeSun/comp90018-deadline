@@ -11,14 +11,14 @@ import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.engine.GameEngine
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
-import com.comp90018.deadline.domain.game.stress.StressManager
-import com.comp90018.deadline.sensor.haptic.GameHaptic
-import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import com.comp90018.deadline.domain.game.model.Tile
+import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.domain.level.model.Level
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.CompletionResult
+import com.comp90018.deadline.sensor.haptic.GameHaptic
+import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,9 +43,8 @@ class GameViewModel(
     private val completionRecorder: CompletionRecorder = CompletionRecorder.None,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val personalBestMillis: (levelId: String) -> Long? = { null },
-    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) }
+    createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) },
 ) : ViewModel(), GameSensorActions {
-
     private val level = findLevel(levelId)
     private val engine = level?.let(createEngine)
 
@@ -53,25 +52,27 @@ class GameViewModel(
         if (engine != null) timer.start()
     }
 
-    private val _uiState = MutableStateFlow(
-        if (level == null || engine == null) {
-            GameUiState(levelNotFound = true)
-        } else {
-            initialUiState(level, engine)
-        }
-    )
+    private val _uiState =
+        MutableStateFlow(
+            if (level == null || engine == null) {
+                GameUiState(levelNotFound = true)
+            } else {
+                initialUiState(level, engine)
+            },
+        )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     /**
      * Whole seconds on the completion timer, emitted when the value changes.
      * Cold flow: it ticks only while the screen collects it.
      */
-    val elapsedSeconds: Flow<Long> = flow {
-        while (true) {
-            emit(timer.elapsedSeconds)
-            delay(TIMER_TICK_MILLIS)
-        }
-    }.distinctUntilChanged()
+    val elapsedSeconds: Flow<Long> =
+        flow {
+            while (true) {
+                emit(timer.elapsedSeconds)
+                delay(TIMER_TICK_MILLIS)
+            }
+        }.distinctUntilChanged()
 
     /** Elapsed time on the completion timer; frozen once the game has ended. */
     val elapsedMillis: Long
@@ -79,7 +80,10 @@ class GameViewModel(
 
     fun onEvent(event: GameUiEvent) = onEvent(event, null)
 
-    fun onEvent(event: GameUiEvent, haptics: HapticFeedbackManager?) {
+    fun onEvent(
+        event: GameUiEvent,
+        haptics: HapticFeedbackManager?,
+    ) {
         val engine = engine ?: return
         val before = engine.state
         when (event) {
@@ -94,12 +98,14 @@ class GameViewModel(
         if (event == GameUiEvent.RestartClicked) _uiState.value = _uiState.value.copy(peekAmount = 0f, previousBestMillis = null)
         val after = engine.state
         if (after.board.tiles.size == before.board.tiles.size - 1) {
-            haptics?.perform(when {
-                after.status == GameStatus.WON -> GameHaptic.SUCCESS
-                after.status == GameStatus.LOST -> GameHaptic.FAILURE
-                after.taskTray.tiles.size < before.taskTray.tiles.size + 1 -> GameHaptic.MATCH
-                else -> GameHaptic.TILE_SELECT
-            })
+            haptics?.perform(
+                when {
+                    after.status == GameStatus.WON -> GameHaptic.SUCCESS
+                    after.status == GameStatus.LOST -> GameHaptic.FAILURE
+                    after.taskTray.tiles.size < before.taskTray.tiles.size + 1 -> GameHaptic.MATCH
+                    else -> GameHaptic.TILE_SELECT
+                },
+            )
         }
     }
 
@@ -112,21 +118,25 @@ class GameViewModel(
     }
 
     override fun onPeekChanged(amount: Float) {
-        _uiState.value = _uiState.value.copy(
-            peekAmount = if (amount.isFinite()) amount.coerceIn(0f, 1f) else 0f
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                peekAmount = if (amount.isFinite()) amount.coerceIn(0f, 1f) else 0f,
+            )
     }
 
     fun undo() = onEvent(GameUiEvent.UndoClicked)
 
     fun restart() = onEvent(GameUiEvent.RestartClicked)
 
-    private fun initialUiState(level: Level, engine: GameEngine): GameUiState {
+    private fun initialUiState(
+        level: Level,
+        engine: GameEngine,
+    ): GameUiState {
         val tiles = engine.state.board.tiles
         return GameUiState(
             levelName = level.name,
             boardRows = tiles.maxOfOrNull { it.position.row + TILE_SPAN } ?: 0,
-            boardColumns = tiles.maxOfOrNull { it.position.column + TILE_SPAN } ?: 0
+            boardColumns = tiles.maxOfOrNull { it.position.column + TILE_SPAN } ?: 0,
         ).withEngineState(engine)
     }
 
@@ -151,8 +161,8 @@ class GameViewModel(
                 week = level.week,
                 // A sub-millisecond win still counts as a completion.
                 timeMillis = timer.elapsedMillis.coerceAtLeast(1L),
-                completedAtMillis = nowMillis()
-            )
+                completedAtMillis = nowMillis(),
+            ),
         )
     }
 
@@ -160,27 +170,29 @@ class GameViewModel(
         val state: GameState = engine.state
         val stressManager = StressManager(engine.stressConfig)
         return copy(
-            boardTiles = state.board.tiles
-                .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
-                .map { it.toUiModel(isSelectable = engine.isTileSelectable(it.id)) },
+            boardTiles =
+                state.board.tiles
+                    .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
+                    .map { it.toUiModel(isSelectable = engine.isTileSelectable(it.id)) },
             trayTiles = state.taskTray.tiles.map { it.toUiModel(isSelectable = false) },
             trayCapacity = state.taskTray.capacity,
             status = state.status,
             stress = stressManager.clamp(state.stress),
             stressMaximum = engine.stressConfig.maximum,
             isHighStress = stressManager.isHighStress(state.stress),
-            canUndo = engine.canUndo
+            canUndo = engine.canUndo,
         )
     }
 
-    private fun Tile.toUiModel(isSelectable: Boolean) = TileUiModel(
-        id = id,
-        type = type,
-        row = position.row,
-        column = position.column,
-        layer = position.layer,
-        isSelectable = isSelectable
-    )
+    private fun Tile.toUiModel(isSelectable: Boolean) =
+        TileUiModel(
+            id = id,
+            type = type,
+            row = position.row,
+            column = position.column,
+            layer = position.layer,
+            isSelectable = isSelectable,
+        )
 
     companion object {
         /** A tile covers this many logical units in each direction (see TilePosition). */
@@ -188,18 +200,18 @@ class GameViewModel(
 
         private const val TIMER_TICK_MILLIS = 200L
 
-        fun factory(levelId: String): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val container = (this[APPLICATION_KEY] as DeadlineApp).container
-                GameViewModel(
-                    levelId,
-                    completionRecorder = container.completionRecorder,
-                    personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
-                )
+        fun factory(levelId: String): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                    GameViewModel(
+                        levelId,
+                        completionRecorder = container.completionRecorder,
+                        personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
+                    )
+                }
             }
-        }
     }
 }
 
-private fun findFixedLevel(levelId: String): Level? =
-    (FixedLevels.ALL_LEVELS + FixedLevels.SAMPLE_LEVEL).find { it.id == levelId }
+private fun findFixedLevel(levelId: String): Level? = (FixedLevels.ALL_LEVELS + FixedLevels.SAMPLE_LEVEL).find { it.id == levelId }

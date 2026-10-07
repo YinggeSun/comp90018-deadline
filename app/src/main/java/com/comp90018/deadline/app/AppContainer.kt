@@ -31,12 +31,13 @@ class AppContainer(context: Context) {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** A failed save costs one record, never the game, so errors are logged and not rethrown. */
-    val completionRecorder = CompletionRecorder { result ->
-        applicationScope.launch {
-            runCatching { progressRepository.recordCompletion(result) }
-                .onFailure { Log.w(TAG, "Could not save completion of ${result.levelId}", it) }
+    val completionRecorder =
+        CompletionRecorder { result ->
+            applicationScope.launch {
+                runCatching { progressRepository.recordCompletion(result) }
+                    .onFailure { Log.w(TAG, "Could not save completion of ${result.levelId}", it) }
+            }
         }
-    }
 
     /** Latest saved progress, for callers that must read it synchronously (e.g. at a win). */
     val currentProgress: StateFlow<PlayerProgress> =
