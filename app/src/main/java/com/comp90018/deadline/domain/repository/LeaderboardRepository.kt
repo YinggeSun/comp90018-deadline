@@ -8,10 +8,16 @@ import kotlinx.coroutines.flow.Flow
 /** Per-level online leaderboard. */
 interface LeaderboardRepository {
     /** Live ranking for [levelId], fastest first; updates while collected. */
-    fun observe(levelId: String, limit: Int = DEFAULT_LIMIT): Flow<LeaderboardState>
+    fun observe(
+        levelId: String,
+        limit: Int = DEFAULT_LIMIT,
+    ): Flow<LeaderboardState>
 
     /** Publishes [result] under [nickname] if it beats this player's stored entry. Never throws. */
-    suspend fun submit(result: CompletionResult, nickname: String): SubmitResult
+    suspend fun submit(
+        result: CompletionResult,
+        nickname: String,
+    ): SubmitResult
 
     companion object {
         const val DEFAULT_LIMIT = 50

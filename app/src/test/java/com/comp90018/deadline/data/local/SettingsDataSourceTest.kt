@@ -13,43 +13,46 @@ import org.junit.Rule
 import org.junit.Test
 
 class SettingsDataSourceTest {
-
     @get:Rule
     val store = DataStoreTestRule()
 
     @Test
-    fun emptyStoreReadsAsDefaults() = runBlocking {
-        assertEquals(PlayerSettings(), SettingsDataSource(store.dataStore).settings.first())
-    }
-
-    @Test
-    fun settingsAndNicknameSurviveRestart() = runBlocking {
-        SettingsDataSource(store.dataStore).update {
-            it.copy(nickname = "Lavanya", hapticsEnabled = false, shakeToShuffleEnabled = false)
+    fun emptyStoreReadsAsDefaults() =
+        runBlocking {
+            assertEquals(PlayerSettings(), SettingsDataSource(store.dataStore).settings.first())
         }
 
-        val restored = SettingsDataSource(store.reopen()).settings.first()
+    @Test
+    fun settingsAndNicknameSurviveRestart() =
+        runBlocking {
+            SettingsDataSource(store.dataStore).update {
+                it.copy(nickname = "Lavanya", hapticsEnabled = false, shakeToShuffleEnabled = false)
+            }
 
-        assertEquals("Lavanya", restored.nickname)
-        assertFalse(restored.hapticsEnabled)
-        assertFalse(restored.shakeToShuffleEnabled)
-        assertEquals(true, restored.tiltToPeekEnabled)
-    }
+            val restored = SettingsDataSource(store.reopen()).settings.first()
+
+            assertEquals("Lavanya", restored.nickname)
+            assertFalse(restored.hapticsEnabled)
+            assertFalse(restored.shakeToShuffleEnabled)
+            assertEquals(true, restored.tiltToPeekEnabled)
+        }
 
     @Test
-    fun clearingNicknameRemovesIt() = runBlocking {
-        val source = SettingsDataSource(store.dataStore)
-        source.update { it.copy(nickname = "Lavanya") }
+    fun clearingNicknameRemovesIt() =
+        runBlocking {
+            val source = SettingsDataSource(store.dataStore)
+            source.update { it.copy(nickname = "Lavanya") }
 
-        source.update { it.copy(nickname = null) }
+            source.update { it.copy(nickname = null) }
 
-        assertNull(source.settings.first().nickname)
-    }
+            assertNull(source.settings.first().nickname)
+        }
 
     @Test
-    fun invalidStoredNicknameReadsAsUnset() = runBlocking {
-        store.dataStore.edit { it[stringPreferencesKey("settings_nickname")] = "x".repeat(50) }
+    fun invalidStoredNicknameReadsAsUnset() =
+        runBlocking {
+            store.dataStore.edit { it[stringPreferencesKey("settings_nickname")] = "x".repeat(50) }
 
-        assertNull(SettingsDataSource(store.dataStore).settings.first().nickname)
-    }
+            assertNull(SettingsDataSource(store.dataStore).settings.first().nickname)
+        }
 }

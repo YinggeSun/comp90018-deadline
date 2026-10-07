@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.combine
  * on reconnect), or [failure] to make every read and write fail with that reason.
  */
 class FakeLeaderboardRepository(
-    private val userId: String = "test-user"
+    private val userId: String = "test-user",
 ) : LeaderboardRepository {
     private val entries = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
     private val isOffline = MutableStateFlow(false)
@@ -32,14 +32,20 @@ class FakeLeaderboardRepository(
 
     var failure: LeaderboardFailure? = null
 
-    override fun observe(levelId: String, limit: Int): Flow<LeaderboardState> =
+    override fun observe(
+        levelId: String,
+        limit: Int,
+    ): Flow<LeaderboardState> =
         combine(entries, isOffline) { all, offline ->
             failure?.let { return@combine LeaderboardState.Error(it) }
             val ranked = all.filter { it.levelId == levelId }.sortedBy { it.timeMillis }.take(limit)
             if (offline) LeaderboardState.Offline(ranked) else LeaderboardState.Ranked(ranked)
         }
 
-    override suspend fun submit(result: CompletionResult, nickname: String): SubmitResult {
+    override suspend fun submit(
+        result: CompletionResult,
+        nickname: String,
+    ): SubmitResult {
         failure?.let { return SubmitResult.Failed(it) }
         if (offline) {
             queued += result to nickname
@@ -48,12 +54,20 @@ class FakeLeaderboardRepository(
         return if (write(result, nickname)) SubmitResult.Submitted else SubmitResult.NotFaster
     }
 
-    private fun write(result: CompletionResult, nickname: String): Boolean {
+    private fun write(
+        result: CompletionResult,
+        nickname: String,
+    ): Boolean {
         val existing = entries.value.find { it.userId == userId && it.levelId == result.levelId }
         if (existing != null && result.timeMillis >= existing.timeMillis) return false
-        entries.value = entries.value - listOfNotNull(existing).toSet() + LeaderboardEntry(
-            userId, nickname, result.levelId, result.timeMillis, result.completedAtMillis
-        )
+        entries.value = entries.value - listOfNotNull(existing).toSet() +
+            LeaderboardEntry(
+                userId,
+                nickname,
+                result.levelId,
+                result.timeMillis,
+                result.completedAtMillis,
+            )
         return true
     }
 

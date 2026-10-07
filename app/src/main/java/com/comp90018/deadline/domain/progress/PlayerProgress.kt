@@ -12,7 +12,7 @@ data class PlayerProgress(
     val completedLevelIds: Set<String> = emptySet(),
     val highestUnlockedWeek: Int = SemesterDifficulty.FIRST_WEEK,
     val personalBests: Map<String, PersonalBest> = emptyMap(),
-    val lastModifiedMillis: Long = 0L
+    val lastModifiedMillis: Long = 0L,
 ) {
     init {
         require(highestUnlockedWeek in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
@@ -34,25 +34,31 @@ data class PlayerProgress(
     fun withCompletion(result: CompletionResult): Pair<PlayerProgress, CompletionOutcome> {
         val previousBest = personalBests[result.levelId]
         val isNewBest = previousBest == null || result.timeMillis < previousBest.timeMillis
-        val unlocked = maxOf(
-            highestUnlockedWeek,
-            minOf(result.week + 1, SemesterDifficulty.SEMESTER_WEEKS)
-        )
-        val updated = PlayerProgress(
-            completedLevelIds = completedLevelIds + result.levelId,
-            highestUnlockedWeek = unlocked,
-            personalBests = if (isNewBest) {
-                personalBests + (result.levelId to
-                    PersonalBest(result.levelId, result.timeMillis, result.completedAtMillis))
-            } else {
-                personalBests
-            },
-            lastModifiedMillis = maxOf(lastModifiedMillis, result.completedAtMillis)
-        )
-        return updated to CompletionOutcome(
-            isNewPersonalBest = isNewBest,
-            previousBest = previousBest,
-            newlyUnlockedWeek = unlocked.takeIf { it > highestUnlockedWeek }
-        )
+        val unlocked =
+            maxOf(
+                highestUnlockedWeek,
+                minOf(result.week + 1, SemesterDifficulty.SEMESTER_WEEKS),
+            )
+        val updated =
+            PlayerProgress(
+                completedLevelIds = completedLevelIds + result.levelId,
+                highestUnlockedWeek = unlocked,
+                personalBests =
+                    if (isNewBest) {
+                        personalBests + (
+                            result.levelId to
+                                PersonalBest(result.levelId, result.timeMillis, result.completedAtMillis)
+                        )
+                    } else {
+                        personalBests
+                    },
+                lastModifiedMillis = maxOf(lastModifiedMillis, result.completedAtMillis),
+            )
+        return updated to
+            CompletionOutcome(
+                isNewPersonalBest = isNewBest,
+                previousBest = previousBest,
+                newlyUnlockedWeek = unlocked.takeIf { it > highestUnlockedWeek },
+            )
     }
 }

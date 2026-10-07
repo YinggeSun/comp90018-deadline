@@ -12,15 +12,17 @@ import kotlinx.coroutines.flow.map
 
 /** Maps [PlayerSettings] to and from Preferences keys. Missing or invalid values read as defaults. */
 class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
-
     val settings: Flow<PlayerSettings> =
         dataStore.safeData().map(::read).distinctUntilChanged()
 
     suspend fun update(transform: (PlayerSettings) -> PlayerSettings) {
         dataStore.edit { preferences ->
             val updated = transform(read(preferences))
-            if (updated.nickname == null) preferences.remove(NICKNAME)
-            else preferences[NICKNAME] = updated.nickname
+            if (updated.nickname == null) {
+                preferences.remove(NICKNAME)
+            } else {
+                preferences[NICKNAME] = updated.nickname
+            }
             preferences[HAPTICS] = updated.hapticsEnabled
             preferences[SHAKE] = updated.shakeToShuffleEnabled
             preferences[TILT] = updated.tiltToPeekEnabled
@@ -30,12 +32,13 @@ class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
     private fun read(preferences: Preferences): PlayerSettings {
         val defaults = PlayerSettings()
         return PlayerSettings(
-            nickname = preferences[NICKNAME]?.takeIf {
-                it.isNotBlank() && it.length <= PlayerSettings.MAX_NICKNAME_LENGTH
-            },
-            hapticsEnabled = preferences[HAPTICS] ?: defaults.hapticsEnabled,
-            shakeToShuffleEnabled = preferences[SHAKE] ?: defaults.shakeToShuffleEnabled,
-            tiltToPeekEnabled = preferences[TILT] ?: defaults.tiltToPeekEnabled
+            nickname =
+                preferences.typed(NICKNAME)?.takeIf {
+                    it.isNotBlank() && it.length <= PlayerSettings.MAX_NICKNAME_LENGTH
+                },
+            hapticsEnabled = preferences.typed(HAPTICS) ?: defaults.hapticsEnabled,
+            shakeToShuffleEnabled = preferences.typed(SHAKE) ?: defaults.shakeToShuffleEnabled,
+            tiltToPeekEnabled = preferences.typed(TILT) ?: defaults.tiltToPeekEnabled,
         )
     }
 

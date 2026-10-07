@@ -1,5 +1,7 @@
 package com.comp90018.deadline.domain.progress
 
+import com.comp90018.deadline.domain.level.model.SemesterDifficulty
+
 /**
  * One finished level, as reported by the game once it is won.
  * [completedAtMillis] is supplied by the caller so domain logic never reads the clock.
@@ -8,11 +10,13 @@ data class CompletionResult(
     val levelId: String,
     val week: Int,
     val timeMillis: Long,
-    val completedAtMillis: Long
+    val completedAtMillis: Long,
 ) {
     init {
         require(levelId.isNotBlank()) { "Level ID must not be blank." }
-        require(week > 0) { "Week must be positive." }
+        require(week in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
+            "Week must be within the semester."
+        }
         require(timeMillis > 0) { "Completion time must be positive." }
         require(completedAtMillis >= 0) { "Completion timestamp must be non-negative." }
     }
@@ -24,5 +28,5 @@ data class CompletionOutcome(
     /** Best time before this completion, or null on a first clear. */
     val previousBest: PersonalBest?,
     /** Week unlocked by this completion, or null when nothing new was unlocked. */
-    val newlyUnlockedWeek: Int?
+    val newlyUnlockedWeek: Int?,
 )

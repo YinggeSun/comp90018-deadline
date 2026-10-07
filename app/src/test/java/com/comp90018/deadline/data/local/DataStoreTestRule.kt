@@ -3,7 +3,6 @@ package com.comp90018.deadline.data.local
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.comp90018.deadline.data.local.datastore.DeadlineDataStore
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -11,6 +10,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import org.junit.rules.TemporaryFolder
+import java.io.File
 
 /**
  * Production-configured Preferences DataStore on a temporary file. [reopen] closes the current instance

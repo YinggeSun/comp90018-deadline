@@ -11,6 +11,5 @@ import kotlinx.coroutines.flow.Flow
 class ProgressRepositoryImpl(private val local: ProgressDataSource) : ProgressRepository {
     override val progress: Flow<PlayerProgress> = local.progress
 
-    override suspend fun recordCompletion(result: CompletionResult): CompletionOutcome =
-        local.recordCompletion(result)
+    override suspend fun recordCompletion(result: CompletionResult): CompletionOutcome = local.recordCompletion(result)
 }
