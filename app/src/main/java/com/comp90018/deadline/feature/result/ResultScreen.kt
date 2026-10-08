@@ -33,11 +33,13 @@ fun ResultScreen(
     levelId: String,
     won: Boolean,
     elapsedMillis: Long,
+    previousBestMillis: Long?,
     onRetry: () -> Unit,
     onNextLevel: (levelId: String) -> Unit,
     onLevelSelect: () -> Unit,
     onHome: () -> Unit,
-    viewModel: ResultViewModel = viewModel(factory = ResultViewModel.factory(levelId, won, elapsedMillis)),
+    viewModel: ResultViewModel =
+        viewModel(factory = ResultViewModel.factory(levelId, won, elapsedMillis, previousBestMillis)),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     ResultContent(

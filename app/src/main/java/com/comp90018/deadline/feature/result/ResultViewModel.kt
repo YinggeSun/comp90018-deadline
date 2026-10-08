@@ -13,29 +13,31 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Builds the Result screen from the finished game's summary.
  *
- * Personal Bests are not persisted yet (#36), so by default there is no
- * previous best; [bestTimeMillis] is the seam for the progress repository.
- * Recording a new best is also left to #36.
+ * [previousBestMillis] is the level's Personal Best from before this run.
+ * Comparing against it, rather than reading saved progress here, keeps the
+ * screen correct whether or not the background save of this run has
+ * finished: a win sets a new best when there was none or it is faster, and
+ * the best shown is the faster of the two.
  */
 class ResultViewModel(
     levelId: String,
     won: Boolean,
     elapsedMillis: Long,
+    previousBestMillis: Long?,
     levels: List<Level> = FixedLevels.ALL_LEVELS,
-    bestTimeMillis: (levelId: String) -> Long? = { null },
 ) : ViewModel() {
     private val _uiState =
         MutableStateFlow(
             run {
                 val index = levels.indexOfFirst { it.id == levelId }
-                val best = bestTimeMillis(levelId)
+                val isNewBest = won && (previousBestMillis == null || elapsedMillis < previousBestMillis)
                 ResultUiState(
                     levelId = levelId,
                     levelName = levels.getOrNull(index)?.name.orEmpty(),
                     won = won,
                     elapsedMillis = elapsedMillis,
-                    bestTimeMillis = best,
-                    isNewBest = won && best != null && elapsedMillis < best,
+                    bestTimeMillis = if (isNewBest) elapsedMillis else previousBestMillis,
+                    isNewBest = isNewBest,
                     nextLevelId = if (won && index >= 0) levels.getOrNull(index + 1)?.id else null,
                 )
             },
@@ -47,9 +49,10 @@ class ResultViewModel(
             levelId: String,
             won: Boolean,
             elapsedMillis: Long,
+            previousBestMillis: Long?,
         ): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { ResultViewModel(levelId, won, elapsedMillis) }
+                initializer { ResultViewModel(levelId, won, elapsedMillis, previousBestMillis) }
             }
     }
 }

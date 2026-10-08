@@ -42,6 +42,10 @@ fun AppNavHost(
                     type = NavType.LongType
                     defaultValue = 0L
                 },
+                navArgument(Routes.ARG_PREVIOUS_BEST_MILLIS) {
+                    type = NavType.LongType
+                    defaultValue = Routes.NO_PREVIOUS_BEST
+                },
             )
 
     NavHost(
@@ -81,6 +85,10 @@ fun AppNavHost(
                 levelId = levelId,
                 won = arguments?.getBoolean(Routes.ARG_WON) ?: false,
                 elapsedMillis = arguments?.getLong(Routes.ARG_ELAPSED_MILLIS) ?: 0L,
+                previousBestMillis =
+                    arguments
+                        ?.getLong(Routes.ARG_PREVIOUS_BEST_MILLIS, Routes.NO_PREVIOUS_BEST)
+                        ?.takeIf { it != Routes.NO_PREVIOUS_BEST },
                 onRetry = { actions.playFromResult(levelId) },
                 onNextLevel = actions::playFromResult,
                 onLevelSelect = actions::backToLevelSelect,

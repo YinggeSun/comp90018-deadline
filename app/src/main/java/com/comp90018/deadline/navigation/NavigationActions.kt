@@ -25,7 +25,9 @@ class NavigationActions(private val navController: NavHostController) {
         levelId: String,
         outcome: GameOutcome,
     ) {
-        navController.navigate(Routes.result(levelId, outcome.won, outcome.elapsedMillis)) {
+        navController.navigate(
+            Routes.result(levelId, outcome.won, outcome.elapsedMillis, outcome.previousBestMillis),
+        ) {
             popUpTo(Routes.GAME) { inclusive = true }
         }
     }

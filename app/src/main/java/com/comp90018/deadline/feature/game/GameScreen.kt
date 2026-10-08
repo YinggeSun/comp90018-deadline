@@ -73,7 +73,11 @@ fun GameScreen(
     LaunchedEffect(uiState.status) {
         if (uiState.status != GameStatus.RUNNING) {
             currentOnGameFinished(
-                GameOutcome(won = uiState.status == GameStatus.WON, elapsedMillis = viewModel.elapsedMillis),
+                GameOutcome(
+                    won = uiState.status == GameStatus.WON,
+                    elapsedMillis = viewModel.elapsedMillis,
+                    previousBestMillis = uiState.previousBestMillis,
+                ),
             )
         }
     }

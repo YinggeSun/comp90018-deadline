@@ -12,8 +12,8 @@ class ResultViewModelTest {
         levelId: String = FixedLevels.LEVEL_1.id,
         won: Boolean = true,
         elapsedMillis: Long = 60_000,
-        best: Long? = null,
-    ) = ResultViewModel(levelId, won, elapsedMillis, bestTimeMillis = { best }).uiState.value
+        previousBest: Long? = null,
+    ) = ResultViewModel(levelId, won, elapsedMillis, previousBest).uiState.value
 
     @Test
     fun showsOutcomeTimeAndLevelName() {
@@ -33,7 +33,7 @@ class ResultViewModelTest {
 
     @Test
     fun lastLevelHasNoNextLevel() {
-        assertNull(state(levelId = FixedLevels.LEVEL_3.id).nextLevelId)
+        assertNull(state(levelId = FixedLevels.ALL_LEVELS.last().id).nextLevelId)
     }
 
     @Test
@@ -50,24 +50,45 @@ class ResultViewModelTest {
     }
 
     @Test
-    fun noPersonalBestByDefault() {
-        val result = ResultViewModel(FixedLevels.LEVEL_1.id, won = true, elapsedMillis = 1_000).uiState.value
+    fun firstWinIsNewBestAndShowsThisTime() {
+        val result = state(elapsedMillis = 42_000, previousBest = null)
 
-        assertNull(result.bestTimeMillis)
-        assertFalse(result.isNewBest)
-    }
-
-    @Test
-    fun fasterWinIsNewBest() {
-        val result = state(elapsedMillis = 50_000, best = 60_000)
-
-        assertEquals(60_000L, result.bestTimeMillis)
         assertTrue(result.isNewBest)
+        assertEquals(42_000L, result.bestTimeMillis)
     }
 
     @Test
-    fun slowerWinOrLossIsNotNewBest() {
-        assertFalse(state(elapsedMillis = 70_000, best = 60_000).isNewBest)
-        assertFalse(state(won = false, elapsedMillis = 10_000, best = 60_000).isNewBest)
+    fun fasterWinIsNewBestAndShowsThisTime() {
+        val result = state(elapsedMillis = 50_000, previousBest = 60_000)
+
+        assertTrue(result.isNewBest)
+        assertEquals(50_000L, result.bestTimeMillis)
+    }
+
+    @Test
+    fun slowerWinKeepsPreviousBest() {
+        val result = state(elapsedMillis = 70_000, previousBest = 60_000)
+
+        assertFalse(result.isNewBest)
+        assertEquals(60_000L, result.bestTimeMillis)
+    }
+
+    @Test
+    fun equalTimeIsNotNewBest() {
+        val result = state(elapsedMillis = 60_000, previousBest = 60_000)
+
+        assertFalse(result.isNewBest)
+        assertEquals(60_000L, result.bestTimeMillis)
+    }
+
+    @Test
+    fun lossKeepsPreviousBestEvenWhenFaster() {
+        val withBest = state(won = false, elapsedMillis = 10_000, previousBest = 60_000)
+        val withoutBest = state(won = false, elapsedMillis = 10_000, previousBest = null)
+
+        assertFalse(withBest.isNewBest)
+        assertEquals(60_000L, withBest.bestTimeMillis)
+        assertFalse(withoutBest.isNewBest)
+        assertNull(withoutBest.bestTimeMillis)
     }
 }
