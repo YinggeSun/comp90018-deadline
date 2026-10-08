@@ -29,32 +29,36 @@ object SemesterDifficulty {
 
     private fun configForWeek(week: Int): LevelConfig =
         when (week) {
-            in 1..3 -> LevelConfig(
-                layout = LayoutTemplate(rows = 3, columns = 3),
-                tileCount = 9,
-                maxLayer = 0,
-                tileVariety = 3
-            )
+            in 1..3 ->
+                LevelConfig(
+                    layout = LayoutTemplate(rows = 3, columns = 3),
+                    tileCount = 9,
+                    maxLayer = 0,
+                    tileVariety = 3,
+                )
 
-            in 4..6 -> LevelConfig(
-                layout = LayoutTemplate(rows = 4, columns = 4),
-                tileCount = 12,
-                maxLayer = 1,
-                tileVariety = 4
-            )
+            in 4..6 ->
+                LevelConfig(
+                    layout = LayoutTemplate(rows = 4, columns = 4),
+                    tileCount = 12,
+                    maxLayer = 1,
+                    tileVariety = 4,
+                )
 
-            in 7..9 -> LevelConfig(
-                layout = LayoutTemplate(rows = 5, columns = 5),
-                tileCount = 18,
-                maxLayer = 2,
-                tileVariety = 5
-            )
+            in 7..9 ->
+                LevelConfig(
+                    layout = LayoutTemplate(rows = 5, columns = 5),
+                    tileCount = 18,
+                    maxLayer = 2,
+                    tileVariety = 5,
+                )
 
-            else -> LevelConfig(
-                layout = LayoutTemplate(rows = 6, columns = 6),
-                tileCount = 24,
-                maxLayer = 3,
-                tileVariety = 6
-            )
+            else ->
+                LevelConfig(
+                    layout = LayoutTemplate(rows = 6, columns = 6),
+                    tileCount = 24,
+                    maxLayer = 3,
+                    tileVariety = 6,
+                )
         }
 }

@@ -7,7 +7,7 @@ data class LevelConfig(
     val layout: LayoutTemplate,
     val tileCount: Int,
     val maxLayer: Int,
-    val tileVariety: Int = 3
+    val tileVariety: Int = 3,
 ) {
     init {
         require(tileCount > 0) {

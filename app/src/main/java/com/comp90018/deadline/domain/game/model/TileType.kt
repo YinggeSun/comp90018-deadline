@@ -7,5 +7,5 @@ enum class TileType {
     LAPTOP,
     ASSIGNMENT,
     QUIZ,
-    READING
+    READING,
 }
