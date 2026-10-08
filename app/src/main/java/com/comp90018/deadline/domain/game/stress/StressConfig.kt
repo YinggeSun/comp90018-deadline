@@ -23,7 +23,7 @@ data class StressConfig(
     val baseRate: Int = DEFAULT_BASE_RATE,
     val rateGrowthPerWeek: Int = DEFAULT_RATE_GROWTH_PER_WEEK,
     val coffeeRecoveryBase: Int = DEFAULT_COFFEE_RECOVERY_BASE,
-    val coffeeRecoveryDeclinePerWeek: Int = DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK
+    val coffeeRecoveryDeclinePerWeek: Int = DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK,
 ) {
     init {
         require(maximum > 0) {

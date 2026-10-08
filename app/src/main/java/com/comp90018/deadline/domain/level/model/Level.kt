@@ -12,8 +12,7 @@ data class Level(
 ) {
     init {
         require(
-            week in SemesterDifficulty.FIRST_WEEK..
-                SemesterDifficulty.SEMESTER_WEEKS
+            week in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS,
         ) {
             "Week must be within the semester."
         }

@@ -2,27 +2,26 @@
 package com.comp90018.deadline.domain.level.model
 
 object SemesterDifficulty {
-
     const val FIRST_WEEK = 1
     const val SEMESTER_WEEKS = 12
     const val WEEKS_PER_LEVEL = 2
     const val TOTAL_LEVELS = 6
 
-
     val levels: List<WeekConfig> =
         (1..TOTAL_LEVELS).map { level ->
             WeekConfig(
                 week = firstWeekForLevel(level),
-                levels = listOf(configForLevel(level))
+                levels = listOf(configForLevel(level)),
             )
         }
     val weeks: List<WeekConfig> =
         (FIRST_WEEK..SEMESTER_WEEKS).map { week ->
             WeekConfig(
                 week = week,
-                levels = listOf(
-                    configForLevel(levelForWeek(week))
-                )
+                levels =
+                    listOf(
+                        configForLevel(levelForWeek(week)),
+                    ),
             )
         }
 
@@ -54,55 +53,60 @@ object SemesterDifficulty {
         return (level - 1) * WEEKS_PER_LEVEL + FIRST_WEEK
     }
 
-    fun lastWeekForLevel(level: Int): Int =
-        firstWeekForLevel(level) + WEEKS_PER_LEVEL - 1
+    fun lastWeekForLevel(level: Int): Int = firstWeekForLevel(level) + WEEKS_PER_LEVEL - 1
 
     private fun configForLevel(level: Int): LevelConfig =
         when (level) {
-            1 -> LevelConfig(
-                layout = LayoutTemplate(4, 4),
-                tileCount = 18,
-                maxLayer = 1,
-                tileVariety = 3
-            )
+            1 ->
+                LevelConfig(
+                    layout = LayoutTemplate(4, 4),
+                    tileCount = 18,
+                    maxLayer = 1,
+                    tileVariety = 3,
+                )
 
-            2 -> LevelConfig(
-                layout = LayoutTemplate(4, 4),
-                tileCount = 24,
-                maxLayer = 1,
-                tileVariety = 4
-            )
+            2 ->
+                LevelConfig(
+                    layout = LayoutTemplate(4, 4),
+                    tileCount = 24,
+                    maxLayer = 1,
+                    tileVariety = 4,
+                )
 
-            3 -> LevelConfig(
-                layout = LayoutTemplate(5, 5),
-                tileCount = 30,
-                maxLayer = 2,
-                tileVariety = 5
-            )
+            3 ->
+                LevelConfig(
+                    layout = LayoutTemplate(5, 5),
+                    tileCount = 30,
+                    maxLayer = 2,
+                    tileVariety = 5,
+                )
 
-            4 -> LevelConfig(
-                layout = LayoutTemplate(5, 5),
-                tileCount = 36,
-                maxLayer = 3,
-                tileVariety = 5
-            )
+            4 ->
+                LevelConfig(
+                    layout = LayoutTemplate(5, 5),
+                    tileCount = 36,
+                    maxLayer = 3,
+                    tileVariety = 5,
+                )
 
-            5 -> LevelConfig(
-                layout = LayoutTemplate(6, 6),
-                tileCount = 42,
-                maxLayer = 4,
-                tileVariety = 6
-            )
+            5 ->
+                LevelConfig(
+                    layout = LayoutTemplate(6, 6),
+                    tileCount = 42,
+                    maxLayer = 4,
+                    tileVariety = 6,
+                )
 
-            6 -> LevelConfig(
-                layout = LayoutTemplate(6, 6),
-                tileCount = 48,
-                maxLayer = 5,
-                tileVariety = 6
-            )
+            6 ->
+                LevelConfig(
+                    layout = LayoutTemplate(6, 6),
+                    tileCount = 48,
+                    maxLayer = 5,
+                    tileVariety = 6,
+                )
 
             else -> throw IllegalArgumentException(
-                "Invalid level: $level"
+                "Invalid level: $level",
             )
         }
 }

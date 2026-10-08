@@ -14,7 +14,7 @@ import kotlin.random.Random
  */
 class InputDegradation(
     private val config: StressConfig = StressConfig(),
-    private val random: Random = Random.Default
+    private val random: Random = Random.Default,
 ) {
     private val stressManager = StressManager(config)
 
@@ -29,7 +29,7 @@ class InputDegradation(
     fun resolveSelection(
         requestedTileId: String,
         stress: Int,
-        eligibleNeighbours: List<String>
+        eligibleNeighbours: List<String>,
     ): String {
         if (!stressManager.isHighStress(stress)) return requestedTileId
         val candidates = eligibleNeighbours.filter { it != requestedTileId }
@@ -49,7 +49,7 @@ class InputDegradation(
     fun eligibleNeighbours(
         requestedTileId: String,
         tiles: List<Tile>,
-        selectableIds: Set<String>
+        selectableIds: Set<String>,
     ): List<String> {
         val requested = tiles.find { it.id == requestedTileId } ?: return emptyList()
         return tiles.filter { candidate ->
@@ -59,7 +59,10 @@ class InputDegradation(
         }.map { it.id }
     }
 
-    private fun isNeighbour(requested: Tile, candidate: Tile): Boolean =
+    private fun isNeighbour(
+        requested: Tile,
+        candidate: Tile,
+    ): Boolean =
         abs(requested.position.row.toLong() - candidate.position.row.toLong()) <= 2L &&
             abs(requested.position.column.toLong() - candidate.position.column.toLong()) <= 2L
 }

@@ -6,7 +6,6 @@ import com.comp90018.deadline.domain.level.model.LevelConfig
 import com.comp90018.deadline.domain.level.model.SemesterDifficulty
 import com.comp90018.deadline.domain.level.solver.SolvabilityResult
 import com.comp90018.deadline.domain.level.solver.SolvabilityValidator
-
 import kotlin.random.Random
 
 data class LevelGenerationResult(
@@ -14,31 +13,31 @@ data class LevelGenerationResult(
     val usedFallback: Boolean,
     val attempts: Int,
     val candidateSeed: Long?,
-    val winningMoves: List<String>
+    val winningMoves: List<String>,
 )
 
 class ValidatedLevelGenerator internal constructor(
     private val seed: Long?,
     private val maxAttempts: Int,
     private val createCandidate: (String, String, LevelConfig, Long) -> Level,
-    private val validateCandidate: (Level) -> SolvabilityResult
+    private val validateCandidate: (Level) -> SolvabilityResult,
 ) {
     constructor(
         seed: Long? = null,
         maxAttempts: Int = 10,
-        validator: SolvabilityValidator = SolvabilityValidator()
+        validator: SolvabilityValidator = SolvabilityValidator(),
     ) : this(
-        seed, maxAttempts,
+        seed,
+        maxAttempts,
         { id, name, config, candidateSeed ->
             LevelGenerator(candidateSeed).generate(id, name, config)
         },
-        { level -> validator.validate(level) }
+        { level -> validator.validate(level) },
     )
 
     init {
         require(maxAttempts in 1..100) { "Maximum attempts must be between 1 and 100." }
     }
-
 
     fun generateForLevel(levelNumber: Int): LevelGenerationResult {
         val weekConfig = SemesterDifficulty.forLevel(levelNumber)
@@ -51,7 +50,6 @@ class ValidatedLevelGenerator internal constructor(
         )
     }
 
-
     fun generate(
         id: String,
         name: String,
@@ -59,8 +57,7 @@ class ValidatedLevelGenerator internal constructor(
         week: Int = SemesterDifficulty.FIRST_WEEK,
     ): LevelGenerationResult {
         require(
-            week in SemesterDifficulty.FIRST_WEEK..
-                SemesterDifficulty.SEMESTER_WEEKS
+            week in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS,
         ) {
             "Week must be within the semester."
         }
@@ -105,7 +102,6 @@ class ValidatedLevelGenerator internal constructor(
 
         return fallback(maxAttempts)
     }
-
 
     private fun fallback(attempts: Int): LevelGenerationResult {
         val level = FixedLevels.LEVEL_1

@@ -38,11 +38,15 @@ class CoffeeRecovery(private val config: StressConfig = StressConfig()) {
      * [week] is validated for every call, not only for a Coffee triple, so a caller cannot
      * discover an invalid week only once the player happens to clear coffee.
      */
-    fun applyMatch(current: Int, matchedType: TileType?, week: Int): Int {
+    fun applyMatch(
+        current: Int,
+        matchedType: TileType?,
+        week: Int,
+    ): Int {
         val recovery = recoveryForWeek(week)
         return stressManager.decreaseBy(
             current = current,
-            amount = if (isRecoveryMatch(matchedType)) recovery else 0
+            amount = if (isRecoveryMatch(matchedType)) recovery else 0,
         )
     }
 

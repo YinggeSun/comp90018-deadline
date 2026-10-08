@@ -22,12 +22,12 @@ fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
         modifier = modifier.defaultMinSize(Dimens.buttonMinWidth, Dimens.buttonMinHeight),
-        enabled = enabled
+        enabled = enabled,
     ) {
         Text(text = text)
     }
@@ -39,12 +39,12 @@ fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.defaultMinSize(Dimens.buttonMinWidth, Dimens.buttonMinHeight),
-        enabled = enabled
+        enabled = enabled,
     ) {
         Text(text = text)
     }
@@ -56,12 +56,12 @@ fun TertiaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     TextButton(
         onClick = onClick,
         modifier = modifier.defaultMinSize(minHeight = Dimens.buttonMinHeight),
-        enabled = enabled
+        enabled = enabled,
     ) {
         Text(text = text)
     }

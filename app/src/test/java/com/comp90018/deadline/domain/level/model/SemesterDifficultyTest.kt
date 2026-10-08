@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SemesterDifficultyTest {
-
     @Test
     fun semesterContainsTwelveWeeksAndSixPlayableLevels() {
         assertEquals(12, SemesterDifficulty.SEMESTER_WEEKS)
@@ -77,18 +76,20 @@ class SemesterDifficultyTest {
 
     @Test
     fun allSixLevelsHaveExpectedTileCounts() {
-        val expectedCounts = listOf(
-            18,
-            24,
-            30,
-            36,
-            42,
-            48,
-        )
+        val expectedCounts =
+            listOf(
+                18,
+                24,
+                30,
+                36,
+                42,
+                48,
+            )
 
-        val actualCounts = SemesterDifficulty.levels.map {
-            it.levels.single().tileCount
-        }
+        val actualCounts =
+            SemesterDifficulty.levels.map {
+                it.levels.single().tileCount
+            }
 
         assertEquals(expectedCounts, actualCounts)
     }
@@ -98,64 +99,71 @@ class SemesterDifficultyTest {
         // maxLayer is zero-indexed.
         // Therefore, actual layer count = maxLayer + 1.
 
-        val expectedLayers = listOf(
-            2,
-            2,
-            3,
-            4,
-            5,
-            6,
-        )
+        val expectedLayers =
+            listOf(
+                2,
+                2,
+                3,
+                4,
+                5,
+                6,
+            )
 
-        val actualLayers = SemesterDifficulty.levels.map {
-            it.levels.single().maxLayer + 1
-        }
+        val actualLayers =
+            SemesterDifficulty.levels.map {
+                it.levels.single().maxLayer + 1
+            }
 
         assertEquals(expectedLayers, actualLayers)
     }
 
     @Test
     fun allSixLevelsHaveExpectedTileVariety() {
-        val expectedVarieties = listOf(
-            3,
-            4,
-            5,
-            5,
-            6,
-            6,
-        )
+        val expectedVarieties =
+            listOf(
+                3,
+                4,
+                5,
+                5,
+                6,
+                6,
+            )
 
-        val actualVarieties = SemesterDifficulty.levels.map {
-            it.levels.single().tileVariety
-        }
+        val actualVarieties =
+            SemesterDifficulty.levels.map {
+                it.levels.single().tileVariety
+            }
 
         assertEquals(expectedVarieties, actualVarieties)
     }
 
     @Test
     fun allSixLevelsHaveExpectedLayoutDimensions() {
-        val expectedLayouts = listOf(
-            4 to 4,
-            4 to 4,
-            5 to 5,
-            5 to 5,
-            6 to 6,
-            6 to 6,
-        )
+        val expectedLayouts =
+            listOf(
+                4 to 4,
+                4 to 4,
+                5 to 5,
+                5 to 5,
+                6 to 6,
+                6 to 6,
+            )
 
-        val actualLayouts = SemesterDifficulty.levels.map {
-            val layout = it.levels.single().layout
-            layout.rows to layout.columns
-        }
+        val actualLayouts =
+            SemesterDifficulty.levels.map {
+                val layout = it.levels.single().layout
+                layout.rows to layout.columns
+            }
 
         assertEquals(expectedLayouts, actualLayouts)
     }
 
     @Test
     fun difficultyProgressesAcrossSixLevels() {
-        val configs = SemesterDifficulty.levels.map {
-            it.levels.single()
-        }
+        val configs =
+            SemesterDifficulty.levels.map {
+                it.levels.single()
+            }
 
         for (index in 1 until configs.size) {
             val previous = configs[index - 1]
@@ -183,12 +191,13 @@ class SemesterDifficultyTest {
         val levelNumber = 4
         val weekConfig = SemesterDifficulty.forLevel(levelNumber)
 
-        val level = LevelGenerator(seed = 42L).generate(
-            id = "level_4",
-            name = "Level 4",
-            config = weekConfig.levels.single(),
-            week = weekConfig.week,
-        )
+        val level =
+            LevelGenerator(seed = 42L).generate(
+                id = "level_4",
+                name = "Level 4",
+                config = weekConfig.levels.single(),
+                week = weekConfig.week,
+            )
 
         assertEquals("level_4", level.id)
         assertEquals("Level 4", level.name)

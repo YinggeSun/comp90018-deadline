@@ -288,7 +288,6 @@ class ValidatedLevelGeneratorTest {
         }
     }
 
-
     @Test
     fun sixBiweeklyLevelsHaveCorrectMetadataBeforeValidation() {
         for (levelNumber in 1..SemesterDifficulty.TOTAL_LEVELS) {
@@ -297,17 +296,18 @@ class ValidatedLevelGeneratorTest {
             val observedWeeks = mutableListOf<Int>()
             val validator = SolvabilityValidator()
 
-            val generator = ValidatedLevelGenerator(
-                seed = 42L,
-                maxAttempts = 10,
-                createCandidate = { id, name, config, seed ->
-                    LevelGenerator(seed).generate(id, name, config)
-                },
-                validateCandidate = { level ->
-                    observedWeeks.add(level.week)
-                    validator.validate(level)
-                },
-            )
+            val generator =
+                ValidatedLevelGenerator(
+                    seed = 42L,
+                    maxAttempts = 10,
+                    createCandidate = { id, name, config, seed ->
+                        LevelGenerator(seed).generate(id, name, config)
+                    },
+                    validateCandidate = { level ->
+                        observedWeeks.add(level.week)
+                        validator.validate(level)
+                    },
+                )
 
             val result = generator.generateForLevel(levelNumber)
 
@@ -339,10 +339,11 @@ class ValidatedLevelGeneratorTest {
 
     @Test
     fun firstBiweeklyLevelGeneratesWithoutFallback() {
-        val result = ValidatedLevelGenerator(
-            seed = 42L,
-            maxAttempts = 10,
-        ).generateForLevel(1)
+        val result =
+            ValidatedLevelGenerator(
+                seed = 42L,
+                maxAttempts = 10,
+            ).generateForLevel(1)
 
         assertFalse(
             "Level 1 should be procedurally generated",
@@ -361,16 +362,17 @@ class ValidatedLevelGeneratorTest {
 
     @Test
     fun biweeklyFallbackCannotMasqueradeAsLevelSix() {
-        val generator = ValidatedLevelGenerator(
-            seed = 42L,
-            maxAttempts = 2,
-            createCandidate = { id, name, config, seed ->
-                LevelGenerator(seed).generate(id, name, config)
-            },
-            validateCandidate = {
-                SolvabilityResult.SearchLimitReached
-            },
-        )
+        val generator =
+            ValidatedLevelGenerator(
+                seed = 42L,
+                maxAttempts = 2,
+                createCandidate = { id, name, config, seed ->
+                    LevelGenerator(seed).generate(id, name, config)
+                },
+                validateCandidate = {
+                    SolvabilityResult.SearchLimitReached
+                },
+            )
 
         val result = generator.generateForLevel(6)
 
@@ -398,5 +400,4 @@ class ValidatedLevelGeneratorTest {
             }
         }
     }
-
 }

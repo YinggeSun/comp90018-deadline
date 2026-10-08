@@ -41,36 +41,39 @@ fun TileView(
     tile: TileUiModel,
     size: Dp,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val label = stringResource(tile.type.labelRes)
-    val state = stringResource(
-        if (tile.isSelectable) R.string.game_tile_selectable else R.string.game_tile_blocked
-    )
+    val state =
+        stringResource(
+            if (tile.isSelectable) R.string.game_tile_selectable else R.string.game_tile_blocked,
+        )
     val colors = MaterialTheme.colorScheme
     Surface(
         onClick = onClick,
         enabled = tile.isSelectable,
-        modifier = modifier
-            .size(size)
-            .alpha(if (tile.isSelectable) 1f else BLOCKED_TILE_ALPHA)
-            .testTag(tileTestTag(tile.id))
-            .semantics {
-                contentDescription = label
-                stateDescription = state
-            },
+        modifier =
+            modifier
+                .size(size)
+                .alpha(if (tile.isSelectable) 1f else BLOCKED_TILE_ALPHA)
+                .testTag(tileTestTag(tile.id))
+                .semantics {
+                    contentDescription = label
+                    stateDescription = state
+                },
         shape = MaterialTheme.shapes.medium,
         color = if (tile.isSelectable) colors.surface else colors.surfaceVariant,
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (tile.isSelectable) colors.primary else colors.outline
-        ),
-        shadowElevation = if (tile.isSelectable) 4.dp else 0.dp
+        border =
+            BorderStroke(
+                width = 1.dp,
+                color = if (tile.isSelectable) colors.primary else colors.outline,
+            ),
+        shadowElevation = if (tile.isSelectable) 4.dp else 0.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = tile.type.symbol,
-                fontSize = (size.value * 0.45f).sp
+                fontSize = (size.value * 0.45f).sp,
             )
         }
     }
@@ -83,17 +86,18 @@ private fun TileViewPreview() {
         Row(modifier = Modifier.padding(Spacing.large)) {
             TileType.entries.forEachIndexed { index, type ->
                 TileView(
-                    tile = TileUiModel(
-                        id = type.name,
-                        type = type,
-                        row = 0,
-                        column = 0,
-                        layer = 0,
-                        isSelectable = index != TileType.entries.lastIndex
-                    ),
+                    tile =
+                        TileUiModel(
+                            id = type.name,
+                            type = type,
+                            row = 0,
+                            column = 0,
+                            layer = 0,
+                            isSelectable = index != TileType.entries.lastIndex,
+                        ),
                     size = 64.dp,
                     onClick = {},
-                    modifier = Modifier.padding(Spacing.extraSmall)
+                    modifier = Modifier.padding(Spacing.extraSmall),
                 )
             }
         }

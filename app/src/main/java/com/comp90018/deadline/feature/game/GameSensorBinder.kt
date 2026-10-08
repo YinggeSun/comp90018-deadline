@@ -21,17 +21,18 @@ class GameSensorBinder(
     private val actions: GameSensorActions,
     private val haptics: HapticFeedbackManager? = null,
 ) : DefaultLifecycleObserver {
-
-    private val shakeController = ShakeSensorController(gateway) {
-        // Only confirm the action with haptic feedback when the Game layer accepted it.
-        if (actions.onShuffleRequested()) {
-            haptics?.perform(GameHaptic.SHUFFLE)
+    private val shakeController =
+        ShakeSensorController(gateway) {
+            // Only confirm the action with haptic feedback when the Game layer accepted it.
+            if (actions.onShuffleRequested()) {
+                haptics?.perform(GameHaptic.SHUFFLE)
+            }
         }
-    }
 
-    private val tiltController = TiltSensorController(gateway) { amount ->
-        actions.onPeekChanged(amount)
-    }
+    private val tiltController =
+        TiltSensorController(gateway) { amount ->
+            actions.onPeekChanged(amount)
+        }
 
     val shakeSupported: Boolean get() = shakeController.isSupported()
     val tiltSupported: Boolean get() = tiltController.isSupported()
