@@ -13,7 +13,7 @@ fun Modifier.tiltPeek(
     topLayerIndex: Int,
     peekAmount: Float,
 ): Modifier {
-    val amount = peekAmount.coerceIn(0f, 1f)
+    val amount = if (peekAmount.isFinite()) peekAmount.coerceIn(0f, 1f) else 0f
     val depth = (topLayerIndex - layerIndex).coerceAtLeast(0)
 
     return graphicsLayer {

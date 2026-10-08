@@ -34,15 +34,13 @@ class DefaultGameEngineTest {
     }
 
     @Test
-    fun placeholderActionsLeaveStateUnchanged() {
+    fun invalidSelectionAndUnavailableUndoLeaveStateUnchanged() {
         val engine: GameEngine = DefaultGameEngine(FixedLevels.SAMPLE_LEVEL)
         val initialState = engine.state
 
         engine.selectTile("unknown-tile")
         assertSame(initialState, engine.state)
         engine.undo()
-        assertSame(initialState, engine.state)
-        engine.shuffle()
         assertSame(initialState, engine.state)
     }
 

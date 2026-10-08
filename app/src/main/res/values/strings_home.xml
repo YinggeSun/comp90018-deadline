@@ -1,0 +1,8 @@
+<resources>
+    <!-- Home screen -->
+    <string name="home_tagline">Survive the semester, one deadline at a time.</string>
+    <string name="home_play">Play</string>
+    <string name="home_continue">Continue</string>
+    <string name="home_leaderboard">Leaderboard</string>
+    <string name="home_settings">Settings</string>
+</resources>

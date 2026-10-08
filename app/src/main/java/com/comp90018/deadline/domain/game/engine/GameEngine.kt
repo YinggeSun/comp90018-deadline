@@ -1,19 +1,36 @@
 package com.comp90018.deadline.domain.game.engine
 
 import com.comp90018.deadline.domain.game.model.GameState
+import com.comp90018.deadline.domain.game.stress.StressConfig
 
 /** Pure-Kotlin session API with deterministic win/loss evaluation after matching. */
 interface GameEngine {
     /** Current read-only snapshot; only the engine can replace its state. */
     val state: GameState
 
-    /** Resolves selection, matching, then win/loss; terminal games, unavailable IDs and full trays are no-ops. */
+    /**
+     * Tuning this engine applies to [GameState.stress]. Exposed because a stress gauge needs
+     * the range and the High Stress threshold, and must not re-declare them.
+     */
+    val stressConfig: StressConfig
+        get() = StressConfig()
+
+    /**
+     * Resolves selection, matching, stress, then win/loss; terminal games, unavailable IDs
+     * and full trays are no-ops that leave [GameState.stress] unchanged.
+     */
     fun selectTile(tileId: String)
 
     /** True only while running, for a tile still on the board with no active covering tiles. */
     fun isTileSelectable(tileId: String): Boolean
 
-    /** Placeholder for a later undo implementation; currently leaves state unchanged. */
+<<<<<<< HEAD
+    /** True while running and at least one selection since the last match can be undone. */
+    val canUndo: Boolean
+
+=======
+>>>>>>> 0519c7046b504757bad7e97db2940c35c98277b4
+    /** Restores the latest retained selection since the last match while running; unavailable undo is a no-op. */
     fun undo()
 
     /**
@@ -23,6 +40,13 @@ interface GameEngine {
      */
     fun shuffle()
 
-    /** Restores the initial board and availability, empty tray, and running status. */
+<<<<<<< HEAD
+    /**
+     * Restores the initial board and availability, empty tray, running status and starting
+     * stress; clears undo history.
+     */
+=======
+    /** Restores the initial board and availability, empty tray, and running status; clears undo history. */
+>>>>>>> 0519c7046b504757bad7e97db2940c35c98277b4
     fun restart()
 }
