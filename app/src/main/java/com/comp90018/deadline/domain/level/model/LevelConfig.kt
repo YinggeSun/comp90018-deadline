@@ -1,8 +1,5 @@
 package com.comp90018.deadline.domain.level.model
 
-/**
- * Parameters describing the layout and difficulty constraints of a level.
- */
 data class LevelConfig(
     val layout: LayoutTemplate,
     val tileCount: Int,

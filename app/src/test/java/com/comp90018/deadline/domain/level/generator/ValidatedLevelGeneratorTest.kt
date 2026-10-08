@@ -287,4 +287,116 @@ class ValidatedLevelGeneratorTest {
             }
         }
     }
+
+
+    @Test
+    fun sixBiweeklyLevelsHaveCorrectMetadataBeforeValidation() {
+        for (levelNumber in 1..SemesterDifficulty.TOTAL_LEVELS) {
+            val expected = SemesterDifficulty.forLevel(levelNumber)
+            val expectedWeek = expected.week
+            val observedWeeks = mutableListOf<Int>()
+            val validator = SolvabilityValidator()
+
+            val generator = ValidatedLevelGenerator(
+                seed = 42L,
+                maxAttempts = 10,
+                createCandidate = { id, name, config, seed ->
+                    LevelGenerator(seed).generate(id, name, config)
+                },
+                validateCandidate = { level ->
+                    observedWeeks.add(level.week)
+                    validator.validate(level)
+                },
+            )
+
+            val result = generator.generateForLevel(levelNumber)
+
+            assertTrue(
+                "Level $levelNumber should reach validation",
+                observedWeeks.isNotEmpty(),
+            )
+
+            assertTrue(
+                "Level $levelNumber was validated with the wrong week",
+                observedWeeks.all { it == expectedWeek },
+            )
+
+            if (result.usedFallback) {
+                assertEquals(FixedLevels.LEVEL_1, result.level)
+                assertNull(result.candidateSeed)
+            } else {
+                assertEquals("level_$levelNumber", result.level.id)
+                assertEquals("Level $levelNumber", result.level.name)
+                assertEquals(expectedWeek, result.level.week)
+                assertEquals(levelNumber, result.level.levelNumber)
+                assertEquals(expected.levels.single(), result.level.config)
+                assertNotNull(result.candidateSeed)
+            }
+
+            assertPlayable(result)
+        }
+    }
+
+    @Test
+    fun firstBiweeklyLevelGeneratesWithoutFallback() {
+        val result = ValidatedLevelGenerator(
+            seed = 42L,
+            maxAttempts = 10,
+        ).generateForLevel(1)
+
+        assertFalse(
+            "Level 1 should be procedurally generated",
+            result.usedFallback,
+        )
+
+        assertEquals("level_1", result.level.id)
+        assertEquals(1, result.level.week)
+        assertEquals(1, result.level.levelNumber)
+        assertEquals(18, result.level.board.tiles.size)
+        assertEquals(1, result.level.config.maxLayer)
+        assertNotNull(result.candidateSeed)
+
+        assertPlayable(result)
+    }
+
+    @Test
+    fun biweeklyFallbackCannotMasqueradeAsLevelSix() {
+        val generator = ValidatedLevelGenerator(
+            seed = 42L,
+            maxAttempts = 2,
+            createCandidate = { id, name, config, seed ->
+                LevelGenerator(seed).generate(id, name, config)
+            },
+            validateCandidate = {
+                SolvabilityResult.SearchLimitReached
+            },
+        )
+
+        val result = generator.generateForLevel(6)
+
+        assertTrue(result.usedFallback)
+        assertEquals(2, result.attempts)
+        assertNull(result.candidateSeed)
+
+        assertEquals(FixedLevels.LEVEL_1, result.level)
+        assertNotEquals("level_6", result.level.id)
+        assertNotEquals(11, result.level.week)
+        assertNotEquals(
+            SemesterDifficulty.forLevel(6).levels.single(),
+            result.level.config,
+        )
+
+        assertPlayable(result)
+    }
+
+    @Test
+    fun invalidBiweeklyLevelNumbersAreRejected() {
+        for (levelNumber in listOf(0, 7, -1)) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ValidatedLevelGenerator(seed = 42L)
+                    .generateForLevel(levelNumber)
+            }
+        }
+    }
+
 }

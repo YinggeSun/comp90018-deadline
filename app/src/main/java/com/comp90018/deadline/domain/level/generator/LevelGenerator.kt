@@ -5,17 +5,24 @@ import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.model.TilePosition
 import com.comp90018.deadline.domain.level.model.Level
 import com.comp90018.deadline.domain.level.model.LevelConfig
+import com.comp90018.deadline.domain.level.model.SemesterDifficulty
 import kotlin.random.Random
 
-/**
- * Creates candidate levels; solvability validation is a separate responsibility.
- * For generation, layout rows/columns count tile slots, not half-tile coordinates.
- * Slots are two logical units apart, with alternate layers offset by one unit.
- */
 class LevelGenerator(private val seed: Long? = null) {
 
-    fun generate(id: String, name: String, config: LevelConfig): Level =
-        Level(id, name, generateBoard(config), config)
+    fun generate(
+        id: String,
+        name: String,
+        config: LevelConfig,
+        week: Int = SemesterDifficulty.FIRST_WEEK,
+    ): Level =
+        Level(
+            id = id,
+            name = name,
+            board = generateBoard(config),
+            config = config,
+            week = week,
+        )
 
     fun generateBoard(config: LevelConfig): Board {
         val rows = config.layout.rows
