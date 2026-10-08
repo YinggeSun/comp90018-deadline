@@ -7,15 +7,17 @@ package com.comp90018.deadline.domain.level.model
  * The values are kept outside the UI so they can be adjusted independently.
  */
 object SemesterDifficulty {
+    const val FIRST_WEEK = 1
 
     const val SEMESTER_WEEKS = 12
 
-    val weeks: List<WeekConfig> = (1..SEMESTER_WEEKS).map { week ->
-        WeekConfig(
-            week = week,
-            levels = listOf(configForWeek(week))
-        )
-    }
+    val weeks: List<WeekConfig> =
+        (1..SEMESTER_WEEKS).map { week ->
+            WeekConfig(
+                week = week,
+                levels = listOf(configForWeek(week)),
+            )
+        }
 
     fun forWeek(week: Int): WeekConfig {
         require(week in 1..SEMESTER_WEEKS) {
