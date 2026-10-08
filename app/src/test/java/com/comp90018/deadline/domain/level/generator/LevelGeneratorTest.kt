@@ -73,8 +73,8 @@ class LevelGeneratorTest {
     fun fullCapacityAndSingleCellStacksWork() {
         for (config in listOf(
             LevelConfig(LayoutTemplate(2, 3), 18, 2),
-            LevelConfig(LayoutTemplate(1, 1), 3, 2),
-            LevelConfig(LayoutTemplate(1, 1), 3, Int.MAX_VALUE)
+            LevelConfig(LayoutTemplate(1, 1), 3, 2, tileVariety = 1),
+            LevelConfig(LayoutTemplate(1, 1), 3, Int.MAX_VALUE, tileVariety = 1)
         )) {
             val board = LevelGenerator(42).generateBoard(config)
             assertEquals(config.tileCount, board.tiles.size)

@@ -51,9 +51,15 @@ class SemesterDifficultyTest {
 
     @Test
     fun tileVariety_increasesAcrossSemester() {
-        assertEquals(3, SemesterDifficulty.forWeek(1).levels.single().tileVariety)
-        assertEquals(4, SemesterDifficulty.forWeek(4).levels.single().tileVariety)
-        assertEquals(5, SemesterDifficulty.forWeek(7).levels.single().tileVariety)
-        assertEquals(6, SemesterDifficulty.forWeek(10).levels.single().tileVariety)
+        val expectedVarieties = listOf(
+            3, 3, 3,
+            4, 4, 4,
+            5, 5, 5,
+            6, 6, 6
+        )
+        assertEquals(
+            expectedVarieties,
+            SemesterDifficulty.weeks.map { it.levels.single().tileVariety }
+        )
     }
 }

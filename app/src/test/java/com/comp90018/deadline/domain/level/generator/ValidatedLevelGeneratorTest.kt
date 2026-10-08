@@ -72,7 +72,8 @@ class ValidatedLevelGeneratorTest {
         val simpleConfig = LevelConfig(
             layout = LayoutTemplate(rows = 1, columns = 3),
             tileCount = 3,
-            maxLayer = 0
+            maxLayer = 0,
+            tileVariety = 1
         )
 
         val result = ValidatedLevelGenerator(
@@ -194,7 +195,8 @@ class ValidatedLevelGeneratorTest {
         val impossibleConfig = LevelConfig(
             layout = LayoutTemplate(rows = 1, columns = 1),
             tileCount = 3,
-            maxLayer = 0
+            maxLayer = 0,
+            tileVariety = 1
         )
 
         val result = ValidatedLevelGenerator(seed = 42L).generate(

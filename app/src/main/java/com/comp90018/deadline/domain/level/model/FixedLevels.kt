@@ -54,7 +54,8 @@ object FixedLevels {
                 columns = 4
             ),
             tileCount = 3,
-            maxLayer = 0
+            maxLayer = 0,
+            tileVariety = 1
         )
     )
 
@@ -101,7 +102,8 @@ object FixedLevels {
                 columns = 6
             ),
             tileCount = 6,
-            maxLayer = 0
+            maxLayer = 0,
+            tileVariety = 2
         )
     )
 
@@ -165,7 +167,8 @@ object FixedLevels {
                 columns = 6
             ),
             tileCount = 9,
-            maxLayer = 0
+            maxLayer = 0,
+            tileVariety = 3
         )
     )
 
@@ -231,7 +234,8 @@ object FixedLevels {
                 columns = 6
             ),
             tileCount = 9,
-            maxLayer = 1
+            maxLayer = 1,
+            tileVariety = 3
         )
     )
 
