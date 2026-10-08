@@ -10,12 +10,12 @@ import com.comp90018.deadline.domain.level.model.SemesterDifficulty
  */
 data class PlayerProgress(
     val completedLevelIds: Set<String> = emptySet(),
-    val highestUnlockedWeek: Int = FIRST_WEEK,
+    val highestUnlockedWeek: Int = SemesterDifficulty.FIRST_WEEK,
     val personalBests: Map<String, PersonalBest> = emptyMap(),
     val lastModifiedMillis: Long = 0L,
 ) {
     init {
-        require(highestUnlockedWeek in FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
+        require(highestUnlockedWeek in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
             "Unlocked week must be within the semester."
         }
         require(personalBests.all { (levelId, best) -> levelId == best.levelId }) {
@@ -23,7 +23,7 @@ data class PlayerProgress(
         }
     }
 
-    fun isWeekUnlocked(week: Int): Boolean = week in FIRST_WEEK..highestUnlockedWeek
+    fun isWeekUnlocked(week: Int): Boolean = week in SemesterDifficulty.FIRST_WEEK..highestUnlockedWeek
 
     fun bestFor(levelId: String): PersonalBest? = personalBests[levelId]
 
@@ -60,9 +60,5 @@ data class PlayerProgress(
                 previousBest = previousBest,
                 newlyUnlockedWeek = unlocked.takeIf { it > highestUnlockedWeek },
             )
-    }
-
-    companion object {
-        const val FIRST_WEEK = 1
     }
 }
