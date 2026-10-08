@@ -146,10 +146,10 @@ class CoffeeRecoveryTest {
     private fun config(
         maximum: Int = 100,
         recoveryBase: Int = StressConfig.DEFAULT_COFFEE_RECOVERY_BASE,
-        recoveryDecline: Int = 0
+        recoveryDecline: Int = 0,
     ) = StressConfig(
         maximum = maximum,
         coffeeRecoveryBase = recoveryBase,
-        coffeeRecoveryDeclinePerWeek = recoveryDecline
+        coffeeRecoveryDeclinePerWeek = recoveryDecline,
     )
 }

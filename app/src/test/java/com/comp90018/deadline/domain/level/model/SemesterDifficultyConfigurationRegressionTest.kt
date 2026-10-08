@@ -13,14 +13,26 @@ class SemesterDifficultyConfigurationRegressionTest(
     private val columns: Int,
     private val tileCount: Int,
     private val maxLayer: Int,
+    private val tileVariety: Int,
 ) {
     @Test
     fun weekHasExpectedDifficultyConfiguration() {
         val actual = SemesterDifficulty.forWeek(week)
-        val expected = LevelConfig(LayoutTemplate(rows, columns), tileCount, maxLayer)
+        val expected =
+            LevelConfig(
+                LayoutTemplate(rows, columns),
+                tileCount,
+                maxLayer,
+                tileVariety,
+            )
+
         assertEquals("week=$week", week, actual.week)
         assertEquals("week=$week", listOf(expected), actual.levels)
-        assertEquals("semester table week=$week", actual, SemesterDifficulty.weeks[week - 1])
+        assertEquals(
+            "semester table week=$week",
+            actual,
+            SemesterDifficulty.weeks[week - 1],
+        )
     }
 
     companion object {
@@ -28,18 +40,18 @@ class SemesterDifficultyConfigurationRegressionTest(
         @Parameterized.Parameters(name = "week={0}")
         fun configurations(): List<Array<Int>> =
             listOf(
-                arrayOf(1, 3, 3, 9, 0),
-                arrayOf(2, 3, 3, 9, 0),
-                arrayOf(3, 3, 3, 9, 0),
-                arrayOf(4, 4, 4, 12, 1),
-                arrayOf(5, 4, 4, 12, 1),
-                arrayOf(6, 4, 4, 12, 1),
-                arrayOf(7, 5, 5, 18, 2),
-                arrayOf(8, 5, 5, 18, 2),
-                arrayOf(9, 5, 5, 18, 2),
-                arrayOf(10, 6, 6, 24, 3),
-                arrayOf(11, 6, 6, 24, 3),
-                arrayOf(12, 6, 6, 24, 3),
+                arrayOf(1, 3, 3, 9, 0, 3),
+                arrayOf(2, 3, 3, 9, 0, 3),
+                arrayOf(3, 3, 3, 9, 0, 3),
+                arrayOf(4, 4, 4, 12, 1, 4),
+                arrayOf(5, 4, 4, 12, 1, 4),
+                arrayOf(6, 4, 4, 12, 1, 4),
+                arrayOf(7, 5, 5, 18, 2, 5),
+                arrayOf(8, 5, 5, 18, 2, 5),
+                arrayOf(9, 5, 5, 18, 2, 5),
+                arrayOf(10, 6, 6, 24, 3, 6),
+                arrayOf(11, 6, 6, 24, 3, 6),
+                arrayOf(12, 6, 6, 24, 3, 6),
             )
     }
 }
