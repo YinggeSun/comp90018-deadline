@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameViewModelTest {
+
     private fun GameViewModel.tile(id: String) = uiState.value.boardTiles.single { it.id == id }
 
     @Test
@@ -106,12 +107,12 @@ class GameViewModelTest {
     }
 
     private var nowNanos = 0L
-
     private fun advanceSeconds(seconds: Long) {
         nowNanos += seconds * 1_000_000_000L
     }
 
-    private fun timedViewModel(levelId: String) = GameViewModel(levelId, timer = CompletionTimer { nowNanos })
+    private fun timedViewModel(levelId: String) =
+        GameViewModel(levelId, timer = CompletionTimer { nowNanos })
 
     @Test
     fun timerRunsWhileGameIsRunning() {
@@ -186,19 +187,17 @@ class GameViewModelTest {
 
     @Test
     fun stressGaugeComesFromTheEngineAndFallsWithCoffeeRecovery() {
-        val stressConfig =
-            StressConfig(
-                maximum = 100,
-                highStressThreshold = 75,
-                baseRate = 0,
-                rateGrowthPerWeek = 0,
-                coffeeRecoveryBase = 20,
-                coffeeRecoveryDeclinePerWeek = 0,
-            )
-        val viewModel =
-            GameViewModel(FixedLevels.LEVEL_1.id) { level ->
-                DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 80)
-            }
+        val stressConfig = StressConfig(
+            maximum = 100,
+            highStressThreshold = 75,
+            baseRate = 0,
+            rateGrowthPerWeek = 0,
+            coffeeRecoveryBase = 20,
+            coffeeRecoveryDeclinePerWeek = 0
+        )
+        val viewModel = GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+            DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 80)
+        }
 
         assertEquals(80, viewModel.uiState.value.stress)
         assertEquals(100, viewModel.uiState.value.stressMaximum)
@@ -217,10 +216,9 @@ class GameViewModelTest {
     @Test
     fun restartReturnsTheStressGaugeToItsStartingValue() {
         val stressConfig = StressConfig(baseRate = 5, rateGrowthPerWeek = 0)
-        val viewModel =
-            GameViewModel(FixedLevels.LEVEL_1.id) { level ->
-                DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 30)
-            }
+        val viewModel = GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+            DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 30)
+        }
 
         viewModel.onEvent(GameUiEvent.TileTapped("level_1_book_1"))
         assertEquals(35, viewModel.uiState.value.stress)

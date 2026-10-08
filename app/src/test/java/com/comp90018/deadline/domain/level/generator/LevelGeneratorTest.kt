@@ -11,10 +11,8 @@ import org.junit.Test
 import kotlin.math.abs
 
 class LevelGeneratorTest {
-    private fun intersects(
-        a: TilePosition,
-        b: TilePosition,
-    ) = abs(a.row.toLong() - b.row) < 2 && abs(a.column.toLong() - b.column) < 2
+    private fun intersects(a: TilePosition, b: TilePosition) =
+        abs(a.row.toLong() - b.row) < 2 && abs(a.column.toLong() - b.column) < 2
 
     @Test
     fun allWeeksHaveValidGeometryAndEngineAvailability() {
@@ -33,25 +31,18 @@ class LevelGeneratorTest {
                         val p = tile.position
                         assertTrue(p.row in 0..(config.layout.rows * 2 - 1))
                         assertTrue(p.column in 0..(config.layout.columns * 2 - 1))
-                        assertFalse(
-                            tiles.any {
-                                it.id != tile.id && it.position.layer == p.layer && intersects(p, it.position)
-                            },
-                        )
-                        if (p.layer > 0) {
-                            assertTrue(
-                                tiles.any {
-                                    it.position.layer == p.layer - 1 && intersects(p, it.position)
-                                },
-                            )
-                        }
+                        assertFalse(tiles.any {
+                            it.id != tile.id && it.position.layer == p.layer && intersects(p, it.position)
+                        })
+                        if (p.layer > 0) assertTrue(tiles.any {
+                            it.position.layer == p.layer - 1 && intersects(p, it.position)
+                        })
                     }
                     val engine = DefaultGameEngine(level)
                     for (tile in tiles) {
-                        val blocked =
-                            tiles.any {
-                                it.position.layer > tile.position.layer && intersects(tile.position, it.position)
-                            }
+                        val blocked = tiles.any {
+                            it.position.layer > tile.position.layer && intersects(tile.position, it.position)
+                        }
                         assertEquals(!blocked, engine.isTileSelectable(tile.id))
                     }
                     val top = tiles.first { it.position.layer == config.maxLayer }
@@ -82,8 +73,8 @@ class LevelGeneratorTest {
     fun fullCapacityAndSingleCellStacksWork() {
         for (config in listOf(
             LevelConfig(LayoutTemplate(2, 3), 18, 2),
-            LevelConfig(LayoutTemplate(1, 1), 3, 2, tileVariety = 1),
-            LevelConfig(LayoutTemplate(1, 1), 3, Int.MAX_VALUE, tileVariety = 1),
+            LevelConfig(LayoutTemplate(1, 1), 3, 2),
+            LevelConfig(LayoutTemplate(1, 1), 3, Int.MAX_VALUE)
         )) {
             val board = LevelGenerator(42).generateBoard(config)
             assertEquals(config.tileCount, board.tiles.size)

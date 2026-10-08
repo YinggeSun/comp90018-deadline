@@ -141,12 +141,11 @@ class CoffeeRecoveryIntegrationTest {
 
     @Test
     fun restartReturnsStressToTheStartingValue() {
-        val engine =
-            engine(
-                FixedLevels.LEVEL_1,
-                config(baseRate = 5, recoveryBase = 25),
-                initialStress = 30,
-            )
+        val engine = engine(
+            FixedLevels.LEVEL_1,
+            config(baseRate = 5, recoveryBase = 25),
+            initialStress = 30
+        )
 
         select(engine, *COFFEE_IDS.toTypedArray())
         assertEquals(20, engine.state.stress)
@@ -181,33 +180,29 @@ class CoffeeRecoveryIntegrationTest {
         level: Level,
         stressConfig: StressConfig,
         initialStress: Int = 0,
-        week: Int = 1,
-    ): GameEngine =
-        DefaultGameEngine(
-            level = level,
-            week = week,
-            stressConfig = stressConfig,
-            initialStress = initialStress,
-        )
+        week: Int = 1
+    ): GameEngine = DefaultGameEngine(
+        level = level,
+        week = week,
+        stressConfig = stressConfig,
+        initialStress = initialStress
+    )
 
     /** Flat rates by default so each test reads one rule at a time. */
     private fun config(
         maximum: Int = 100,
         baseRate: Int = 0,
         recoveryBase: Int = StressConfig.DEFAULT_COFFEE_RECOVERY_BASE,
-        recoveryDecline: Int = 0,
+        recoveryDecline: Int = 0
     ) = StressConfig(
         maximum = maximum,
         baseRate = baseRate,
         rateGrowthPerWeek = 0,
         coffeeRecoveryBase = recoveryBase,
-        coffeeRecoveryDeclinePerWeek = recoveryDecline,
+        coffeeRecoveryDeclinePerWeek = recoveryDecline
     )
 
-    private fun select(
-        engine: GameEngine,
-        vararg tileIds: String,
-    ) {
+    private fun select(engine: GameEngine, vararg tileIds: String) {
         for (id in tileIds) engine.selectTile(id)
     }
 

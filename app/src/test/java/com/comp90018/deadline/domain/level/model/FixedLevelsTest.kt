@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FixedLevelsTest {
+
     @Test
     fun sampleLevel_hasExpectedConfiguration() {
         val level = FixedLevels.SAMPLE_LEVEL
@@ -24,42 +25,38 @@ class FixedLevelsTest {
 
     @Test
     fun fixedLevels_canBeCompletedThroughNormalGameplay() {
-        val winningOrders =
-            mapOf(
-                FixedLevels.LEVEL_1 to
-                    listOf(
-                        "level_1_book_1",
-                        "level_1_book_2",
-                        "level_1_book_3",
-                        "level_1_coffee_1",
-                        "level_1_coffee_2",
-                        "level_1_coffee_3",
-                    ),
-                FixedLevels.LEVEL_2 to
-                    listOf(
-                        "level_2_book_1",
-                        "level_2_book_2",
-                        "level_2_book_3",
-                        "level_2_coffee_1",
-                        "level_2_coffee_2",
-                        "level_2_coffee_3",
-                        "level_2_laptop_1",
-                        "level_2_laptop_2",
-                        "level_2_laptop_3",
-                    ),
-                FixedLevels.LEVEL_3 to
-                    listOf(
-                        "level_3_laptop_1",
-                        "level_3_laptop_2",
-                        "level_3_laptop_3",
-                        "level_3_book_1",
-                        "level_3_book_2",
-                        "level_3_book_3",
-                        "level_3_coffee_1",
-                        "level_3_coffee_2",
-                        "level_3_coffee_3",
-                    ),
+        val winningOrders = mapOf(
+            FixedLevels.LEVEL_1 to listOf(
+                "level_1_book_1",
+                "level_1_book_2",
+                "level_1_book_3",
+                "level_1_coffee_1",
+                "level_1_coffee_2",
+                "level_1_coffee_3"
+            ),
+            FixedLevels.LEVEL_2 to listOf(
+                "level_2_book_1",
+                "level_2_book_2",
+                "level_2_book_3",
+                "level_2_coffee_1",
+                "level_2_coffee_2",
+                "level_2_coffee_3",
+                "level_2_laptop_1",
+                "level_2_laptop_2",
+                "level_2_laptop_3"
+            ),
+            FixedLevels.LEVEL_3 to listOf(
+                "level_3_laptop_1",
+                "level_3_laptop_2",
+                "level_3_laptop_3",
+                "level_3_book_1",
+                "level_3_book_2",
+                "level_3_book_3",
+                "level_3_coffee_1",
+                "level_3_coffee_2",
+                "level_3_coffee_3"
             )
+        )
 
         for ((level, winningOrder) in winningOrders) {
             val engine = DefaultGameEngine(level)
@@ -71,7 +68,7 @@ class FixedLevelsTest {
             assertEquals(
                 "${level.name} should be completable",
                 GameStatus.WON,
-                engine.state.status,
+                engine.state.status
             )
         }
     }
@@ -86,7 +83,7 @@ class FixedLevelsTest {
                 assertTrue(
                     "${tile.id} should fit inside ${level.name}'s layout",
                     tile.position.row + TILE_SPAN <= layout.rows &&
-                        tile.position.column + TILE_SPAN <= layout.columns,
+                        tile.position.column + TILE_SPAN <= layout.columns
                 )
             }
         }
@@ -98,10 +95,9 @@ class FixedLevelsTest {
             val tiles = level.board.tiles
             for ((index, a) in tiles.withIndex()) {
                 for (b in tiles.drop(index + 1)) {
-                    val overlaps =
-                        a.position.layer == b.position.layer &&
-                            kotlin.math.abs(a.position.row - b.position.row) < TILE_SPAN &&
-                            kotlin.math.abs(a.position.column - b.position.column) < TILE_SPAN
+                    val overlaps = a.position.layer == b.position.layer &&
+                        kotlin.math.abs(a.position.row - b.position.row) < TILE_SPAN &&
+                        kotlin.math.abs(a.position.column - b.position.column) < TILE_SPAN
                     assertFalse("${a.id} and ${b.id} overlap in ${level.name}", overlaps)
                 }
             }

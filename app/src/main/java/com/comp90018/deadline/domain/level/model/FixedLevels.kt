@@ -5,6 +5,13 @@ import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.model.TilePosition
 import com.comp90018.deadline.domain.game.model.TileType
 
+/**
+ * Fixed level definitions used for development and testing.
+ *
+ * Positions follow [TilePosition]: each tile covers 2 x 2 logical units, so
+ * neighbouring tiles on one layer are 2 apart and an odd offset on a higher
+ * layer staggers a tile by half. Layout sizes are in the same logical units.
+ */
 object FixedLevels {
     val SAMPLE_LEVEL =
         Level(
@@ -55,7 +62,6 @@ object FixedLevels {
                         ),
                     tileCount = 3,
                     maxLayer = 0,
-                    tileVariety = 1,
                 ),
         )
 
@@ -108,7 +114,6 @@ object FixedLevels {
                         ),
                     tileCount = 6,
                     maxLayer = 0,
-                    tileVariety = 2,
                 ),
             week = 1,
         )
@@ -177,7 +182,6 @@ object FixedLevels {
                         ),
                     tileCount = 9,
                     maxLayer = 0,
-                    tileVariety = 3,
                 ),
             week = 2,
         )
@@ -248,7 +252,6 @@ object FixedLevels {
                         ),
                     tileCount = 9,
                     maxLayer = 1,
-                    tileVariety = 3,
                 ),
             week = 3,
         )

@@ -107,13 +107,12 @@ class StressConfigTest {
 
     @Test
     fun coffeeRecoveryShrinksLinearlyWhileAccumulationGrows() {
-        val config =
-            StressConfig(
-                baseRate = 2,
-                rateGrowthPerWeek = 1,
-                coffeeRecoveryBase = 20,
-                coffeeRecoveryDeclinePerWeek = 2,
-            )
+        val config = StressConfig(
+            baseRate = 2,
+            rateGrowthPerWeek = 1,
+            coffeeRecoveryBase = 20,
+            coffeeRecoveryDeclinePerWeek = 2
+        )
 
         assertEquals(20, config.coffeeRecoveryForWeek(1))
         assertEquals(18, config.coffeeRecoveryForWeek(2))
