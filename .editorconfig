@@ -9,6 +9,8 @@ trim_trailing_whitespace = true
 [*.{kt,kts}]
 indent_style = space
 indent_size = 4
+# Compose UI functions are PascalCase by convention.
+ktlint_function_naming_ignore_when_annotated_with = Composable
 
 [*.{xml,md,yml,yaml}]
 indent_style = space

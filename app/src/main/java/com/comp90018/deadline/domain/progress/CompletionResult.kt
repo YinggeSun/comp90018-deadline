@@ -14,7 +14,7 @@ data class CompletionResult(
 ) {
     init {
         require(levelId.isNotBlank()) { "Level ID must not be blank." }
-        require(week in PlayerProgress.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
+        require(week in SemesterDifficulty.FIRST_WEEK..SemesterDifficulty.SEMESTER_WEEKS) {
             "Week must be within the semester."
         }
         require(timeMillis > 0) { "Completion time must be positive." }
