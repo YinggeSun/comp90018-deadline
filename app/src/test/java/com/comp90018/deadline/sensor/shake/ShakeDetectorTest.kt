@@ -15,12 +15,13 @@ class ShakeDetectorTest {
 
     @Test
     fun strongConsecutiveMovement_triggersOnceDuringCooldown() {
-        val detector = ShakeDetector(
-            thresholdG = 1.2f,
-            requiredHits = 2,
-            cooldownMillis = 900L,
-            smoothing = 1f,
-        )
+        val detector =
+            ShakeDetector(
+                thresholdG = 1.2f,
+                requiredHits = 2,
+                cooldownMillis = 900L,
+                smoothing = 1f,
+            )
 
         assertFalse(detector.processAccelerometer(30f, 0f, 0f, 1000L))
         assertTrue(detector.processAccelerometer(30f, 0f, 0f, 1020L))

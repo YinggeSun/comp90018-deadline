@@ -10,12 +10,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SeededGeneratorTest {
-
-    private val config = LevelConfig(
-        layout = LayoutTemplate(rows = 4, columns = 4),
-        tileCount = 12,
-        maxLayer = 1
-    )
+    private val config =
+        LevelConfig(
+            layout = LayoutTemplate(rows = 4, columns = 4),
+            tileCount = 12,
+            maxLayer = 1,
+        )
 
     @Test
     fun generatedTileCount_matchesConfig() {
@@ -36,17 +36,19 @@ class SeededGeneratorTest {
         assertTrue(
             countsByType.values.all { count ->
                 count % SeededGenerator.MATCH_SIZE == 0
-            }
+            },
         )
     }
 
     @Test
     fun sameSeed_reproducesSameTileSequence() {
-        val first = SeededGenerator(seed = 1234)
-            .generateTileTypes(config)
+        val first =
+            SeededGenerator(seed = 1234)
+                .generateTileTypes(config)
 
-        val second = SeededGenerator(seed = 1234)
-            .generateTileTypes(config)
+        val second =
+            SeededGenerator(seed = 1234)
+                .generateTileTypes(config)
 
         assertEquals(first, second)
     }
@@ -65,24 +67,25 @@ class SeededGeneratorTest {
         for (week in SemesterDifficulty.weeks) {
             val config = week.levels.single()
 
-            val tiles = SeededGenerator(seed = 42L)
-                .generateTileTypes(config)
+            val tiles =
+                SeededGenerator(seed = 42L)
+                    .generateTileTypes(config)
 
             assertEquals(
                 config.tileVariety,
-                tiles.toSet().size
+                tiles.toSet().size,
             )
 
             assertEquals(
                 config.tileCount,
-                tiles.size
+                tiles.size,
             )
 
             assertTrue(
                 tiles.groupingBy { it }
                     .eachCount()
                     .values
-                    .all { it % SeededGenerator.MATCH_SIZE == 0 }
+                    .all { it % SeededGenerator.MATCH_SIZE == 0 },
             )
 
             assertFalse(tiles.contains(TileType.DEFAULT))

@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SemesterDifficultyTest {
-
     @Test
     fun semester_containsTwelveWeeks() {
         assertEquals(12, SemesterDifficulty.weeks.size)
@@ -51,15 +50,24 @@ class SemesterDifficultyTest {
 
     @Test
     fun tileVariety_increasesAcrossSemester() {
-        val expectedVarieties = listOf(
-            3, 3, 3,
-            4, 4, 4,
-            5, 5, 5,
-            6, 6, 6
-        )
+        val expectedVarieties =
+            listOf(
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                6,
+                6,
+                6,
+            )
         assertEquals(
             expectedVarieties,
-            SemesterDifficulty.weeks.map { it.levels.single().tileVariety }
+            SemesterDifficulty.weeks.map { it.levels.single().tileVariety },
         )
     }
 }
