@@ -82,14 +82,16 @@ fun StressIndicator(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            if (isStressSlowed) {
-                Text(
-                    text = slowed,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.testTag(STRESS_SLOWED_TAG),
-                )
-            }
+        }
+        // Own row, so a narrow HUD with large fonts cannot squeeze it to zero width beside
+        // the label and stress warning.
+        if (isStressSlowed) {
+            Text(
+                text = slowed,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.testTag(STRESS_SLOWED_TAG),
+            )
         }
         LinearProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
