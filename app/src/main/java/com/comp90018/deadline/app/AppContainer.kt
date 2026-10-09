@@ -28,7 +28,7 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository = SettingsRepositoryImpl(SettingsDataSource(dataStore))
 
     /** Work that must finish even after the screen that started it is gone. */
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** A failed save costs one record, never the game, so errors are logged and not rethrown. */
     val completionRecorder =

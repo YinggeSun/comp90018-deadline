@@ -17,6 +17,7 @@ import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.domain.level.model.Level
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.CompletionResult
+import com.comp90018.deadline.domain.settings.PlayerSettings
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 import kotlinx.coroutines.delay
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Owns one game session. Forwards taps to the [GameEngine] and republishes
@@ -43,6 +45,7 @@ class GameViewModel(
     private val completionRecorder: CompletionRecorder = CompletionRecorder.None,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val personalBestMillis: (levelId: String) -> Long? = { null },
+    settings: Flow<PlayerSettings> = flowOf(PlayerSettings()),
     createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) },
 ) : ViewModel(), GameSensorActions {
     private val level = findLevel(levelId)
@@ -77,6 +80,12 @@ class GameViewModel(
     /** Elapsed time on the completion timer; frozen once the game has ended. */
     val elapsedMillis: Long
         get() = timer.elapsedMillis
+
+    /**
+     * The player's stored settings, for the screen to switch haptics and motion controls
+     * on or off. Cold like [elapsedSeconds]; it is read while the Game screen collects it.
+     */
+    val settings: Flow<PlayerSettings> = settings
 
     fun onEvent(event: GameUiEvent) = onEvent(event, null)
 
@@ -208,6 +217,7 @@ class GameViewModel(
                         levelId,
                         completionRecorder = container.completionRecorder,
                         personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
+                        settings = container.settingsRepository.settings,
                     )
                 }
             }

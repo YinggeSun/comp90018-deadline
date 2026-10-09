@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -62,8 +63,18 @@ fun GameScreen(
         remember(context, viewModel) {
             GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
         }
-    DisposableEffect(owner, binder) {
-        owner.lifecycle.addObserver(binder)
+    // Null until stored settings are read, so sensors never start with the defaults first.
+    val settings by viewModel.settings.collectAsState(initial = null)
+    val settingsLoaded = settings != null
+    SideEffect {
+        settings?.let {
+            haptics.enabled = it.hapticsEnabled
+            binder.shakeEnabled = it.shakeToShuffleEnabled
+            binder.tiltEnabled = it.tiltToPeekEnabled
+        }
+    }
+    DisposableEffect(owner, binder, settingsLoaded) {
+        if (settingsLoaded) owner.lifecycle.addObserver(binder)
         onDispose {
             owner.lifecycle.removeObserver(binder)
             binder.stop()
