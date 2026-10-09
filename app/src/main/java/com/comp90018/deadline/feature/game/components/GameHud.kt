@@ -29,12 +29,13 @@ fun GameHud(
     stress: Int,
     stressMaximum: Int,
     isHighStress: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isMaxStress: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.large),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val time = TimeFormatter.formatSeconds(elapsedSeconds)
         val timeDescription = stringResource(R.string.game_timer_description, time)
@@ -42,15 +43,17 @@ fun GameHud(
             text = time,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .testTag(GAME_TIMER_TAG)
-                .clearAndSetSemantics { contentDescription = timeDescription }
+            modifier =
+                Modifier
+                    .testTag(GAME_TIMER_TAG)
+                    .clearAndSetSemantics { contentDescription = timeDescription },
         )
         StressIndicator(
             stress = stress,
             stressMaximum = stressMaximum,
             isHighStress = isHighStress,
-            modifier = Modifier.weight(1f)
+            isMaxStress = isMaxStress,
+            modifier = Modifier.weight(1f),
         )
     }
 }
@@ -65,7 +68,7 @@ private fun GameHudPreview() {
                 stress = 40,
                 stressMaximum = 100,
                 isHighStress = false,
-                modifier = Modifier.padding(Spacing.large)
+                modifier = Modifier.padding(Spacing.large),
             )
         }
     }

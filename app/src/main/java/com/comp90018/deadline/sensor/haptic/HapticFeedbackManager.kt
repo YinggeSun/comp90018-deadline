@@ -11,6 +11,9 @@ enum class GameHaptic {
     SHUFFLE,
     SUCCESS,
     FAILURE,
+
+    /** Stress has reached its maximum; selections may now slip (issue #58). */
+    MAX_STRESS,
 }
 
 class HapticFeedbackManager(context: Context) {
@@ -21,21 +24,30 @@ class HapticFeedbackManager(context: Context) {
     fun perform(event: GameHaptic) {
         if (!enabled || vibrator?.hasVibrator() != true) return
 
-        val effect = when (event) {
-            GameHaptic.TILE_SELECT -> VibrationEffect.createOneShot(18L, 80)
-            GameHaptic.MATCH -> VibrationEffect.createWaveform(
-                longArrayOf(0L, 25L, 45L, 35L),
-                intArrayOf(0, 110, 0, 150),
-                -1,
-            )
-            GameHaptic.SHUFFLE -> VibrationEffect.createOneShot(45L, 120)
-            GameHaptic.SUCCESS -> VibrationEffect.createWaveform(
-                longArrayOf(0L, 35L, 55L, 60L),
-                intArrayOf(0, 120, 0, 180),
-                -1,
-            )
-            GameHaptic.FAILURE -> VibrationEffect.createOneShot(80L, 150)
-        }
+        val effect =
+            when (event) {
+                GameHaptic.TILE_SELECT -> VibrationEffect.createOneShot(18L, 80)
+                GameHaptic.MATCH ->
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0L, 25L, 45L, 35L),
+                        intArrayOf(0, 110, 0, 150),
+                        -1,
+                    )
+                GameHaptic.SHUFFLE -> VibrationEffect.createOneShot(45L, 120)
+                GameHaptic.SUCCESS ->
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0L, 35L, 55L, 60L),
+                        intArrayOf(0, 120, 0, 180),
+                        -1,
+                    )
+                GameHaptic.FAILURE -> VibrationEffect.createOneShot(80L, 150)
+                GameHaptic.MAX_STRESS ->
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0L, 120L, 80L, 120L, 80L, 120L),
+                        intArrayOf(0, 255, 0, 255, 0, 255),
+                        -1,
+                    )
+            }
         vibrator.vibrate(effect)
     }
 }
