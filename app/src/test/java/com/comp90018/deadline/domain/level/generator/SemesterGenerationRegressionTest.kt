@@ -7,6 +7,7 @@ import com.comp90018.deadline.domain.game.model.TilePosition
 import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.level.model.SemesterDifficulty
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,40 +39,57 @@ class SemesterGenerationRegressionTest(
 
             val candidate =
                 LevelGenerator(seed).generate(
-                    "week_$week",
-                    "Week $week",
-                    config,
+                    id = "week_$week",
+                    name = "Week $week",
+                    config = config,
+                    week = week,
                 )
 
+            // Deterministic generation
             assertEquals(
                 context,
                 candidate,
                 LevelGenerator(seed).generate(
-                    candidate.id,
-                    candidate.name,
-                    config,
+                    id = candidate.id,
+                    name = candidate.name,
+                    config = config,
+                    week = week,
                 ),
             )
 
+            assertEquals(context, week, candidate.week)
+
             val tiles = candidate.board.tiles
 
+            // Correct tile count and unique identities
             assertEquals(context, config.tileCount, tiles.size)
+
             assertEquals(
                 context,
                 tiles.size,
                 tiles.map { it.id }.toSet().size,
             )
+
             assertEquals(
                 context,
                 tiles.size,
                 tiles.map { it.position }.toSet().size,
             )
 
+            // Correct tile variety
+            assertEquals(
+                "$context incorrect tile variety",
+                config.tileVariety,
+                tiles.map { it.type }.toSet().size,
+            )
+
+            // No placeholder tile types
             assertTrue(
                 context,
                 tiles.none { it.type == TileType.DEFAULT },
             )
 
+            // Every type occurs in complete triples
             assertTrue(
                 context,
                 tiles.groupingBy { it.type }
@@ -80,6 +98,7 @@ class SemesterGenerationRegressionTest(
                     .all { it % 3 == 0 },
             )
 
+            // Valid board geometry
             tiles.forEach { tile ->
                 val position = tile.position
 
@@ -117,28 +136,47 @@ class SemesterGenerationRegressionTest(
                     )
                 }
             }
-
             val generator = ValidatedLevelGenerator(seed)
 
             val result =
                 generator.generate(
-                    candidate.id,
-                    candidate.name,
-                    config,
+                    id = candidate.id,
+                    name = candidate.name,
+                    config = config,
+                    week = week,
                 )
 
             assertEquals(
                 context,
                 result,
                 generator.generate(
-                    candidate.id,
-                    candidate.name,
-                    config,
+                    id = candidate.id,
+                    name = candidate.name,
+                    config = config,
+                    week = week,
                 ),
             )
 
             assertTrue(context, result.attempts in 1..10)
 
+            assertFalse(
+                "$context unexpectedly used fallback",
+                result.usedFallback,
+            )
+
+            assertEquals(
+                "$context incorrect validated config",
+                config,
+                result.level.config,
+            )
+
+            assertEquals(
+                "$context incorrect week",
+                week,
+                result.level.week,
+            )
+
+            // Winning path must cover every tile exactly once
             assertEquals(
                 context,
                 result.level.board.tiles.size,
@@ -151,6 +189,7 @@ class SemesterGenerationRegressionTest(
                 result.winningMoves.toSet().size,
             )
 
+            // Replay the winning path through the actual game engine
             val engine =
                 DefaultGameEngine(
                     result.level,
