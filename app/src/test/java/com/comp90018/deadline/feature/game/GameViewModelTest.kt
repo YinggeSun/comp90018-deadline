@@ -2,7 +2,11 @@ package com.comp90018.deadline.feature.game
 
 import com.comp90018.deadline.domain.game.engine.CompletionTimer
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
+import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.model.Tile
+import com.comp90018.deadline.domain.game.model.TilePosition
+import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -297,4 +301,22 @@ class GameViewModelTest {
             runCurrent()
             assertEquals(15, viewModel.uiState.value.stress)
         }
+
+    @Test
+    fun musicTripleShowsTheSlowdownUntilItExpires() {
+        val tiles =
+            (listOf(TileType.MUSIC, TileType.MUSIC, TileType.MUSIC) + List(3) { TileType.BOOK })
+                .mapIndexed { index, type -> Tile("t$index", type, TilePosition(0, index * 2, 0)) }
+        val level = FixedLevels.LEVEL_1.copy(id = "music", board = Board(tiles))
+        val viewModel = GameViewModel(level.id, findLevel = { level })
+        assertFalse(viewModel.uiState.value.isStressSlowed)
+
+        listOf("t0", "t1", "t2").forEach { viewModel.onEvent(GameUiEvent.TileTapped(it)) }
+        assertTrue(viewModel.uiState.value.isStressSlowed)
+
+        viewModel.onTimeElapsed(7_900L)
+        assertTrue(viewModel.uiState.value.isStressSlowed)
+        viewModel.onTimeElapsed(100L)
+        assertFalse(viewModel.uiState.value.isStressSlowed)
+    }
 }

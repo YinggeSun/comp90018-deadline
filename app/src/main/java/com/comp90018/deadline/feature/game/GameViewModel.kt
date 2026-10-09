@@ -229,6 +229,7 @@ class GameViewModel(
             stressMaximum = engine.stressConfig.maximum,
             isHighStress = stressManager.isHighStress(state.stress),
             isMaxStress = state.status == GameStatus.RUNNING && stressManager.isMaxStress(state.stress),
+            isStressSlowed = state.status == GameStatus.RUNNING && state.musicSlowdownRemainingMillis > 0L,
             canUndo = engine.canUndo,
         )
     }

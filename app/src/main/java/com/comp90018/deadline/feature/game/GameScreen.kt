@@ -174,6 +174,7 @@ fun GameContent(
                     stressMaximum = uiState.stressMaximum,
                     isHighStress = uiState.isHighStress,
                     isMaxStress = uiState.isMaxStress,
+                    isStressSlowed = uiState.isStressSlowed,
                     modifier = Modifier.padding(horizontal = Spacing.large),
                 )
                 if (uiState.isMaxStress) {

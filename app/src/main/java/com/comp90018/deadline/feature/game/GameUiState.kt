@@ -27,7 +27,8 @@ data class TileUiModel(
  * [isHighStress] is the warning band the engine's configuration defines, so
  * the HUD never has to re-derive the threshold. [isMaxStress] is the Maximum
  * Stress state of a running game, in which selections may slip onto a
- * neighbouring tile and the screen flashes a warning.
+ * neighbouring tile and the screen flashes a warning. [isStressSlowed] is true while
+ * the Music effect slows stress accumulation in a running game.
  *
  * [previousBestMillis] is this level's Personal Best from before the current run. It is
  * read in the same update that sets [status] to WON, before the new time is saved, so the
@@ -52,6 +53,7 @@ data class GameUiState(
     val stressMaximum: Int = StressConfig.DEFAULT_MAXIMUM,
     val isHighStress: Boolean = false,
     val isMaxStress: Boolean = false,
+    val isStressSlowed: Boolean = false,
     val canUndo: Boolean = false,
     val previousBestMillis: Long? = null,
 )

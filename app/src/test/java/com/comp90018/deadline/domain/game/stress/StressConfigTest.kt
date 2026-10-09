@@ -146,4 +146,28 @@ class StressConfigTest {
     fun rejectsNonPositiveWeekForCoffeeRecovery() {
         StressConfig().coffeeRecoveryForWeek(0)
     }
+
+    @Test
+    fun musicDefaultsGiveASmallRecoveryAndAHalfSpeedSlowdown() {
+        val config = StressConfig()
+
+        assertEquals(8, config.musicRecovery)
+        assertEquals(0.5, config.musicSlowdownMultiplier, 0.0)
+        assertEquals(8_000L, config.musicSlowdownMillis)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeMusicRecovery() {
+        StressConfig(musicRecovery = -1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsMusicMultiplierAboveOneBecauseItWouldSpeedStressUp() {
+        StressConfig(musicSlowdownMultiplier = 1.5)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeMusicDuration() {
+        StressConfig(musicSlowdownMillis = -1L)
+    }
 }

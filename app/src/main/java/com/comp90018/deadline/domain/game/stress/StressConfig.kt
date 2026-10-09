@@ -12,6 +12,9 @@ package com.comp90018.deadline.domain.game.stress
  * *when* time has passed belongs to the caller that drives the engine, which keeps these rules
  * testable without a clock.
  *
+ * A completed Music triple removes a smaller [musicRecovery] and, for [musicSlowdownMillis] of
+ * play, multiplies accumulation by [musicSlowdownMultiplier].
+ *
  * [highStressThreshold] only marks the warning band of the gauge. The Maximum Stress state,
  * which makes selections unreliable, starts when stress reaches [maximum].
  */
@@ -26,6 +29,9 @@ data class StressConfig(
     val accumulationPercentPerSecond: Double = DEFAULT_ACCUMULATION_PERCENT_PER_SECOND,
     val coffeeRecoveryBase: Int = DEFAULT_COFFEE_RECOVERY_BASE,
     val coffeeRecoveryDeclinePerWeek: Int = DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK,
+    val musicRecovery: Int = DEFAULT_MUSIC_RECOVERY,
+    val musicSlowdownMultiplier: Double = DEFAULT_MUSIC_SLOWDOWN_MULTIPLIER,
+    val musicSlowdownMillis: Long = DEFAULT_MUSIC_SLOWDOWN_MILLIS,
 ) {
     init {
         require(maximum > 0) {
@@ -45,6 +51,15 @@ data class StressConfig(
         }
         require(coffeeRecoveryDeclinePerWeek >= 0) {
             "Coffee recovery decline must be non-negative."
+        }
+        require(musicRecovery >= 0) {
+            "Music recovery must be non-negative."
+        }
+        require(musicSlowdownMultiplier in 0.0..1.0) {
+            "Music slowdown multiplier must be within 0.0..1.0."
+        }
+        require(musicSlowdownMillis >= 0L) {
+            "Music slowdown duration must be non-negative."
         }
     }
 
@@ -82,5 +97,13 @@ data class StressConfig(
         const val DEFAULT_COFFEE_RECOVERY_BASE = 20
 
         const val DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK = 1
+
+        /** Smaller than a Coffee triple: Music trades immediate relief for a slowdown. */
+        const val DEFAULT_MUSIC_RECOVERY = 8
+
+        /** Stress builds at half speed while the Music effect lasts. */
+        const val DEFAULT_MUSIC_SLOWDOWN_MULTIPLIER = 0.5
+
+        const val DEFAULT_MUSIC_SLOWDOWN_MILLIS = 8_000L
     }
 }
