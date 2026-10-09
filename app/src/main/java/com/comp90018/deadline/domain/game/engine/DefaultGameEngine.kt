@@ -166,7 +166,9 @@ class DefaultGameEngine(
         if (currentState.status != GameStatus.RUNNING) return
         val entry = history.removeLastOrNull() ?: return
         overlapGraph.restore(entry.graph)
-        currentState = entry.state.copy(stress = currentState.stress)
+        // Reuse the snapshot itself when stress has not moved, so undo returns the exact instance.
+        currentState =
+            if (entry.state.stress == currentState.stress) entry.state else entry.state.copy(stress = currentState.stress)
     }
 
     /**
