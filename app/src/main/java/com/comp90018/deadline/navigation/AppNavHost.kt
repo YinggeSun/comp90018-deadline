@@ -24,31 +24,48 @@ import com.comp90018.deadline.feature.settings.SettingsScreen
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
 ) {
     val actions = remember(navController) { NavigationActions(navController) }
-    val levelIdArgument = listOf(
-        navArgument(Routes.ARG_LEVEL_ID) { type = NavType.StringType }
-    )
+    val levelIdArgument =
+        listOf(
+            navArgument(Routes.ARG_LEVEL_ID) { type = NavType.StringType },
+        )
+    val resultArguments =
+        levelIdArgument +
+            listOf(
+                navArgument(Routes.ARG_WON) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(Routes.ARG_ELAPSED_MILLIS) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                },
+                navArgument(Routes.ARG_PREVIOUS_BEST_MILLIS) {
+                    type = NavType.LongType
+                    defaultValue = Routes.NO_PREVIOUS_BEST
+                },
+            )
 
     NavHost(
         navController = navController,
         startDestination = Routes.HOME,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable(Routes.HOME) {
             HomeScreen(
                 onPlay = actions::navigateToLevelSelect,
                 onContinue = actions::navigateToGame,
                 onLeaderboard = actions::navigateToLeaderboard,
-                onSettings = actions::navigateToSettings
+                onSettings = actions::navigateToSettings,
             )
         }
 
         composable(Routes.LEVEL_SELECT) {
             LevelSelectScreen(
                 onLevelSelected = actions::navigateToGame,
-                onBack = actions::navigateUp
+                onBack = actions::navigateUp,
             )
         }
 
@@ -56,18 +73,26 @@ fun AppNavHost(
             val levelId = entry.arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
             GameScreen(
                 levelId = levelId,
-                onGameFinished = { actions.navigateToResult(levelId) },
-                onBack = actions::navigateUp
+                onGameFinished = { outcome -> actions.navigateToResult(levelId, outcome) },
+                onBack = actions::navigateUp,
             )
         }
 
-        composable(Routes.RESULT, arguments = levelIdArgument) { entry ->
-            val levelId = entry.arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
+        composable(Routes.RESULT, arguments = resultArguments) { entry ->
+            val arguments = entry.arguments
+            val levelId = arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
             ResultScreen(
                 levelId = levelId,
-                onReplay = { actions.replayLevel(levelId) },
+                won = arguments?.getBoolean(Routes.ARG_WON) ?: false,
+                elapsedMillis = arguments?.getLong(Routes.ARG_ELAPSED_MILLIS) ?: 0L,
+                previousBestMillis =
+                    arguments
+                        ?.getLong(Routes.ARG_PREVIOUS_BEST_MILLIS, Routes.NO_PREVIOUS_BEST)
+                        ?.takeIf { it != Routes.NO_PREVIOUS_BEST },
+                onRetry = { actions.playFromResult(levelId) },
+                onNextLevel = actions::playFromResult,
                 onLevelSelect = actions::backToLevelSelect,
-                onHome = actions::backToHome
+                onHome = actions::backToHome,
             )
         }
 

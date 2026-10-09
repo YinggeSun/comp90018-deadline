@@ -15,6 +15,7 @@ import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.feature.game.components.tileTestTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +23,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppNavHostTest {
-
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
@@ -34,14 +34,17 @@ class AppNavHostTest {
     @Before
     fun setUp() {
         composeRule.setContent {
-            navController = TestNavHostController(LocalContext.current).apply {
-                navigatorProvider.addNavigator(ComposeNavigator())
-            }
+            navController =
+                TestNavHostController(LocalContext.current).apply {
+                    navigatorProvider.addNavigator(ComposeNavigator())
+                }
             AppNavHost(navController = navController)
         }
     }
 
     private fun currentRoute() = navController.currentBackStackEntry?.destination?.route
+
+    private fun currentArguments() = navController.currentBackStackEntry?.arguments
 
     private fun click(label: String) {
         composeRule.onNodeWithText(label).performClick()
@@ -87,7 +90,7 @@ class AppNavHostTest {
         assertEquals(Routes.GAME, currentRoute())
         assertEquals(
             levelId,
-            navController.currentBackStackEntry?.arguments?.getString(Routes.ARG_LEVEL_ID)
+            navController.currentBackStackEntry?.arguments?.getString(Routes.ARG_LEVEL_ID),
         )
         composeRule.onNodeWithText(level.name).assertExists()
         composeRule.onNodeWithTag(tileTestTag(level.board.tiles.first().id)).assertExists()
@@ -112,8 +115,9 @@ class AppNavHostTest {
         click(level.name)
         finishGame()
 
-        click("Replay")
+        click("Retry")
         assertEquals(Routes.GAME, currentRoute())
+        assertEquals(levelId, currentArguments()?.getString(Routes.ARG_LEVEL_ID))
 
         finishGame()
         click("Level Select")
@@ -124,5 +128,33 @@ class AppNavHostTest {
         click("Home")
         assertEquals(Routes.HOME, currentRoute())
         assertNull(navController.previousBackStackEntry)
+    }
+
+    @Test
+    fun resultReceivesOutcomeOfFinishedGame() {
+        click("Play")
+        click(level.name)
+        finishGame()
+
+        assertEquals(Routes.RESULT, currentRoute())
+        assertEquals(levelId, currentArguments()?.getString(Routes.ARG_LEVEL_ID))
+        assertTrue(currentArguments()?.getBoolean(Routes.ARG_WON) == true)
+        assertTrue((currentArguments()?.getLong(Routes.ARG_ELAPSED_MILLIS) ?: -1L) >= 0L)
+        composeRule.onNodeWithText("Deadline met!").assertExists()
+    }
+
+    @Test
+    fun nextLevelOpensFollowingLevel() {
+        click("Play")
+        click(level.name)
+        finishGame()
+
+        click("Next Level")
+
+        assertEquals(Routes.GAME, currentRoute())
+        assertEquals(FixedLevels.LEVEL_2.id, currentArguments()?.getString(Routes.ARG_LEVEL_ID))
+        composeRule.runOnUiThread { navController.popBackStack() }
+        composeRule.waitForIdle()
+        assertEquals(Routes.LEVEL_SELECT, currentRoute())
     }
 }
