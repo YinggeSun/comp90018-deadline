@@ -1,43 +1,40 @@
 package com.comp90018.deadline.feature.game
 
+import android.content.Context
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.max
-import com.comp90018.deadline.feature.game.components.minimumBoardSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import android.content.Context
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import com.comp90018.deadline.sensor.AndroidSensorGateway
-import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.max
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
@@ -48,14 +45,16 @@ import com.comp90018.deadline.feature.game.components.GameActions
 import com.comp90018.deadline.feature.game.components.GameBoard
 import com.comp90018.deadline.feature.game.components.GameHud
 import com.comp90018.deadline.feature.game.components.TaskTray
+import com.comp90018.deadline.feature.game.components.minimumBoardSize
+import com.comp90018.deadline.sensor.AndroidSensorGateway
+import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 
 @Composable
 fun GameScreen(
     levelId: String,
     onGameFinished: () -> Unit,
     onBack: () -> Unit,
-    viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId))
-
+    viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId)),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState(initial = 0L)
@@ -64,15 +63,21 @@ fun GameScreen(
     val owner = LocalLifecycleOwner.current
     // Shared across all levels; persists when leaving and reopening the game.
     val brightnessPreferences = remember(context) {
-        context.applicationContext.getSharedPreferences("game_settings", Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences(
+            "game_settings",
+            Context.MODE_PRIVATE,
+        )
     }
     var autoBrightnessEnabled by remember(brightnessPreferences) {
         mutableStateOf(brightnessPreferences.getBoolean("auto_brightness", true))
     }
     val haptics = remember(context) { HapticFeedbackManager(context.applicationContext) }
     val binder = remember(context, viewModel) {
-        GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
-
+        GameSensorBinder(
+            AndroidSensorGateway(context.applicationContext),
+            viewModel,
+            haptics,
+        )
     }
     DisposableEffect(owner, binder) {
         owner.lifecycle.addObserver(binder)
@@ -95,7 +100,7 @@ fun GameScreen(
         onAutoBrightnessChanged = { enabled ->
             autoBrightnessEnabled = enabled
             brightnessPreferences.edit().putBoolean("auto_brightness", enabled).apply()
-        }
+        },
     )
 
     AmbientBrightnessEffect(enabled = autoBrightnessEnabled)
@@ -116,31 +121,31 @@ fun GameContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     autoBrightnessEnabled: Boolean = true,
-    onAutoBrightnessChanged: (Boolean) -> Unit = {}
+    onAutoBrightnessChanged: (Boolean) -> Unit = {},
 ) {
     val topBar = @Composable {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
             Spacer(modifier = Modifier.width(Spacing.small))
             Text(
                 text = uiState.levelName,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = "Auto Light",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Switch(
                 checked = autoBrightnessEnabled,
-                onCheckedChange = onAutoBrightnessChanged
+                onCheckedChange = onAutoBrightnessChanged,
             )
         }
     }
@@ -165,7 +170,7 @@ fun GameContent(
                     stress = uiState.stress,
                     stressMaximum = uiState.stressMaximum,
                     isHighStress = uiState.isHighStress,
-                    modifier = Modifier.padding(horizontal = Spacing.large)
+                    modifier = Modifier.padding(horizontal = Spacing.large),
                 )
             }
         },
@@ -183,7 +188,7 @@ fun GameContent(
                         modifier = Modifier
                             .width(boardWidth)
                             .fillMaxHeight()
-                            .padding(BoardPadding)
+                            .padding(BoardPadding),
                     )
                 }
             }
@@ -193,16 +198,16 @@ fun GameContent(
                 TaskTray(
                     tiles = uiState.trayTiles,
                     capacity = uiState.trayCapacity,
-                    modifier = Modifier.padding(horizontal = Spacing.large)
+                    modifier = Modifier.padding(horizontal = Spacing.large),
                 )
                 GameActions(
                     canUndo = uiState.canUndo,
                     onUndo = { onEvent(GameUiEvent.UndoClicked) },
                     onRestart = { onEvent(GameUiEvent.RestartClicked) },
-                    modifier = Modifier.padding(Spacing.medium)
+                    modifier = Modifier.padding(Spacing.medium),
                 )
             }
-        }
+        },
     )
 }
 
@@ -219,7 +224,7 @@ private fun GameLayout(
     header: @Composable () -> Unit,
     board: @Composable () -> Unit,
     footer: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = constraints.maxHeight
@@ -227,7 +232,7 @@ private fun GameLayout(
             contents = listOf(header, board, footer),
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) { (headerMeasurables, boardMeasurables, footerMeasurables), constraints ->
             val width = constraints.maxWidth
             val loose = Constraints(maxWidth = width)
