@@ -30,7 +30,7 @@ import com.comp90018.deadline.core.theme.Spacing
 @Composable
 fun LoadingContent(
     modifier: Modifier = Modifier,
-    message: String = stringResource(R.string.status_loading)
+    message: String = stringResource(R.string.status_loading),
 ) {
     CenteredScrollableColumn(modifier = modifier, spacing = Spacing.large) {
         CircularProgressIndicator()
@@ -38,7 +38,7 @@ fun LoadingContent(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -53,20 +53,20 @@ fun ErrorContent(
     modifier: Modifier = Modifier,
     title: String = stringResource(R.string.status_error_title),
     onRetry: (() -> Unit)? = null,
-    retryLabel: String = stringResource(R.string.action_retry)
+    retryLabel: String = stringResource(R.string.action_retry),
 ) {
     CenteredScrollableColumn(modifier = modifier, spacing = Spacing.medium) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         if (onRetry != null) {
             PrimaryButton(text = retryLabel, onClick = onRetry)
@@ -82,18 +82,19 @@ fun ErrorContent(
 fun CenteredScrollableColumn(
     modifier: Modifier = Modifier,
     spacing: Dp = Spacing.medium,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .heightIn(min = maxHeight)
-                .padding(Spacing.screenPadding),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(Spacing.screenPadding),
             verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
-            content = content
+            content = content,
         )
     }
 }

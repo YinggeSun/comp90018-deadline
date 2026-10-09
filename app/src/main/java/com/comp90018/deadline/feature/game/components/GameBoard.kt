@@ -30,7 +30,10 @@ val MinTileSize = 48.dp
  * Smallest board that still draws every tile at [MinTileSize] or larger.
  * Screens with less room should scroll rather than shrink the board further.
  */
-fun minimumBoardSize(rows: Int, columns: Int): DpSize {
+fun minimumBoardSize(
+    rows: Int,
+    columns: Int,
+): DpSize {
     val unit = MinTileSize / (TILE_SPAN * (1f - TILE_GAP_FRACTION))
     return DpSize(width = unit * columns, height = unit * rows)
 }
@@ -48,7 +51,7 @@ fun GameBoard(
     columns: Int,
     onTileClick: (tileId: String) -> Unit,
     modifier: Modifier = Modifier,
-    peekAmount: Float = 0f
+    peekAmount: Float = 0f,
 ) {
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         if (rows <= 0 || columns <= 0) return@BoxWithConstraints
@@ -61,14 +64,15 @@ fun GameBoard(
                     tile = tile,
                     size = tileSize - gap,
                     onClick = { onTileClick(tile.id) },
-                    modifier = Modifier.offset(
-                        x = unit * tile.column + gap / 2,
-                        y = unit * tile.row + gap / 2
-                    ).tiltPeek(
-                        layerIndex = tile.layer,
-                        topLayerIndex = tiles.maxOfOrNull { it.layer } ?: 0,
-                        peekAmount = peekAmount
-                    )
+                    modifier =
+                        Modifier.offset(
+                            x = unit * tile.column + gap / 2,
+                            y = unit * tile.row + gap / 2,
+                        ).tiltPeek(
+                            layerIndex = tile.layer,
+                            topLayerIndex = tiles.maxOfOrNull { it.layer } ?: 0,
+                            peekAmount = peekAmount,
+                        ),
                 )
             }
         }
@@ -78,13 +82,14 @@ fun GameBoard(
 @Preview(showBackground = true, heightDp = 400)
 @Composable
 private fun GameBoardPreview() {
-    val tiles = listOf(
-        TileUiModel("a", TileType.BOOK, row = 0, column = 0, layer = 0, isSelectable = false),
-        TileUiModel("b", TileType.BOOK, row = 0, column = 2, layer = 0, isSelectable = false),
-        TileUiModel("c", TileType.COFFEE, row = 2, column = 0, layer = 0, isSelectable = true),
-        TileUiModel("d", TileType.COFFEE, row = 2, column = 2, layer = 0, isSelectable = true),
-        TileUiModel("e", TileType.LAPTOP, row = 0, column = 1, layer = 1, isSelectable = true)
-    )
+    val tiles =
+        listOf(
+            TileUiModel("a", TileType.BOOK, row = 0, column = 0, layer = 0, isSelectable = false),
+            TileUiModel("b", TileType.BOOK, row = 0, column = 2, layer = 0, isSelectable = false),
+            TileUiModel("c", TileType.COFFEE, row = 2, column = 0, layer = 0, isSelectable = true),
+            TileUiModel("d", TileType.COFFEE, row = 2, column = 2, layer = 0, isSelectable = true),
+            TileUiModel("e", TileType.LAPTOP, row = 0, column = 1, layer = 1, isSelectable = true),
+        )
     DeadlineTheme {
         Surface {
             GameBoard(
@@ -92,7 +97,7 @@ private fun GameBoardPreview() {
                 rows = 4,
                 columns = 4,
                 onTileClick = {},
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }

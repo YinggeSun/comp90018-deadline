@@ -35,7 +35,7 @@ fun StressIndicator(
     stress: Int,
     stressMaximum: Int,
     isHighStress: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val progress = if (stressMaximum > 0) stress.toFloat() / stressMaximum else 0f
     val color = if (isHighStress) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
@@ -43,36 +43,38 @@ fun StressIndicator(
     val warning = stringResource(R.string.game_stress_high)
 
     Column(
-        modifier = modifier
-            .testTag(STRESS_INDICATOR_TAG)
-            .clearAndSetSemantics {
-                contentDescription = description
-                if (isHighStress) stateDescription = warning
-            },
-        verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)
+        modifier =
+            modifier
+                .testTag(STRESS_INDICATOR_TAG)
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    if (isHighStress) stateDescription = warning
+                },
+        verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
             Text(
                 text = stringResource(R.string.game_stress_label),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             if (isHighStress) {
                 Text(
                     text = warning,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
         LinearProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(MaterialTheme.shapes.small),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(MaterialTheme.shapes.small),
             color = color,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )
     }
 }

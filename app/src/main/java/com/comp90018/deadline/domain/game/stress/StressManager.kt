@@ -8,15 +8,20 @@ package com.comp90018.deadline.domain.game.stress
  * passes a value that is already out of range.
  */
 class StressManager(val config: StressConfig = StressConfig()) {
-
     /**
      * Stress after one accumulation step during [week]. The caller decides how often a step
      * occurs; see [StressConfig].
      */
-    fun accumulate(current: Int, week: Int): Int = increaseBy(current, config.rateForWeek(week))
+    fun accumulate(
+        current: Int,
+        week: Int,
+    ): Int = increaseBy(current, config.rateForWeek(week))
 
     /** Stress after adding [amount], saturating at [StressConfig.maximum]. */
-    fun increaseBy(current: Int, amount: Int): Int {
+    fun increaseBy(
+        current: Int,
+        amount: Int,
+    ): Int {
         require(amount >= 0) {
             "Stress increase must be non-negative."
         }
@@ -27,7 +32,10 @@ class StressManager(val config: StressConfig = StressConfig()) {
      * Stress after removing [amount], never falling below zero. Coffee Recovery decides the
      * recovery amount; this method only enforces the lower bound.
      */
-    fun decreaseBy(current: Int, amount: Int): Int {
+    fun decreaseBy(
+        current: Int,
+        amount: Int,
+    ): Int {
         require(amount >= 0) {
             "Stress decrease must be non-negative."
         }
@@ -43,6 +51,5 @@ class StressManager(val config: StressConfig = StressConfig()) {
     /** Brings any value, including out-of-range stored state, back into the valid range. */
     fun clamp(current: Int): Int = current.coerceIn(0, config.maximum)
 
-    private fun clampToRange(value: Long): Int =
-        value.coerceIn(0L, config.maximum.toLong()).toInt()
+    private fun clampToRange(value: Long): Int = value.coerceIn(0L, config.maximum.toLong()).toInt()
 }
