@@ -8,8 +8,6 @@ enum class TileType {
     ASSIGNMENT,
     QUIZ,
     READING,
-
-    /** Will also ease Stress when matched; the effect is added separately (#100). */
     MUSIC,
     EXAM,
     PRESENTATION,

@@ -81,18 +81,24 @@ class SemesterDifficultyConfigurationRegressionTest(
         @Parameterized.Parameters(name = "week={0}")
         fun configurations(): List<Array<Int>> =
             listOf(
+                // Level 1: Weeks 1–2
                 arrayOf(1, 4, 4, 18, 1, 3),
                 arrayOf(2, 4, 4, 18, 1, 3),
-                arrayOf(3, 4, 4, 24, 1, 4),
-                arrayOf(4, 4, 4, 24, 1, 4),
-                arrayOf(5, 5, 5, 30, 2, 5),
-                arrayOf(6, 5, 5, 30, 2, 5),
-                arrayOf(7, 5, 5, 36, 3, 5),
-                arrayOf(8, 5, 5, 36, 3, 5),
-                arrayOf(9, 6, 6, 42, 4, 6),
-                arrayOf(10, 6, 6, 42, 4, 6),
-                arrayOf(11, 6, 6, 48, 5, 6),
-                arrayOf(12, 6, 6, 48, 5, 6),
+                // Level 2: Weeks 3–4
+                arrayOf(3, 4, 4, 27, 1, 5),
+                arrayOf(4, 4, 4, 27, 1, 5),
+                // Level 3: Weeks 5–6
+                arrayOf(5, 5, 5, 36, 2, 8),
+                arrayOf(6, 5, 5, 36, 2, 8),
+                // Level 4: Weeks 7–8
+                arrayOf(7, 5, 5, 45, 3, 8),
+                arrayOf(8, 5, 5, 45, 3, 8),
+                // Level 5: Weeks 9–10
+                arrayOf(9, 6, 6, 54, 4, 9),
+                arrayOf(10, 6, 6, 54, 4, 9),
+                // Level 6: Weeks 11–12
+                arrayOf(11, 6, 6, 63, 5, 10),
+                arrayOf(12, 6, 6, 63, 5, 10),
             )
     }
 }
