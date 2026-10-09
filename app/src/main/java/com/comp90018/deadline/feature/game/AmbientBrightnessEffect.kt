@@ -42,34 +42,35 @@ fun AmbientBrightnessEffect(enabled: Boolean = true) {
             lastBrightness = null
         }
 
-        val listener = object : SensorEventListener {
-            override fun onAccuracyChanged(
-                sensor: Sensor?,
-                accuracy: Int,
-            ) = Unit
+        val listener =
+            object : SensorEventListener {
+                override fun onAccuracyChanged(
+                    sensor: Sensor?,
+                    accuracy: Int,
+                ) = Unit
 
-            override fun onSensorChanged(event: SensorEvent) {
-                if (event.sensor.type != Sensor.TYPE_LIGHT) return
-                val lux = event.values[0].coerceAtLeast(0f)
-                // Exponential smoothing reduces visible flicker due to noise.
-                val smoothed = filteredLux?.let { it * 0.8f + lux * 0.2f } ?: lux
-                filteredLux = smoothed
-                val target =
-                    when {
-                        smoothed < 5f -> 0.12f
-                        smoothed < 30f -> 0.27f
-                        smoothed < 150f -> 0.50f
-                        smoothed < 500f -> 0.72f
-                        else -> 0.95f
+                override fun onSensorChanged(event: SensorEvent) {
+                    if (event.sensor.type != Sensor.TYPE_LIGHT) return
+                    val lux = event.values[0].coerceAtLeast(0f)
+                    // Exponential smoothing reduces visible flicker due to noise.
+                    val smoothed = filteredLux?.let { it * 0.8f + lux * 0.2f } ?: lux
+                    filteredLux = smoothed
+                    val target =
+                        when {
+                            smoothed < 5f -> 0.12f
+                            smoothed < 30f -> 0.27f
+                            smoothed < 150f -> 0.50f
+                            smoothed < 500f -> 0.72f
+                            else -> 0.95f
+                        }
+                    if (lastBrightness == null || abs(target - lastBrightness!!) >= 0.05f) {
+                        val lp = window.attributes
+                        lp.screenBrightness = target
+                        window.attributes = lp
+                        lastBrightness = target
                     }
-                if (lastBrightness == null || abs(target - lastBrightness!!) >= 0.05f) {
-                    val lp = window.attributes
-                    lp.screenBrightness = target
-                    window.attributes = lp
-                    lastBrightness = target
                 }
             }
-        }
 
         fun start() {
             if (enabled && !registered && lightSensor != null) {
@@ -88,13 +89,14 @@ fun AmbientBrightnessEffect(enabled: Boolean = true) {
             restore()
         }
 
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> start()
-                Lifecycle.Event.ON_STOP -> stop()
-                else -> Unit
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> start()
+                    Lifecycle.Event.ON_STOP -> stop()
+                    else -> Unit
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             start()
@@ -105,3 +107,4 @@ fun AmbientBrightnessEffect(enabled: Boolean = true) {
         }
     }
 }
+
