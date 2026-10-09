@@ -8,6 +8,7 @@ import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.game.shuffle.BoardShuffler
 import com.comp90018.deadline.domain.game.stress.CoffeeRecovery
 import com.comp90018.deadline.domain.game.stress.InputDegradation
+import com.comp90018.deadline.domain.game.stress.MusicRecovery
 import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.Level
@@ -25,8 +26,9 @@ import kotlin.random.Random
  *
  * Stress lives in [GameState.stress]. It grows only through [advanceTime], and a completed
  * Coffee triple applies Coffee Recovery at the [week] rate; selecting a tile never adds stress.
- * Undo restores the board and tray but keeps the current stress, so it cannot rewind time, and
- * [restart] returns stress to [initialStress]. At Maximum Stress a selection may slip onto a
+ * A completed Music triple removes a little stress and starts the Music slowdown tracked in
+ * [GameState.musicSlowdownRemainingMillis]. Undo restores the board and tray but keeps the
+ * current stress and slowdown, so it cannot rewind time, and [restart] resets both. At Maximum Stress a selection may slip onto a
  * neighbouring selectable tile, decided by [random]. [stressConfig] carries the tuning so no
  * gameplay number is hard-coded here.
  */
@@ -48,6 +50,7 @@ class DefaultGameEngine(
 
     private val stressManager = StressManager(stressConfig)
     private val coffeeRecovery = CoffeeRecovery(stressConfig)
+    private val musicRecovery = MusicRecovery(stressConfig)
     private val inputDegradation = InputDegradation(stressConfig, random)
 
     /** Fraction of a stress point accumulated by [advanceTime] but not yet in the state. */
@@ -83,17 +86,16 @@ class DefaultGameEngine(
             } else {
                 appendedTray
             }
+        val matchedType = if (matched) tile.type else null
+        val afterCoffee = coffeeRecovery.applyMatch(currentState.stress, matchedType, week)
         currentState =
             currentState.copy(
                 board = board,
                 taskTray = tray,
                 status = determineStatus(board, tray),
-                stress =
-                    coffeeRecovery.applyMatch(
-                        current = currentState.stress,
-                        matchedType = if (matched) tile.type else null,
-                        week = week,
-                    ),
+                stress = musicRecovery.applyMatch(afterCoffee, matchedType),
+                musicSlowdownRemainingMillis =
+                    musicRecovery.slowdownAfterMatch(currentState.musicSlowdownRemainingMillis, matchedType),
             )
         if (matched) {
             history.clear()
@@ -123,17 +125,24 @@ class DefaultGameEngine(
 
     /**
      * Adds the stress for [elapsedMillis] of play, carrying the fractional remainder to the
-     * next call. Nothing is banked while stress is already at its maximum, so recovering from
-     * Maximum Stress is not immediately undone by time spent there.
+     * next call, and runs down the Music slowdown. Nothing is banked while stress is already at
+     * its maximum, so recovering from Maximum Stress is not immediately undone by time spent
+     * there.
      */
     override fun advanceTime(elapsedMillis: Long) {
         require(elapsedMillis >= 0L) { "Elapsed time must be non-negative." }
         if (currentState.status != GameStatus.RUNNING) return
+        val slowdown = currentState.musicSlowdownRemainingMillis
+        val accumulation = musicRecovery.accumulationFor(elapsedMillis, slowdown)
+        val slowdownLeft = musicRecovery.remainingAfter(elapsedMillis, slowdown)
+        if (slowdownLeft != slowdown) {
+            currentState = currentState.copy(musicSlowdownRemainingMillis = slowdownLeft)
+        }
         if (stressManager.isMaxStress(currentState.stress)) {
             pendingStress = 0.0
             return
         }
-        pendingStress += stressManager.accumulationFor(elapsedMillis)
+        pendingStress += accumulation
         // The epsilon stops floating-point drift, e.g. 100 x 0.15 summing to 14.999..., from
         // holding back a point that has been fully earned.
         val whole = floor(pendingStress + ROUNDING_EPSILON)
@@ -159,16 +168,27 @@ class DefaultGameEngine(
         get() = currentState.status == GameStatus.RUNNING && history.isNotEmpty()
 
     /**
-     * Restores one pre-selection snapshot except for stress, which follows play time rather
-     * than moves; terminal games and empty history are no-ops.
+     * Restores one pre-selection snapshot except for stress and the Music slowdown, which
+     * follow play time rather than moves; terminal games and empty history are no-ops.
      */
     override fun undo() {
         if (currentState.status != GameStatus.RUNNING) return
         val entry = history.removeLastOrNull() ?: return
         overlapGraph.restore(entry.graph)
-        // Reuse the snapshot itself when stress has not moved, so undo returns the exact instance.
+        val restored = entry.state
+        val timeUnchanged =
+            restored.stress == currentState.stress &&
+                restored.musicSlowdownRemainingMillis == currentState.musicSlowdownRemainingMillis
+        // Reuse the snapshot itself when nothing time-based moved, so undo returns the exact instance.
         currentState =
-            if (entry.state.stress == currentState.stress) entry.state else entry.state.copy(stress = currentState.stress)
+            if (timeUnchanged) {
+                restored
+            } else {
+                restored.copy(
+                    stress = currentState.stress,
+                    musicSlowdownRemainingMillis = currentState.musicSlowdownRemainingMillis,
+                )
+            }
     }
 
     /**

@@ -94,6 +94,15 @@ class GameHudTest {
     }
 
     @Test
+    fun musicSlowdownShowsLabelAndState() {
+        setContent(baseState.copy(stress = 40, isStressSlowed = true))
+
+        composeRule.onNodeWithTag("stress_slowed", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag(STRESS_INDICATOR_TAG)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "🎵 Slowed"))
+    }
+
+    @Test
     fun normalStressHasNoWarning() {
         setContent(baseState.copy(stress = 20, isHighStress = false))
 

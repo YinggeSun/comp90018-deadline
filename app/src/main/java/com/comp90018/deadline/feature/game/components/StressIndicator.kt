@@ -31,10 +31,12 @@ import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
 
 const val STRESS_INDICATOR_TAG = "stress_indicator"
+const val STRESS_SLOWED_TAG = "stress_slowed"
 
 /**
  * Stress bar. Switches to the error colour and shows a warning once the
- * game reports High Stress, and pulses once it reaches Maximum Stress.
+ * game reports High Stress, and pulses once it reaches Maximum Stress. While
+ * the Music effect is active a small label says stress is building slowly.
  */
 @Composable
 fun StressIndicator(
@@ -43,6 +45,7 @@ fun StressIndicator(
     isHighStress: Boolean,
     modifier: Modifier = Modifier,
     isMaxStress: Boolean = false,
+    isStressSlowed: Boolean = false,
 ) {
     val progress = if (stressMaximum > 0) stress.toFloat() / stressMaximum else 0f
     val baseColor =
@@ -53,6 +56,8 @@ fun StressIndicator(
     val warning =
         stringResource(if (isMaxStress) R.string.game_stress_max else R.string.game_stress_high)
     val showWarning = isHighStress || isMaxStress
+    val slowed = stringResource(R.string.game_stress_slowed)
+    val stateText = listOfNotNull(warning.takeIf { showWarning }, slowed.takeIf { isStressSlowed })
 
     Column(
         modifier =
@@ -60,7 +65,7 @@ fun StressIndicator(
                 .testTag(STRESS_INDICATOR_TAG)
                 .clearAndSetSemantics {
                     contentDescription = description
-                    if (showWarning) stateDescription = warning
+                    if (stateText.isNotEmpty()) stateDescription = stateText.joinToString(", ")
                 },
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
@@ -75,6 +80,14 @@ fun StressIndicator(
                     text = warning,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.error,
+                )
+            }
+            if (isStressSlowed) {
+                Text(
+                    text = slowed,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.testTag(STRESS_SLOWED_TAG),
                 )
             }
         }
@@ -111,6 +124,7 @@ private fun StressIndicatorPreview() {
                 StressIndicator(stress = 30, stressMaximum = 100, isHighStress = false)
                 StressIndicator(stress = 85, stressMaximum = 100, isHighStress = true)
                 StressIndicator(stress = 100, stressMaximum = 100, isHighStress = true, isMaxStress = true)
+                StressIndicator(stress = 40, stressMaximum = 100, isHighStress = false, isStressSlowed = true)
             }
         }
     }

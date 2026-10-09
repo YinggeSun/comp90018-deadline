@@ -10,10 +10,14 @@ package com.comp90018.deadline.domain.game.model
  * stores a value within the configured range, but that bound belongs to StressConfig rather
  * than to this model, so state restored under a narrower configuration is repaired by
  * StressManager.clamp instead of being rejected here.
+ *
+ * [musicSlowdownRemainingMillis] is the play time left on the Music effect, during which
+ * stress builds more slowly; zero means the effect is not active.
  */
 data class GameState(
     val board: Board = Board(),
     val taskTray: TrayState = TrayState(),
     val status: GameStatus = GameStatus.RUNNING,
     val stress: Int = 0,
+    val musicSlowdownRemainingMillis: Long = 0L,
 )
