@@ -107,4 +107,3 @@ fun AmbientBrightnessEffect(enabled: Boolean = true) {
         }
     }
 }
-
