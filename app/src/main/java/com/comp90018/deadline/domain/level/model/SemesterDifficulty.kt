@@ -68,41 +68,41 @@ object SemesterDifficulty {
             2 ->
                 LevelConfig(
                     layout = LayoutTemplate(4, 4),
-                    tileCount = 24,
+                    tileCount = 27,
                     maxLayer = 1,
-                    tileVariety = 4,
+                    tileVariety = 5,
                 )
 
             3 ->
                 LevelConfig(
                     layout = LayoutTemplate(5, 5),
-                    tileCount = 30,
+                    tileCount = 36,
                     maxLayer = 2,
-                    tileVariety = 5,
+                    tileVariety = 8,
                 )
 
             4 ->
                 LevelConfig(
                     layout = LayoutTemplate(5, 5),
-                    tileCount = 36,
+                    tileCount = 45,
                     maxLayer = 3,
-                    tileVariety = 5,
+                    tileVariety = 8,
                 )
 
             5 ->
                 LevelConfig(
                     layout = LayoutTemplate(6, 6),
-                    tileCount = 42,
+                    tileCount = 54,
                     maxLayer = 4,
-                    tileVariety = 6,
+                    tileVariety = 9,
                 )
 
             6 ->
                 LevelConfig(
                     layout = LayoutTemplate(6, 6),
-                    tileCount = 48,
+                    tileCount = 63,
                     maxLayer = 5,
-                    tileVariety = 6,
+                    tileVariety = 10,
                 )
 
             else -> throw IllegalArgumentException(
