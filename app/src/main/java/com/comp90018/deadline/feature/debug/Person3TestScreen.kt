@@ -48,17 +48,20 @@ fun Person3TestScreen(
 ) {
     val context = LocalContext.current
 
-    val gateway = remember {
-        AndroidSensorGateway(context.applicationContext)
-    }
+    val gateway =
+        remember {
+            AndroidSensorGateway(context.applicationContext)
+        }
 
-    val haptics = remember {
-        HapticFeedbackManager(context.applicationContext)
-    }
+    val haptics =
+        remember {
+            HapticFeedbackManager(context.applicationContext)
+        }
 
-    val boardShuffler = remember {
-        BoardShuffler()
-    }
+    val boardShuffler =
+        remember {
+            BoardShuffler()
+        }
 
     var board by remember {
         mutableStateOf(
@@ -69,7 +72,7 @@ fun Person3TestScreen(
                 ShuffleSlot("slot-4", "Quiz"),
                 ShuffleSlot("slot-5", "Laptop"),
                 ShuffleSlot("slot-6", "Deadline"),
-            )
+            ),
         )
     }
 
@@ -99,25 +102,25 @@ fun Person3TestScreen(
      * These callbacks represent the GameViewModel side of the
      * sensor integration.
      */
-    val sensorActions = remember {
-        object : GameSensorActions {
+    val sensorActions =
+        remember {
+            object : GameSensorActions {
+                override fun onShuffleRequested(): Boolean {
+                    shakeCount += 1
+                    shuffleCount += 1
 
-            override fun onShuffleRequested(): Boolean {
-                shakeCount += 1
-                shuffleCount += 1
+                    board = boardShuffler.shuffle(board)
 
-                board = boardShuffler.shuffle(board)
+                    lastEvent = "Shake detected -> board shuffled"
+                    return true
+                }
 
-                lastEvent = "Shake detected -> board shuffled"
-                return true
-            }
-
-            override fun onPeekChanged(amount: Float) {
-                peekAmount = amount
-                lastEvent = "Tilt changed"
+                override fun onPeekChanged(amount: Float) {
+                    peekAmount = amount
+                    lastEvent = "Tilt changed"
+                }
             }
         }
-    }
 
     /*
      * #23 + #25 + #27 + #28
@@ -128,13 +131,14 @@ fun Person3TestScreen(
      * Rotation Vector -> Tilt -> Peek UI
      * Shake -> Haptic
      */
-    val sensorBinder = remember {
-        GameSensorBinder(
-            gateway = gateway,
-            actions = sensorActions,
-            haptics = haptics,
-        )
-    }
+    val sensorBinder =
+        remember {
+            GameSensorBinder(
+                gateway = gateway,
+                actions = sensorActions,
+                haptics = haptics,
+            )
+        }
 
     /*
      * Attach sensors to Activity lifecycle.
@@ -146,7 +150,6 @@ fun Person3TestScreen(
      * sensorBinder.onStop()
      */
     DisposableEffect(lifecycleOwner, sensorBinder) {
-
         lifecycleOwner.lifecycle.addObserver(sensorBinder)
 
         onDispose {
@@ -156,18 +159,18 @@ fun Person3TestScreen(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(
-                start = 20.dp,
-                end = 20.dp,
-                top = 50.dp,
-                bottom = 40.dp,
-            ),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = 50.dp,
+                    bottom = 40.dp,
+                ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-
         Text(
             text = "Person 3 Feature Test",
             style = MaterialTheme.typography.headlineMedium,
@@ -180,7 +183,7 @@ fun Person3TestScreen(
         )
 
         Spacer(
-            modifier = Modifier.height(4.dp)
+            modifier = Modifier.height(4.dp),
         )
 
         /*
@@ -191,25 +194,27 @@ fun Person3TestScreen(
          */
 
         SectionTitle(
-            text = "#23 Sensor Infrastructure"
+            text = "#23 Sensor Infrastructure",
         )
 
         StatusCard(
             title = "Accelerometer",
-            value = if (sensorBinder.shakeSupported) {
-                "SUPPORTED"
-            } else {
-                "NOT SUPPORTED"
-            }
+            value =
+                if (sensorBinder.shakeSupported) {
+                    "SUPPORTED"
+                } else {
+                    "NOT SUPPORTED"
+                },
         )
 
         StatusCard(
             title = "Rotation Vector",
-            value = if (sensorBinder.tiltSupported) {
-                "SUPPORTED"
-            } else {
-                "NOT SUPPORTED"
-            }
+            value =
+                if (sensorBinder.tiltSupported) {
+                    "SUPPORTED"
+                } else {
+                    "NOT SUPPORTED"
+                },
         )
 
         Text(
@@ -225,17 +230,17 @@ fun Person3TestScreen(
          */
 
         SectionTitle(
-            text = "#25 Shake-to-Shuffle"
+            text = "#25 Shake-to-Shuffle",
         )
 
         StatusCard(
             title = "Shake count",
-            value = shakeCount.toString()
+            value = shakeCount.toString(),
         )
 
         StatusCard(
             title = "Shuffle count",
-            value = shuffleCount.toString()
+            value = shuffleCount.toString(),
         )
 
         Text(
@@ -244,7 +249,7 @@ fun Person3TestScreen(
         )
 
         BoardDisplay(
-            values = board.map { it.value }
+            values = board.map { it.value },
         )
 
         Button(
@@ -259,7 +264,9 @@ fun Person3TestScreen(
         }
 
         Text(
-            text = "For the real test, use the emulator Virtual Sensors or a physical phone. A detected shake should increase both Shake count and Shuffle count.",
+            text =
+                "For the real test, use the emulator Virtual Sensors or a physical phone. " +
+                    "A detected shake should increase both Shake count and Shuffle count.",
             style = MaterialTheme.typography.bodySmall,
         )
 
@@ -271,12 +278,12 @@ fun Person3TestScreen(
          */
 
         SectionTitle(
-            text = "#27 Tilt-to-Peek"
+            text = "#27 Tilt-to-Peek",
         )
 
         StatusCard(
             title = "Peek amount",
-            value = String.format("%.3f", peekAmount)
+            value = String.format("%.3f", peekAmount),
         )
 
         TiltDemo(
@@ -284,7 +291,9 @@ fun Person3TestScreen(
         )
 
         Text(
-            text = "Tilt the virtual/physical device. Peek amount should change from 0.000 toward 1.000, and the lower card should become more visible and move.",
+            text =
+                "Tilt the virtual/physical device. Peek amount should change from " +
+                    "0.000 toward 1.000, and the lower card should become more visible and move.",
             style = MaterialTheme.typography.bodySmall,
         )
 
@@ -296,7 +305,7 @@ fun Person3TestScreen(
          */
 
         SectionTitle(
-            text = "#28 Haptic Feedback"
+            text = "#28 Haptic Feedback",
         )
 
         Text(
@@ -305,35 +314,35 @@ fun Person3TestScreen(
         )
 
         HapticButton(
-            text = "Tile Select Haptic"
+            text = "Tile Select Haptic",
         ) {
             haptics.perform(GameHaptic.TILE_SELECT)
             lastHaptic = "TILE_SELECT"
         }
 
         HapticButton(
-            text = "Match Haptic"
+            text = "Match Haptic",
         ) {
             haptics.perform(GameHaptic.MATCH)
             lastHaptic = "MATCH"
         }
 
         HapticButton(
-            text = "Shuffle Haptic"
+            text = "Shuffle Haptic",
         ) {
             haptics.perform(GameHaptic.SHUFFLE)
             lastHaptic = "SHUFFLE"
         }
 
         HapticButton(
-            text = "Success Haptic"
+            text = "Success Haptic",
         ) {
             haptics.perform(GameHaptic.SUCCESS)
             lastHaptic = "SUCCESS"
         }
 
         HapticButton(
-            text = "Failure Haptic"
+            text = "Failure Haptic",
         ) {
             haptics.perform(GameHaptic.FAILURE)
             lastHaptic = "FAILURE"
@@ -349,22 +358,20 @@ fun Person3TestScreen(
          */
 
         SectionTitle(
-            text = "Debug"
+            text = "Debug",
         )
 
         StatusCard(
             title = "Last event",
-            value = lastEvent
+            value = lastEvent,
         )
     }
 }
 
 @Composable
-private fun SectionTitle(
-    text: String,
-) {
+private fun SectionTitle(text: String) {
     Spacer(
-        modifier = Modifier.height(8.dp)
+        modifier = Modifier.height(8.dp),
     )
 
     Text(
@@ -384,9 +391,10 @@ private fun StatusCard(
         shape = RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -404,20 +412,18 @@ private fun StatusCard(
 }
 
 @Composable
-private fun BoardDisplay(
-    values: List<String>,
-) {
+private fun BoardDisplay(values: List<String>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-
             values.forEachIndexed { index, value ->
 
                 Text(
@@ -430,43 +436,43 @@ private fun BoardDisplay(
 }
 
 @Composable
-private fun TiltDemo(
-    peekAmount: Float,
-) {
+private fun TiltDemo(peekAmount: Float) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(180.dp),
         contentAlignment = Alignment.Center,
     ) {
-
         /*
          * Bottom layer.
          *
          * This one uses our #27 tiltPeek modifier.
          */
         Card(
-            modifier = Modifier
-                .size(
-                    width = 220.dp,
-                    height = 110.dp,
-                )
-                .tiltPeek(
-                    layerIndex = 0,
-                    topLayerIndex = 1,
-                    peekAmount = peekAmount,
-                ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 4.dp
-            ),
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        MaterialTheme.colorScheme.secondaryContainer
+            modifier =
+                Modifier
+                    .size(
+                        width = 220.dp,
+                        height = 110.dp,
+                    )
+                    .tiltPeek(
+                        layerIndex = 0,
+                        topLayerIndex = 1,
+                        peekAmount = peekAmount,
                     ),
+            elevation =
+                CardDefaults.cardElevation(
+                    defaultElevation = 4.dp,
+                ),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -481,22 +487,24 @@ private fun TiltDemo(
          * Top layer.
          */
         Card(
-            modifier = Modifier
-                .size(
-                    width = 220.dp,
-                    height = 110.dp,
-                ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 8.dp
-            ),
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer
+            modifier =
+                Modifier
+                    .size(
+                        width = 220.dp,
+                        height = 110.dp,
                     ),
+            elevation =
+                CardDefaults.cardElevation(
+                    defaultElevation = 8.dp,
+                ),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

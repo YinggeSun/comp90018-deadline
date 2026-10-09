@@ -61,7 +61,10 @@ internal class OverlapGraph(board: Board) {
         activeBlockerCounts.putAll(initialBlockerCounts)
     }
 
-    private fun covers(upper: TilePosition, lower: TilePosition): Boolean =
+    private fun covers(
+        upper: TilePosition,
+        lower: TilePosition,
+    ): Boolean =
         upper.layer > lower.layer &&
             kotlin.math.abs(upper.row.toLong() - lower.row.toLong()) < 2L &&
             kotlin.math.abs(upper.column.toLong() - lower.column.toLong()) < 2L

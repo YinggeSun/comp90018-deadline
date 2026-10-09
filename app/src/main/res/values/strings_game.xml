@@ -8,6 +8,10 @@
     <string name="game_tile_assignment">Assignment tile</string>
     <string name="game_tile_quiz">Quiz tile</string>
     <string name="game_tile_reading">Reading tile</string>
+    <string name="game_tile_music">Music tile</string>
+    <string name="game_tile_exam">Exam tile</string>
+    <string name="game_tile_presentation">Presentation tile</string>
+    <string name="game_tile_lecture_slide">Lecture slide tile</string>
     <string name="game_tile_selectable">Available</string>
     <string name="game_tile_blocked">Covered</string>
 

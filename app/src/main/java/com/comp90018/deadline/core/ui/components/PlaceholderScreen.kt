@@ -24,19 +24,20 @@ data class PlaceholderAction(val label: String, val onClick: () -> Unit)
 fun PlaceholderScreen(
     title: String,
     actions: List<PlaceholderAction>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(Spacing.screenPadding),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(Spacing.screenPadding),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
         actions.forEachIndexed { index, action ->
             if (index == 0) {
