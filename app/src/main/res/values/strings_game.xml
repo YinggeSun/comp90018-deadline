@@ -19,6 +19,8 @@
     <string name="game_timer_description">Time %1$s</string>
     <string name="game_stress_label">Stress</string>
     <string name="game_stress_high">High stress!</string>
+    <string name="game_stress_max">Maximum stress!</string>
+    <string name="game_stress_max_warning">Maximum stress — some tile selections may be incorrect.</string>
     <string name="game_stress_description">Stress %1$d of %2$d</string>
     <string name="game_tray_label">Task Tray</string>
     <string name="game_tray_count">%1$d/%2$d</string>

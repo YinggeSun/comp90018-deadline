@@ -77,14 +77,7 @@ class SemesterDifficultyTest {
     @Test
     fun allSixLevelsHaveExpectedTileCounts() {
         val expectedCounts =
-            listOf(
-                18,
-                24,
-                30,
-                36,
-                42,
-                48,
-            )
+            listOf(18, 27, 36, 45, 54, 63)
 
         val actualCounts =
             SemesterDifficulty.levels.map {
@@ -122,11 +115,11 @@ class SemesterDifficultyTest {
         val expectedVarieties =
             listOf(
                 3,
-                4,
                 5,
-                5,
-                6,
-                6,
+                8,
+                8,
+                9,
+                10,
             )
 
         val actualVarieties =

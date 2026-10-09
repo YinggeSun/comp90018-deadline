@@ -11,6 +11,9 @@ enum class GameHaptic {
     SHUFFLE,
     SUCCESS,
     FAILURE,
+
+    /** Stress has reached its maximum; selections may now slip (issue #58). */
+    MAX_STRESS,
 }
 
 class HapticFeedbackManager(context: Context) {
@@ -38,6 +41,12 @@ class HapticFeedbackManager(context: Context) {
                         -1,
                     )
                 GameHaptic.FAILURE -> VibrationEffect.createOneShot(80L, 150)
+                GameHaptic.MAX_STRESS ->
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0L, 120L, 80L, 120L, 80L, 120L),
+                        intArrayOf(0, 255, 0, 255, 0, 255),
+                        -1,
+                    )
             }
         vibrator.vibrate(effect)
     }

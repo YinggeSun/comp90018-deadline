@@ -7,22 +7,29 @@ import org.junit.Test
 
 class StressManagerTest {
     @Test
-    fun accumulationAppliesTheWeeksRate() {
-        val manager = StressManager(StressConfig(baseRate = 2, rateGrowthPerWeek = 3))
+    fun accumulationIsProportionalToElapsedTime() {
+        val manager = StressManager(StressConfig())
 
-        assertEquals(2, manager.accumulate(current = 0, week = 1))
-        assertEquals(15, manager.accumulate(current = 10, week = 2))
-        assertEquals(24, manager.accumulate(current = 10, week = 5))
+        assertEquals(0.0, manager.accumulationFor(0L), 1e-9)
+        assertEquals(0.15, manager.accumulationFor(100L), 1e-9)
+        assertEquals(1.5, manager.accumulationFor(1_000L), 1e-9)
+        assertEquals(15.0, manager.accumulationFor(10_000L), 1e-9)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeElapsedTime() {
+        StressManager().accumulationFor(-1L)
     }
 
     @Test
-    fun repeatedAccumulationSaturatesAtTheMaximum() {
-        val manager = StressManager(StressConfig(maximum = 10, baseRate = 4, rateGrowthPerWeek = 0))
-        var stress = 0
+    fun maxStressStartsOnlyAtTheMaximum() {
+        val manager = StressManager(StressConfig(maximum = 100, highStressThreshold = 75))
 
-        repeat(5) { stress = manager.accumulate(stress, week = 1) }
-
-        assertEquals(10, stress)
+        assertFalse(manager.isMaxStress(75))
+        assertFalse(manager.isMaxStress(99))
+        assertTrue(manager.isMaxStress(100))
+        assertTrue("Out-of-range state is treated as clamped", manager.isMaxStress(500))
+        assertFalse(manager.isMaxStress(-10))
     }
 
     @Test

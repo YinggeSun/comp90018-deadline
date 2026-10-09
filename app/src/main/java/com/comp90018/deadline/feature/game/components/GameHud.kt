@@ -30,6 +30,7 @@ fun GameHud(
     stressMaximum: Int,
     isHighStress: Boolean,
     modifier: Modifier = Modifier,
+    isMaxStress: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -51,6 +52,7 @@ fun GameHud(
             stress = stress,
             stressMaximum = stressMaximum,
             isHighStress = isHighStress,
+            isMaxStress = isMaxStress,
             modifier = Modifier.weight(1f),
         )
     }
