@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -20,11 +21,29 @@ import com.comp90018.deadline.feature.game.GameViewModel.Companion.TILE_SPAN
 import com.comp90018.deadline.feature.game.TileUiModel
 import com.comp90018.deadline.feature.game.tiltPeek
 
-/** Gap between neighbouring tiles, as a fraction of a tile. */
-private const val TILE_GAP_FRACTION = 0.06f
+/**
+ * Share of each tile's 2 x 2 slot left empty around the drawn tile. The slot (and so the
+ * overlap geometry the engine uses) is unchanged; drawing the tile a little smaller than
+ * its slot lets more of the tiles underneath show, which makes the layers easier to read.
+ */
+private const val TILE_INSET_FRACTION = 0.12f
 
-/** Smallest drawn tile; matches the 48dp minimum touch target. */
-val MinTileSize = 48.dp
+/**
+ * Largest drawn tile. Small boards stop growing at this size instead of filling the
+ * screen, so the board reads as a pile of tiles rather than a few large cards.
+ */
+val MaxTileSize = 56.dp
+
+/**
+ * Smallest drawn tile. Tiles can be drawn below the 48dp touch-target size because the
+ * tile's tappable area is still extended to 48dp (see [TileView]).
+ */
+val MinTileSize = 40.dp
+
+const val GAME_BOARD_TAG = "game_board"
+
+/** Distance between two neighbouring tile slots for a tile drawn at [tileSize]. */
+private fun slotFor(tileSize: Dp): Dp = tileSize / (1f - TILE_INSET_FRACTION)
 
 /**
  * Smallest board that still draws every tile at [MinTileSize] or larger.
@@ -34,15 +53,15 @@ fun minimumBoardSize(
     rows: Int,
     columns: Int,
 ): DpSize {
-    val unit = MinTileSize / (TILE_SPAN * (1f - TILE_GAP_FRACTION))
+    val unit = slotFor(MinTileSize) / TILE_SPAN
     return DpSize(width = unit * columns, height = unit * rows)
 }
 
 /**
- * Lays tiles out by their logical TilePosition, scaled to fit the available
- * space. A tile spans [TILE_SPAN] units each way, so a one-unit step is a
- * half-tile stagger. [tiles] must be ordered bottom layer first so upper
- * layers draw on top.
+ * Lays tiles out by their logical TilePosition, scaled to fit the available space but
+ * never drawing a tile larger than [MaxTileSize]. A tile spans [TILE_SPAN] units each way,
+ * so a one-unit step is a half-tile stagger. [tiles] must be ordered bottom layer first so
+ * upper layers draw on top. The board is centred in the space it is given.
  */
 @Composable
 fun GameBoard(
@@ -55,22 +74,26 @@ fun GameBoard(
 ) {
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         if (rows <= 0 || columns <= 0) return@BoxWithConstraints
-        val unit: Dp = min(maxWidth / columns, maxHeight / rows)
-        val tileSize = unit * TILE_SPAN
-        val gap = tileSize * TILE_GAP_FRACTION
-        Box(modifier = Modifier.size(unit * columns, unit * rows)) {
+        val unit: Dp = min(min(maxWidth / columns, maxHeight / rows), slotFor(MaxTileSize) / TILE_SPAN)
+        val slot = unit * TILE_SPAN
+        val gap = slot * TILE_INSET_FRACTION
+        val topLayer = tiles.maxOfOrNull { it.layer } ?: 0
+        Box(modifier = Modifier.size(unit * columns, unit * rows).testTag(GAME_BOARD_TAG)) {
             tiles.forEach { tile ->
                 TileView(
                     tile = tile,
-                    size = tileSize - gap,
+                    size = slot - gap,
                     onClick = { onTileClick(tile.id) },
                     modifier =
                         Modifier.offset(
                             x = unit * tile.column + gap / 2,
                             y = unit * tile.row + gap / 2,
                         ).tiltPeek(
-                            layerIndex = tile.layer,
-                            topLayerIndex = tiles.maxOfOrNull { it.layer } ?: 0,
+                            // Peeking reveals covered tiles. A selectable tile is treated as
+                            // top layer, so it is never dimmed or moved even when it sits on
+                            // a lower layer, and stays easy to tell apart from covered ones.
+                            layerIndex = if (tile.isSelectable) topLayer else tile.layer,
+                            topLayerIndex = topLayer,
                             peekAmount = peekAmount,
                         ),
                 )

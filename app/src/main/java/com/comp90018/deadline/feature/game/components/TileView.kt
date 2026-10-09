@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -20,7 +21,6 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
@@ -30,11 +30,22 @@ import com.comp90018.deadline.feature.game.TileUiModel
 /** Test tag of the tile with [tileId], for UI tests. */
 fun tileTestTag(tileId: String) = "tile_$tileId"
 
-private const val BLOCKED_TILE_ALPHA = 0.45f
+/**
+ * Covered tiles are faded on top of the board's Tilt-to-Peek fading, so this stays light
+ * enough that the layers underneath remain readable.
+ */
+private const val BLOCKED_TILE_ALPHA = 0.7f
+
+/** Icon height as a share of the drawn tile. */
+private const val ICON_SIZE_FRACTION = 0.5f
 
 /**
  * One board tile. Selectable tiles are raised and tappable; covered tiles
  * are dimmed and ignore taps.
+ *
+ * [size] is the drawn size. The tappable area is never smaller than 48dp: the clickable
+ * Surface extends its touch area around a smaller tile, and a tap only falls back to that
+ * extended area when it does not land directly on another tile.
  */
 @Composable
 fun TileView(
@@ -71,9 +82,12 @@ fun TileView(
         shadowElevation = if (tile.isSelectable) 4.dp else 0.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
+            // Sized from the tile in dp, so the icon always fits the tile whatever the
+            // system font scale is.
+            val iconSize = with(LocalDensity.current) { (size * ICON_SIZE_FRACTION).toSp() }
             Text(
                 text = tile.type.symbol,
-                fontSize = (size.value * 0.45f).sp,
+                fontSize = iconSize,
             )
         }
     }

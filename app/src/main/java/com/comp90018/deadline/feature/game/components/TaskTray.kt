@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -24,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
-import androidx.compose.ui.unit.sp
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
@@ -107,7 +107,9 @@ private fun TraySlot(
     ) {
         if (tile != null) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = tile.type.symbol, fontSize = (size.value * 0.5f).sp)
+                // Sized from the slot in dp, like the board tiles, so it ignores the font scale.
+                val iconSize = with(LocalDensity.current) { (size * 0.5f).toSp() }
+                Text(text = tile.type.symbol, fontSize = iconSize)
             }
         }
     }
