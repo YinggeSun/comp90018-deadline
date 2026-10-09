@@ -7,12 +7,13 @@ import kotlin.random.Random
 class BoardShufflerTest {
     @Test
     fun shuffle_preservesSlotsAndValues() {
-        val before = listOf(
-            ShuffleSlot("slot-A", "book"),
-            ShuffleSlot("slot-B", "code"),
-            ShuffleSlot("slot-C", "coffee"),
-            ShuffleSlot("slot-D", "quiz"),
-        )
+        val before =
+            listOf(
+                ShuffleSlot("slot-A", "book"),
+                ShuffleSlot("slot-B", "code"),
+                ShuffleSlot("slot-C", "coffee"),
+                ShuffleSlot("slot-D", "quiz"),
+            )
 
         val after = BoardShuffler(Random(1234)).shuffle(before)
 

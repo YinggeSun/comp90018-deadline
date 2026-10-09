@@ -31,7 +31,12 @@ fun interface SensorSampleListener {
  */
 interface SensorGateway {
     fun isAvailable(type: DeadlineSensorType): Boolean
-    fun register(type: DeadlineSensorType, listener: SensorSampleListener): Boolean
+
+    fun register(
+        type: DeadlineSensorType,
+        listener: SensorSampleListener,
+    ): Boolean
+
     fun unregister(listener: SensorSampleListener)
 }
 
@@ -39,17 +44,20 @@ class AndroidSensorGateway(context: Context) : SensorGateway, SensorEventListene
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val listeners = mutableMapOf<SensorSampleListener, MutableSet<DeadlineSensorType>>()
 
-    override fun isAvailable(type: DeadlineSensorType): Boolean =
-        sensorManager.getDefaultSensor(type.androidType) != null
+    override fun isAvailable(type: DeadlineSensorType): Boolean = sensorManager.getDefaultSensor(type.androidType) != null
 
     @Synchronized
-    override fun register(type: DeadlineSensorType, listener: SensorSampleListener): Boolean {
+    override fun register(
+        type: DeadlineSensorType,
+        listener: SensorSampleListener,
+    ): Boolean {
         val sensor = sensorManager.getDefaultSensor(type.androidType) ?: return false
-        val registered = sensorManager.registerListener(
-            this,
-            sensor,
-            SensorManager.SENSOR_DELAY_GAME,
-        )
+        val registered =
+            sensorManager.registerListener(
+                this,
+                sensor,
+                SensorManager.SENSOR_DELAY_GAME,
+            )
         if (registered) {
             listeners.getOrPut(listener) { mutableSetOf() }.add(type)
         }
@@ -76,13 +84,17 @@ class AndroidSensorGateway(context: Context) : SensorGateway, SensorEventListene
     override fun onSensorChanged(event: SensorEvent) {
         val type = DeadlineSensorType.entries.firstOrNull { it.androidType == event.sensor.type } ?: return
         val sample = SensorSample(type, event.values.copyOf(), event.timestamp)
-        val targets = synchronized(this) {
-            listeners.filterValues { type in it }.keys.toList()
-        }
+        val targets =
+            synchronized(this) {
+                listeners.filterValues { type in it }.keys.toList()
+            }
         targets.forEach { it.onSample(sample) }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    override fun onAccuracyChanged(
+        sensor: Sensor?,
+        accuracy: Int,
+    ) = Unit
 }
 
 /**
@@ -94,14 +106,14 @@ class LifecycleSensorBinding(
     private val types: Set<DeadlineSensorType>,
     private val listener: SensorSampleListener,
 ) : DefaultLifecycleObserver {
-
     var activeTypes: Set<DeadlineSensorType> = emptySet()
         private set
 
     override fun onStart(owner: LifecycleOwner) {
-        activeTypes = types.filterTo(mutableSetOf()) { type ->
-            gateway.register(type, listener)
-        }
+        activeTypes =
+            types.filterTo(mutableSetOf()) { type ->
+                gateway.register(type, listener)
+            }
     }
 
     override fun onStop(owner: LifecycleOwner) {

@@ -42,10 +42,18 @@ class UndoTest {
 
     @Test
     fun matchBoundaryKeepsMatchedBlockersRemovedWhileNewMovesRewind() {
-        val engine = engine(tiles = listOf(
-            tile("a", 0, 8), tile("b", 0, 12), tile("upper", 3),
-            tile("middle", 1), tile("lower", 0), tile("other", 0, 16)
-        ))
+        val engine =
+            engine(
+                tiles =
+                    listOf(
+                        tile("a", 0, 8),
+                        tile("b", 0, 12),
+                        tile("upper", 3),
+                        tile("middle", 1),
+                        tile("lower", 0),
+                        tile("other", 0, 16),
+                    ),
+            )
         for (id in listOf("a", "b", "upper")) engine.selectTile(id)
         val checkpoint = capture(engine)
         assertTrue(engine.isTileSelectable("middle"))
@@ -125,10 +133,13 @@ class UndoTest {
             snapshots.add(capture(engine))
         }
         assertTrue(engine.state.taskTray.tiles.isEmpty())
-        val copies = snapshots.map { it.state.copy(
-            board = Board(it.state.board.tiles.toList()),
-            taskTray = it.state.taskTray.copy(tiles = it.state.taskTray.tiles.toList())
-        ) }
+        val copies =
+            snapshots.map {
+                it.state.copy(
+                    board = Board(it.state.board.tiles.toList()),
+                    taskTray = it.state.taskTray.copy(tiles = it.state.taskTray.tiles.toList()),
+                )
+            }
         val checkpoint = capture(engine)
         assertEquals(0, historySize(engine))
         repeat(3) { undoTo(engine, checkpoint) }
@@ -287,12 +298,17 @@ class UndoTest {
 
     private data class Snapshot(val state: GameState, val counts: Map<*, *>, val availability: Map<String, Boolean>)
 
-    private fun capture(engine: DefaultGameEngine): Snapshot = Snapshot(
-        engine.state, counts(engine),
-        (engine.state.board.tiles + engine.state.taskTray.tiles).associate { it.id to engine.isTileSelectable(it.id) }
-    )
+    private fun capture(engine: DefaultGameEngine): Snapshot =
+        Snapshot(
+            engine.state,
+            counts(engine),
+            (engine.state.board.tiles + engine.state.taskTray.tiles).associate { it.id to engine.isTileSelectable(it.id) },
+        )
 
-    private fun undoTo(engine: DefaultGameEngine, expected: Snapshot) {
+    private fun undoTo(
+        engine: DefaultGameEngine,
+        expected: Snapshot,
+    ) {
         engine.undo()
         assertSame(expected.state, engine.state)
         assertEquals(expected.counts, counts(engine))
@@ -309,17 +325,30 @@ class UndoTest {
 
     private fun historySize(engine: DefaultGameEngine) = (field(engine, "history") as Collection<*>).size
 
-    private fun field(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply {
-        isAccessible = true
-    }.get(target)
+    private fun field(
+        target: Any,
+        name: String,
+    ): Any? =
+        target.javaClass.getDeclaredField(name).apply {
+            isAccessible = true
+        }.get(target)
 
     // Test-only fixtures follow the existing engine tests; production state stays read-only.
-    private fun setState(engine: DefaultGameEngine, state: GameState) {
+    private fun setState(
+        engine: DefaultGameEngine,
+        state: GameState,
+    ) {
         engine.javaClass.getDeclaredField("currentState").apply { isAccessible = true }.set(engine, state)
     }
 
-    private fun tile(id: String, layer: Int, column: Int = 0) = Tile(id, TileType.DEFAULT, TilePosition(0, column, layer))
+    private fun tile(
+        id: String,
+        layer: Int,
+        column: Int = 0,
+    ) = Tile(id, TileType.DEFAULT, TilePosition(0, column, layer))
 
-    private fun engine(depth: Int = Int.MAX_VALUE, tiles: List<Tile> = listOf("a", "b", "c", "d").mapIndexed { i, id -> tile(id, 0, i * 4) }) =
-        DefaultGameEngine(FixedLevels.SAMPLE_LEVEL.copy(board = Board(tiles)), maxUndoDepth = depth)
+    private fun engine(
+        depth: Int = Int.MAX_VALUE,
+        tiles: List<Tile> = listOf("a", "b", "c", "d").mapIndexed { i, id -> tile(id, 0, i * 4) },
+    ) = DefaultGameEngine(FixedLevels.SAMPLE_LEVEL.copy(board = Board(tiles)), maxUndoDepth = depth)
 }

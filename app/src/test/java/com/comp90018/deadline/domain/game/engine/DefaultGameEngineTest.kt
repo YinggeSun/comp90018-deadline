@@ -3,10 +3,10 @@ package com.comp90018.deadline.domain.game.engine
 import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
-import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.model.TilePosition
 import com.comp90018.deadline.domain.game.model.TileType
+import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,11 +55,12 @@ class DefaultGameEngineTest {
         val stateField = DefaultGameEngine::class.java.getDeclaredField("currentState")
         stateField.isAccessible = true
         for (status in listOf(GameStatus.WON, GameStatus.LOST)) {
-            val runtimeState = GameState(
-                board = Board(level.board.tiles.drop(1)),
-                taskTray = TrayState(listOf(level.board.tiles.first()), capacity = 1),
-                status = status
-            )
+            val runtimeState =
+                GameState(
+                    board = Board(level.board.tiles.drop(1)),
+                    taskTray = TrayState(listOf(level.board.tiles.first()), capacity = 1),
+                    status = status,
+                )
             stateField.set(engine, runtimeState)
             assertEquals(runtimeState, engine.state)
 
@@ -365,19 +366,21 @@ class DefaultGameEngineTest {
                     // DEFAULT alone cannot fill seven slots through normal matching.
                     setTestState(engine, engine.state.copy(taskTray = TrayState(capacity = 1)))
                 }
-                val selections = when (stage) {
-                    "initial" -> 0
-                    "selection", "lost" -> 1
-                    "unlock" -> 2
-                    "match" -> 3
-                    else -> 4
-                }
+                val selections =
+                    when (stage) {
+                        "initial" -> 0
+                        "selection", "lost" -> 1
+                        "unlock" -> 2
+                        "match" -> 3
+                        else -> 4
+                    }
                 for (id in order.take(selections)) engine.selectTile(id)
                 val beforeRestart = engine.state
-                val expectedBeforeRestart = beforeRestart.copy(
-                    board = Board(beforeRestart.board.tiles.toList()),
-                    taskTray = beforeRestart.taskTray.copy(tiles = beforeRestart.taskTray.tiles.toList())
-                )
+                val expectedBeforeRestart =
+                    beforeRestart.copy(
+                        board = Board(beforeRestart.board.tiles.toList()),
+                        taskTray = beforeRestart.taskTray.copy(tiles = beforeRestart.taskTray.tiles.toList()),
+                    )
                 assertEquals(4 - selections, beforeRestart.board.tiles.size)
                 assertEquals(selections % 3, beforeRestart.taskTray.tiles.size)
                 assertEquals(
@@ -386,7 +389,7 @@ class DefaultGameEngineTest {
                         "lost" -> GameStatus.LOST
                         else -> GameStatus.RUNNING
                     },
-                    beforeRestart.status
+                    beforeRestart.status,
                 )
                 if (stage == "unlock") assertTrue(engine.isTileSelectable(lower.id))
                 if (stage == "match") assertEquals(listOf(other), beforeRestart.board.tiles)
@@ -418,14 +421,21 @@ class DefaultGameEngineTest {
         }
     }
 
-    private fun assertEquivalentGameplay(expected: GameEngine, actual: GameEngine, ids: List<String>) {
+    private fun assertEquivalentGameplay(
+        expected: GameEngine,
+        actual: GameEngine,
+        ids: List<String>,
+    ) {
         assertEquals(expected.state, actual.state)
         for (id in ids) {
             assertEquals("Availability for $id", expected.isTileSelectable(id), actual.isTileSelectable(id))
         }
     }
 
-    private fun assertTerminalFrozen(engine: GameEngine, ids: List<String>) {
+    private fun assertTerminalFrozen(
+        engine: GameEngine,
+        ids: List<String>,
+    ) {
         val terminal = engine.state
         val counts = blockerCounts(engine)
         for (id in ids) {
@@ -449,16 +459,23 @@ class DefaultGameEngineTest {
 
     // DEFAULT is the only type. Custom capacities use the existing test-only
     // reflection convention without introducing a production mutation API.
-    private fun setTestState(engine: GameEngine, state: GameState) {
+    private fun setTestState(
+        engine: GameEngine,
+        state: GameState,
+    ) {
         val stateField = DefaultGameEngine::class.java.getDeclaredField("currentState")
         stateField.isAccessible = true
         stateField.set(engine, state)
     }
 
-    private fun tile(id: String, layer: Int, column: Int = 0) =
-        Tile(id, TileType.DEFAULT, TilePosition(0, column, layer))
+    private fun tile(
+        id: String,
+        layer: Int,
+        column: Int = 0,
+    ) = Tile(id, TileType.DEFAULT, TilePosition(0, column, layer))
 
-    private fun engineWith(vararg tiles: Tile): GameEngine = DefaultGameEngine(
-        FixedLevels.SAMPLE_LEVEL.copy(board = Board(tiles.toList()))
-    )
+    private fun engineWith(vararg tiles: Tile): GameEngine =
+        DefaultGameEngine(
+            FixedLevels.SAMPLE_LEVEL.copy(board = Board(tiles.toList())),
+        )
 }

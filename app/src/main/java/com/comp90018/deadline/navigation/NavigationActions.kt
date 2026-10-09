@@ -1,6 +1,7 @@
 package com.comp90018.deadline.navigation
 
 import androidx.navigation.NavHostController
+import com.comp90018.deadline.feature.game.GameOutcome
 
 /**
  * Navigation operations shared by all screens.
@@ -9,7 +10,6 @@ import androidx.navigation.NavHostController
  * [NavHostController] directly.
  */
 class NavigationActions(private val navController: NavHostController) {
-
     fun navigateToLevelSelect() {
         navController.navigate(Routes.LEVEL_SELECT) {
             launchSingleTop = true
@@ -21,8 +21,13 @@ class NavigationActions(private val navController: NavHostController) {
     }
 
     /** Replaces the finished game so Back from Result does not return to it. */
-    fun navigateToResult(levelId: String) {
-        navController.navigate(Routes.result(levelId)) {
+    fun navigateToResult(
+        levelId: String,
+        outcome: GameOutcome,
+    ) {
+        navController.navigate(
+            Routes.result(levelId, outcome.won, outcome.elapsedMillis, outcome.previousBestMillis),
+        ) {
             popUpTo(Routes.GAME) { inclusive = true }
         }
     }
@@ -39,8 +44,11 @@ class NavigationActions(private val navController: NavHostController) {
         }
     }
 
-    /** Starts the same level again from the Result screen. */
-    fun replayLevel(levelId: String) {
+    /**
+     * Starts [levelId] from the Result screen: the same level for Retry, or
+     * the following one for Next Level. Result is dropped so Back skips it.
+     */
+    fun playFromResult(levelId: String) {
         navController.navigate(Routes.game(levelId)) {
             popUpTo(Routes.RESULT) { inclusive = true }
         }

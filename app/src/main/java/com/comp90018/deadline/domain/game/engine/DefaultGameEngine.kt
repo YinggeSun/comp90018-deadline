@@ -65,17 +65,19 @@ class DefaultGameEngine(
         val board = Board(currentState.board.tiles.filterNot { it.id == tileId })
         val appendedTray = currentState.taskTray.copy(tiles = currentState.taskTray.tiles + tile)
         val matched = appendedTray.tiles.count { it.type == tile.type } == 3
-        val tray = if (matched) {
-            appendedTray.copy(tiles = appendedTray.tiles.filterNot { it.type == tile.type })
-        } else {
-            appendedTray
-        }
-        currentState = currentState.copy(
-            board = board,
-            taskTray = tray,
-            status = determineStatus(board, tray),
-            stress = stressAfterSelection(matchedType = if (matched) tile.type else null)
-        )
+        val tray =
+            if (matched) {
+                appendedTray.copy(tiles = appendedTray.tiles.filterNot { it.type == tile.type })
+            } else {
+                appendedTray
+            }
+        currentState =
+            currentState.copy(
+                board = board,
+                taskTray = tray,
+                status = determineStatus(board, tray),
+                stress = stressAfterSelection(matchedType = if (matched) tile.type else null),
+            )
         if (matched) {
             history.clear()
         } else if (entry != null) {
@@ -89,20 +91,24 @@ class DefaultGameEngine(
      * when that selection completed a Coffee triple. A null [matchedType] means no triple was
      * completed, so only accumulation applies.
      */
-    private fun stressAfterSelection(matchedType: TileType?): Int = coffeeRecovery.applyMatch(
-        current = stressManager.accumulate(currentState.stress, week),
-        matchedType = matchedType,
-        week = week
-    )
+    private fun stressAfterSelection(matchedType: TileType?): Int =
+        coffeeRecovery.applyMatch(
+            current = stressManager.accumulate(currentState.stress, week),
+            matchedType = matchedType,
+            week = week,
+        )
 
-    private fun determineStatus(board: Board, tray: TrayState): GameStatus = when {
-        board.tiles.isEmpty() -> GameStatus.WON
-        tray.isFull -> GameStatus.LOST
-        else -> GameStatus.RUNNING
-    }
+    private fun determineStatus(
+        board: Board,
+        tray: TrayState,
+    ): GameStatus =
+        when {
+            board.tiles.isEmpty() -> GameStatus.WON
+            tray.isFull -> GameStatus.LOST
+            else -> GameStatus.RUNNING
+        }
 
-    override fun isTileSelectable(tileId: String): Boolean =
-        currentState.status == GameStatus.RUNNING && overlapGraph.isSelectable(tileId)
+    override fun isTileSelectable(tileId: String): Boolean = currentState.status == GameStatus.RUNNING && overlapGraph.isSelectable(tileId)
 
     override val canUndo: Boolean
         get() = currentState.status == GameStatus.RUNNING && history.isNotEmpty()

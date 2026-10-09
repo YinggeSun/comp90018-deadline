@@ -1,6 +1,7 @@
 package com.comp90018.deadline.feature.game
 
 import android.content.Context
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,7 +54,7 @@ import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 @Composable
 fun GameScreen(
     levelId: String,
-    onGameFinished: () -> Unit,
+    onGameFinished: (GameOutcome) -> Unit,
     onBack: () -> Unit,
     viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId)),
 ) {
@@ -61,26 +63,31 @@ fun GameScreen(
     val currentOnGameFinished by rememberUpdatedState(onGameFinished)
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
-    // Shared across all levels; persists when leaving and reopening the game.
-    val brightnessPreferences = remember(context) {
-        context.applicationContext.getSharedPreferences(
-            "game_settings",
-            Context.MODE_PRIVATE,
-        )
-    }
+    // One stored preference is shared by every level using GameScreen.
+    val brightnessPreferences =
+        remember(context) {
+            context.applicationContext.getSharedPreferences("game_settings", Context.MODE_PRIVATE)
+        }
     var autoBrightnessEnabled by remember(brightnessPreferences) {
         mutableStateOf(brightnessPreferences.getBoolean("auto_brightness", true))
     }
     val haptics = remember(context) { HapticFeedbackManager(context.applicationContext) }
-    val binder = remember(context, viewModel) {
-        GameSensorBinder(
-            AndroidSensorGateway(context.applicationContext),
-            viewModel,
-            haptics,
-        )
+    val binder =
+        remember(context, viewModel) {
+            GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
+        }
+    // Null until stored settings are read, so sensors never start with the defaults first.
+    val settings by viewModel.settings.collectAsState(initial = null)
+    val settingsLoaded = settings != null
+    SideEffect {
+        settings?.let {
+            haptics.enabled = it.hapticsEnabled
+            binder.shakeEnabled = it.shakeToShuffleEnabled
+            binder.tiltEnabled = it.tiltToPeekEnabled
+        }
     }
-    DisposableEffect(owner, binder) {
-        owner.lifecycle.addObserver(binder)
+    DisposableEffect(owner, binder, settingsLoaded) {
+        if (settingsLoaded) owner.lifecycle.addObserver(binder)
         onDispose {
             owner.lifecycle.removeObserver(binder)
             binder.stop()
@@ -88,7 +95,15 @@ fun GameScreen(
     }
 
     LaunchedEffect(uiState.status) {
-        if (uiState.status != GameStatus.RUNNING) currentOnGameFinished()
+        if (uiState.status != GameStatus.RUNNING) {
+            currentOnGameFinished(
+                GameOutcome(
+                    won = uiState.status == GameStatus.WON,
+                    elapsedMillis = viewModel.elapsedMillis,
+                    previousBestMillis = uiState.previousBestMillis,
+                ),
+            )
+        }
     }
 
     GameContent(
@@ -102,7 +117,6 @@ fun GameScreen(
             brightnessPreferences.edit().putBoolean("auto_brightness", enabled).apply()
         },
     )
-
     AmbientBrightnessEffect(enabled = autoBrightnessEnabled)
 }
 
@@ -125,9 +139,10 @@ fun GameContent(
 ) {
     val topBar = @Composable {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.small),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
@@ -185,10 +200,11 @@ fun GameContent(
                         columns = uiState.boardColumns,
                         onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
                         peekAmount = uiState.peekAmount,
-                        modifier = Modifier
-                            .width(boardWidth)
-                            .fillMaxHeight()
-                            .padding(BoardPadding),
+                        modifier =
+                            Modifier
+                                .width(boardWidth)
+                                .fillMaxHeight()
+                                .padding(BoardPadding),
                     )
                 }
             }
@@ -230,9 +246,10 @@ private fun GameLayout(
         val viewportHeight = constraints.maxHeight
         Layout(
             contents = listOf(header, board, footer),
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
         ) { (headerMeasurables, boardMeasurables, footerMeasurables), constraints ->
             val width = constraints.maxWidth
             val loose = Constraints(maxWidth = width)

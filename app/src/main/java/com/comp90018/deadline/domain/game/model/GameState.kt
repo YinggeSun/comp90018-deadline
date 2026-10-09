@@ -15,5 +15,5 @@ data class GameState(
     val board: Board = Board(),
     val taskTray: TrayState = TrayState(),
     val status: GameStatus = GameStatus.RUNNING,
-    val stress: Int = 0
+    val stress: Int = 0,
 )
