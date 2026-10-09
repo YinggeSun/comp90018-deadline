@@ -1,0 +1,20 @@
+<resources>
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_feedback">Feedback</string>
+    <string name="settings_haptics">Vibration</string>
+    <string name="settings_haptics_summary">Vibrate when you select or match tiles and when a game ends.</string>
+    <string name="settings_section_motion">Motion controls</string>
+    <string name="settings_shake">Shake to shuffle</string>
+    <string name="settings_shake_summary">Shake the phone to shuffle the remaining tiles.</string>
+    <string name="settings_tilt">Tilt to peek</string>
+    <string name="settings_tilt_summary">Tilt the phone to see the tiles underneath.</string>
+    <string name="settings_section_leaderboard">Leaderboard</string>
+    <string name="settings_nickname">Nickname</string>
+    <string name="settings_nickname_summary">Shown next to your times on the leaderboard.</string>
+    <string name="settings_nickname_count">%1$d/%2$d</string>
+    <string name="settings_nickname_blank">Enter at least one letter or number.</string>
+    <string name="settings_nickname_saved">Saved</string>
+    <string name="settings_nickname_save">Save</string>
+    <string name="settings_save_failed">Your last change could not be saved.</string>
+</resources>

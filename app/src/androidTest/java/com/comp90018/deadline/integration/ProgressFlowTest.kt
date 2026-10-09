@@ -55,20 +55,28 @@ class ProgressFlowTest {
             composeRule.onNodeWithTag(tileTestTag(tile.id)).performSemanticsAction(SemanticsActions.OnClick)
             composeRule.waitForIdle()
         }
+        // The win is saved in the background after the Game screen closes. Wait for the save
+        // itself first, then for Level Select (which loads progress asynchronously) to show it,
+        // so a slow emulator does not fail either step.
+        val app = ApplicationProvider.getApplicationContext<DeadlineApp>()
+        composeRule.waitUntil(timeoutMillis = ASYNC_TIMEOUT_MILLIS) {
+            app.container.currentProgress.value.bestFor(level.id) != null
+        }
         click("Level Select")
-
-        // The save runs off the UI thread, so wait for Level Select to observe it.
-        composeRule.waitUntil(timeoutMillis = 5_000) {
+        composeRule.waitUntil(timeoutMillis = ASYNC_TIMEOUT_MILLIS) {
             composeRule.onAllNodes(
                 hasTestTag(levelCardTestTag(level.id)) and hasText("Best", substring = true),
             ).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag(levelCardTestTag(FixedLevels.LEVEL_2.id)).assertIsEnabled()
 
-        val app = ApplicationProvider.getApplicationContext<DeadlineApp>()
         val progress = runBlocking { app.container.progressRepository.progress.first() }
         assertTrue(level.id in progress.completedLevelIds)
         assertTrue(progress.isWeekUnlocked(2))
         assertNotNull(progress.bestFor(level.id))
+    }
+
+    private companion object {
+        const val ASYNC_TIMEOUT_MILLIS = 10_000L
     }
 }
