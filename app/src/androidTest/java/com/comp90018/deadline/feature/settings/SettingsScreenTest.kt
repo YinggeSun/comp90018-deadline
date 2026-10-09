@@ -38,6 +38,7 @@ class SettingsScreenTest {
                     onTiltChange = { calls += "tilt:$it" },
                     onNicknameChange = { calls += "nickname:$it" },
                     onSaveNickname = { calls += "save" },
+                    onRetrySave = { calls += "retry" },
                 )
             }
         }
@@ -77,6 +78,7 @@ class SettingsScreenTest {
                         calls += "nickname:$it"
                     },
                     onSaveNickname = { calls += "save" },
+                    onRetrySave = {},
                 )
             }
         }
@@ -111,5 +113,22 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("Vibration").assertDoesNotExist()
         composeRule.onNodeWithText("Back").performClick()
         assertEquals(listOf("back"), calls)
+    }
+
+    @Test
+    fun failedSaveShowsMessageWithRetry() {
+        setContent(loaded.copy(saveFailed = true))
+
+        composeRule.onNodeWithText("Your last change could not be saved.").assertExists()
+        composeRule.onNodeWithText("Retry").performClick()
+
+        assertEquals(listOf("retry"), calls)
+    }
+
+    @Test
+    fun noFailureMessageNormally() {
+        setContent(loaded)
+
+        composeRule.onNodeWithText("Your last change could not be saved.").assertDoesNotExist()
     }
 }

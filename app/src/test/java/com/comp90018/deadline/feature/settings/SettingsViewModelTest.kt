@@ -3,6 +3,7 @@ package com.comp90018.deadline.feature.settings
 import com.comp90018.deadline.MainDispatcherRule
 import com.comp90018.deadline.data.fake.FakeSettingsRepository
 import com.comp90018.deadline.domain.settings.PlayerSettings
+import kotlinx.coroutines.CoroutineScope
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -16,7 +17,7 @@ class SettingsViewModelTest {
 
     private fun viewModel(initial: PlayerSettings = PlayerSettings()): Pair<SettingsViewModel, FakeSettingsRepository> {
         val repository = FakeSettingsRepository(initial)
-        return SettingsViewModel(repository) to repository
+        return SettingsViewModel(repository, CoroutineScope(mainDispatcherRule.dispatcher)) to repository
     }
 
     @Test

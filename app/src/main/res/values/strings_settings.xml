@@ -16,4 +16,5 @@
     <string name="settings_nickname_blank">Enter at least one letter or number.</string>
     <string name="settings_nickname_saved">Saved</string>
     <string name="settings_nickname_save">Save</string>
+    <string name="settings_save_failed">Your last change could not be saved.</string>
 </resources>

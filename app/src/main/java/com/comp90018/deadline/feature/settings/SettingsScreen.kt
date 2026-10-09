@@ -27,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,6 +59,7 @@ fun SettingsScreen(
         onTiltChange = viewModel::setTiltToPeekEnabled,
         onNicknameChange = viewModel::onNicknameChange,
         onSaveNickname = viewModel::saveNickname,
+        onRetrySave = viewModel::retrySave,
     )
 }
 
@@ -70,6 +73,7 @@ fun SettingsContent(
     onTiltChange: (Boolean) -> Unit,
     onNicknameChange: (String) -> Unit,
     onSaveNickname: () -> Unit,
+    onRetrySave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -102,6 +106,7 @@ fun SettingsContent(
                     .padding(horizontal = Spacing.large, vertical = Spacing.small),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
+            if (uiState.saveFailed) SaveFailedBanner(onRetry = onRetrySave)
             SectionHeader(stringResource(R.string.settings_section_feedback))
             SettingSwitch(
                 title = stringResource(R.string.settings_haptics),
@@ -132,6 +137,32 @@ fun SettingsContent(
                 onNicknameChange = onNicknameChange,
                 onSaveNickname = onSaveNickname,
             )
+        }
+    }
+}
+
+/** Shown after a failed save; announced by screen readers when it appears. */
+@Composable
+private fun SaveFailedBanner(onRetry: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Row(
+            modifier = Modifier.padding(start = Spacing.large, end = Spacing.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_save_failed),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            TertiaryButton(text = stringResource(R.string.action_retry), onClick = onRetry)
         }
     }
 }
@@ -244,6 +275,7 @@ private fun SettingsPreview() {
                 onTiltChange = {},
                 onNicknameChange = {},
                 onSaveNickname = {},
+                onRetrySave = {},
             )
         }
     }
