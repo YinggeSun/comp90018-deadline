@@ -3,13 +3,16 @@ package com.comp90018.deadline.domain.game.engine
 import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameState
 import com.comp90018.deadline.domain.game.model.GameStatus
-import com.comp90018.deadline.domain.game.model.TileType
+import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.model.TrayState
 import com.comp90018.deadline.domain.game.shuffle.BoardShuffler
 import com.comp90018.deadline.domain.game.stress.CoffeeRecovery
+import com.comp90018.deadline.domain.game.stress.InputDegradation
 import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.Level
+import kotlin.math.floor
+import kotlin.random.Random
 
 /**
  * Base engine initialized from [Level.board], with the default empty tray and running status.
@@ -20,12 +23,12 @@ import com.comp90018.deadline.domain.level.model.Level
  * Completed matches permanently commit their tiles and clear all undo history.
  * The supplied board follows the models' contract that its tile list is not mutated externally.
  *
- * Stress lives in [GameState.stress] and changes only through selections. One accumulation
- * step happens per accepted selection at the [week] rate, and a completed Coffee triple then
- * applies Coffee Recovery. Rejected selections leave stress untouched, undo restores the
- * earlier value with the rest of the snapshot, and [restart] returns it to [initialStress].
- * [week] comes from the caller because [Level] does not yet carry its semester week;
- * [stressConfig] carries the tuning so no gameplay number is hard-coded here.
+ * Stress lives in [GameState.stress]. It grows only through [advanceTime], and a completed
+ * Coffee triple applies Coffee Recovery at the [week] rate; selecting a tile never adds stress.
+ * Undo restores the board and tray but keeps the current stress, so it cannot rewind time, and
+ * [restart] returns stress to [initialStress]. At Maximum Stress a selection may slip onto a
+ * neighbouring selectable tile, decided by [random]. [stressConfig] carries the tuning so no
+ * gameplay number is hard-coded here.
  */
 class DefaultGameEngine(
     level: Level,
@@ -34,6 +37,7 @@ class DefaultGameEngine(
     private val week: Int = DEFAULT_WEEK,
     override val stressConfig: StressConfig = StressConfig(),
     initialStress: Int = 0,
+    random: Random = Random.Default,
 ) : GameEngine {
     init {
         require(maxUndoDepth >= 0) { "Maximum undo depth must be non-negative." }
@@ -44,6 +48,10 @@ class DefaultGameEngine(
 
     private val stressManager = StressManager(stressConfig)
     private val coffeeRecovery = CoffeeRecovery(stressConfig)
+    private val inputDegradation = InputDegradation(stressConfig, random)
+
+    /** Fraction of a stress point accumulated by [advanceTime] but not yet in the state. */
+    private var pendingStress = 0.0
     private val history = ArrayDeque<UndoEntry>()
     private val initialState =
         GameState(board = level.board, stress = stressManager.clamp(initialStress))
@@ -54,15 +62,19 @@ class DefaultGameEngine(
     override val state: GameState
         get() = currentState
 
-    /** Moves the exact board tile into the tray after validating availability and capacity. */
+    /**
+     * Moves a board tile into the tray after validating availability and capacity. The
+     * requested tile is used unless Maximum Stress redirects the selection; see [resolveTile].
+     */
     override fun selectTile(tileId: String) {
         if (currentState.status != GameStatus.RUNNING) return
-        val tile = currentState.board.tiles.find { it.id == tileId } ?: return
+        val requested = currentState.board.tiles.find { it.id == tileId } ?: return
         if (!overlapGraph.isSelectable(tileId)) return
         if (currentState.taskTray.isFull) return
+        val tile = resolveTile(requested)
         val entry = if (maxUndoDepth > 0) UndoEntry(currentState, overlapGraph.snapshot()) else null
-        if (!overlapGraph.remove(tileId)) return
-        val board = Board(currentState.board.tiles.filterNot { it.id == tileId })
+        if (!overlapGraph.remove(tile.id)) return
+        val board = Board(currentState.board.tiles.filterNot { it.id == tile.id })
         val appendedTray = currentState.taskTray.copy(tiles = currentState.taskTray.tiles + tile)
         val matched = appendedTray.tiles.count { it.type == tile.type } == 3
         val tray =
@@ -76,7 +88,12 @@ class DefaultGameEngine(
                 board = board,
                 taskTray = tray,
                 status = determineStatus(board, tray),
-                stress = stressAfterSelection(matchedType = if (matched) tile.type else null),
+                stress =
+                    coffeeRecovery.applyMatch(
+                        current = currentState.stress,
+                        matchedType = if (matched) tile.type else null,
+                        week = week,
+                    ),
             )
         if (matched) {
             history.clear()
@@ -87,16 +104,44 @@ class DefaultGameEngine(
     }
 
     /**
-     * Stress after one accepted selection: the week's accumulation step, then Coffee Recovery
-     * when that selection completed a Coffee triple. A null [matchedType] means no triple was
-     * completed, so only accumulation applies.
+     * The tile a selection of [requested] actually takes. Below Maximum Stress this is always
+     * [requested]; at Maximum Stress [inputDegradation] may pick a selectable neighbour instead,
+     * and falls back to [requested] when there is none.
      */
-    private fun stressAfterSelection(matchedType: TileType?): Int =
-        coffeeRecovery.applyMatch(
-            current = stressManager.accumulate(currentState.stress, week),
-            matchedType = matchedType,
-            week = week,
-        )
+    private fun resolveTile(requested: Tile): Tile {
+        if (!stressManager.isMaxStress(currentState.stress)) return requested
+        val tiles = currentState.board.tiles
+        val selectableIds = tiles.filter { overlapGraph.isSelectable(it.id) }.mapTo(HashSet()) { it.id }
+        val resolvedId =
+            inputDegradation.resolveSelection(
+                requestedTileId = requested.id,
+                stress = currentState.stress,
+                eligibleNeighbours = inputDegradation.eligibleNeighbours(requested.id, tiles, selectableIds),
+            )
+        return tiles.find { it.id == resolvedId } ?: requested
+    }
+
+    /**
+     * Adds the stress for [elapsedMillis] of play, carrying the fractional remainder to the
+     * next call. Nothing is banked while stress is already at its maximum, so recovering from
+     * Maximum Stress is not immediately undone by time spent there.
+     */
+    override fun advanceTime(elapsedMillis: Long) {
+        require(elapsedMillis >= 0L) { "Elapsed time must be non-negative." }
+        if (currentState.status != GameStatus.RUNNING) return
+        if (stressManager.isMaxStress(currentState.stress)) {
+            pendingStress = 0.0
+            return
+        }
+        pendingStress += stressManager.accumulationFor(elapsedMillis)
+        // The epsilon stops floating-point drift, e.g. 100 x 0.15 summing to 14.999..., from
+        // holding back a point that has been fully earned.
+        val whole = floor(pendingStress + ROUNDING_EPSILON)
+        pendingStress -= whole
+        if (whole <= 0.0) return
+        val added = whole.coerceAtMost(stressConfig.maximum.toDouble()).toInt()
+        currentState = currentState.copy(stress = stressManager.increaseBy(currentState.stress, added))
+    }
 
     private fun determineStatus(
         board: Board,
@@ -113,12 +158,17 @@ class DefaultGameEngine(
     override val canUndo: Boolean
         get() = currentState.status == GameStatus.RUNNING && history.isNotEmpty()
 
-    /** Restores one pre-selection snapshot; terminal games and empty history are no-ops. */
+    /**
+     * Restores one pre-selection snapshot except for stress, which follows play time rather
+     * than moves; terminal games and empty history are no-ops.
+     */
     override fun undo() {
         if (currentState.status != GameStatus.RUNNING) return
         val entry = history.removeLastOrNull() ?: return
         overlapGraph.restore(entry.graph)
-        currentState = entry.state
+        // Reuse the snapshot itself when stress has not moved, so undo returns the exact instance.
+        currentState =
+            if (entry.state.stress == currentState.stress) entry.state else entry.state.copy(stress = currentState.stress)
     }
 
     /**
@@ -145,11 +195,14 @@ class DefaultGameEngine(
     override fun restart() {
         overlapGraph.reset()
         currentState = initialState
+        pendingStress = 0.0
         history.clear()
     }
 
     companion object {
         /** First semester week, used until a caller supplies the level's own week. */
         const val DEFAULT_WEEK = 1
+
+        private const val ROUNDING_EPSILON = 1e-9
     }
 }

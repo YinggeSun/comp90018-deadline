@@ -25,8 +25,6 @@ class GameEngineCapacityRegressionTest {
                     maximum = 100,
                     highStressThreshold = 75,
                     degradationProbability = 0.0,
-                    baseRate = 2,
-                    rateGrowthPerWeek = 0,
                     coffeeRecoveryBase = 20,
                     coffeeRecoveryDeclinePerWeek = 0,
                 ),
@@ -41,7 +39,7 @@ class GameEngineCapacityRegressionTest {
         engine.selectTile("t6")
         assertEquals(GameStatus.LOST, engine.state.status)
         assertEquals(7, engine.state.taskTray.tiles.size)
-        assertEquals(44, engine.state.stress)
+        assertEquals(30, engine.state.stress)
         assertFalse(engine.canUndo)
         val lost = engine.state
         engine.undo()
@@ -73,7 +71,7 @@ class GameEngineCapacityRegressionTest {
         engine.selectTile("t6")
         assertEquals(GameStatus.RUNNING, engine.state.status)
         assertEquals(listOf("t1", "t2", "t3", "t5"), engine.state.taskTray.tiles.map { it.id })
-        assertEquals(24, engine.state.stress)
+        assertEquals(10, engine.state.stress)
         assertFalse(engine.canUndo)
         val committed = engine.state
         engine.undo()
