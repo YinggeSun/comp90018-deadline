@@ -25,21 +25,21 @@ fun GameActions(
     canUndo: Boolean,
     onUndo: () -> Unit,
     onRestart: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         SecondaryButton(
             text = stringResource(R.string.game_action_undo),
             onClick = onUndo,
-            enabled = canUndo
+            enabled = canUndo,
         )
         TertiaryButton(
             text = stringResource(R.string.game_action_restart),
-            onClick = onRestart
+            onClick = onRestart,
         )
     }
 }
