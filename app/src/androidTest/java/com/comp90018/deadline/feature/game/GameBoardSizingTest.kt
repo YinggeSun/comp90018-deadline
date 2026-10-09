@@ -1,6 +1,7 @@
 package com.comp90018.deadline.feature.game
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,7 +87,9 @@ class GameBoardSizingTest {
         var level by mutableStateOf(levels.first())
         composeRule.setContent {
             DeadlineTheme {
-                Box(modifier = Modifier.size(screen.width, screen.height)) {
+                // requiredSize lays the screen out at its full size even on a smaller test
+                // device, so the sizes checked do not depend on which device runs the test.
+                Box(modifier = Modifier.requiredSize(screen.width, screen.height)) {
                     GameScreen(
                         levelId = level.id,
                         onGameFinished = {},
@@ -127,7 +130,7 @@ class GameBoardSizingTest {
         val viewModel = stillViewModel(level)
         composeRule.setContent {
             DeadlineTheme {
-                Box(modifier = Modifier.size(600.dp, 960.dp)) {
+                Box(modifier = Modifier.requiredSize(600.dp, 960.dp)) {
                     GameScreen(levelId = level.id, onGameFinished = {}, onBack = {}, viewModel = viewModel)
                 }
             }
@@ -152,7 +155,8 @@ class GameBoardSizingTest {
                     columns = state.boardColumns,
                     onTileClick = { tapped += it },
                     peekAmount = 1f,
-                    modifier = Modifier.size(411.dp, 600.dp),
+                    // Small enough to be fully on screen on any phone, so the tiles can be tapped.
+                    modifier = Modifier.size(300.dp, 400.dp),
                 )
             }
         }
