@@ -52,8 +52,8 @@ data class StressConfig(
         require(coffeeRecoveryDeclinePerWeek >= 0) {
             "Coffee recovery decline must be non-negative."
         }
-        require(musicRecovery in 0..maximum) {
-            "Music recovery must be within 0..maximum."
+        require(musicRecovery >= 0) {
+            "Music recovery must be non-negative."
         }
         require(musicSlowdownMultiplier in 0.0..1.0) {
             "Music slowdown multiplier must be within 0.0..1.0."
