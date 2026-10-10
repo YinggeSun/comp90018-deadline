@@ -27,6 +27,7 @@ class ProgressSyncManagerTest {
         val stored = mutableMapOf<String, PlayerProgress>()
         var hangs = false
         var refuses = false
+        var unreachable = false
         var gate: CompletableDeferred<Unit>? = null
         var calls = 0
         var concurrent = 0
@@ -42,6 +43,7 @@ class ProgressSyncManagerTest {
             try {
                 if (hangs) awaitCancellation()
                 if (refuses) throw RemoteProgressException(isRefused = true)
+                if (unreachable) throw RemoteProgressException(isRefused = false, isOffline = true)
                 gate?.await()
                 return transform(stored[userId]).also { stored[userId] = it }
             } finally {
@@ -118,6 +120,16 @@ class ProgressSyncManagerTest {
     fun offlineLeavesLocalProgressUntouched() =
         runTest {
             remote.hangs = true
+            val local = FakeProgressRepository(progress(3, "level_1" to 40_000))
+
+            assertEquals(SyncResult.Offline, ProgressSyncManager(local, remote, auth).sync())
+            assertEquals(progress(3, "level_1" to 40_000), local.progress.first())
+        }
+
+    @Test
+    fun anUnreachableServerIsReportedAsOffline() =
+        runTest {
+            remote.unreachable = true
             val local = FakeProgressRepository(progress(3, "level_1" to 40_000))
 
             assertEquals(SyncResult.Offline, ProgressSyncManager(local, remote, auth).sync())

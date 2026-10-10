@@ -60,7 +60,11 @@ class ProgressSyncManager(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: RemoteProgressException) {
-                    return@withLock if (error.isRefused) SyncResult.Refused else SyncResult.Failed
+                    return@withLock when {
+                        error.isRefused -> SyncResult.Refused
+                        error.isOffline -> SyncResult.Offline
+                        else -> SyncResult.Failed
+                    }
                 } catch (error: Exception) {
                     return@withLock SyncResult.Failed
                 }

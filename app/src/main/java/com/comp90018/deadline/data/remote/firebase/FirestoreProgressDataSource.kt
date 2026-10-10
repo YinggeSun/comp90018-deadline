@@ -9,11 +9,22 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.tasks.await
 
-/** A cloud progress call that failed, translated from Firebase. [isRefused] means the rules denied it. */
+/**
+ * A cloud progress call that failed, translated from Firebase. [isRefused] means the rules
+ * denied it; [isOffline] means the server could not be reached.
+ */
 class RemoteProgressException(
     val isRefused: Boolean,
+    val isOffline: Boolean = false,
     cause: Throwable? = null,
-) : Exception(if (isRefused) "Refused" else "Failed", cause)
+) : Exception(
+        when {
+            isRefused -> "Refused"
+            isOffline -> "Offline"
+            else -> "Failed"
+        },
+        cause,
+    )
 
 /** The cloud copy of a player's progress; a seam for JVM tests. */
 interface RemoteProgressStore {
@@ -47,7 +58,12 @@ class FirestoreProgressDataSource(
                 transform(stored).also { transaction.set(document, it.toFields()) }
             }.await()
         } catch (error: FirebaseFirestoreException) {
-            throw RemoteProgressException(isRefused = error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED, cause = error)
+            throw RemoteProgressException(
+                isRefused = error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED,
+                // Offline, a transaction fails at once with UNAVAILABLE rather than waiting.
+                isOffline = error.code == FirebaseFirestoreException.Code.UNAVAILABLE,
+                cause = error,
+            )
         }
     }
 
