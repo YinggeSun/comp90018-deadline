@@ -1,6 +1,7 @@
 package com.comp90018.deadline.data.repository
 
 import com.comp90018.deadline.data.remote.firebase.AnonymousAuthClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -146,5 +147,93 @@ class AuthRepositoryImplTest {
             gate.complete(Unit)
 
             assertEquals("shared-user", second.await().getOrThrow())
+        }
+
+    @Test
+    fun retryAfterTimeoutReusesTheStillRunningSignIn() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val client =
+                FakeClient().apply {
+                    signIn = {
+                        gate.await()
+                        "late-user"
+                    }
+                }
+            val repository = AuthRepositoryImpl(client, backgroundScope, timeoutMillis = 5_000)
+
+            assertTrue(repository.ensureSignedIn().isFailure) // times out; Firebase is still working
+            assertTrue(repository.ensureSignedIn().isFailure) // retry must wait on the same operation
+
+            assertEquals(1, client.signInCalls)
+        }
+
+    @Test
+    fun lateCompletionAfterTimeoutIsKeptWithoutASecondSignIn() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val client =
+                FakeClient().apply {
+                    signIn = {
+                        gate.await()
+                        "late-user"
+                    }
+                }
+            val repository = AuthRepositoryImpl(client, backgroundScope, timeoutMillis = 5_000)
+            assertTrue(repository.ensureSignedIn().isFailure)
+
+            gate.complete(Unit)
+            runCurrent()
+
+            assertEquals("late-user", repository.ensureSignedIn().getOrThrow())
+            assertEquals(1, client.signInCalls)
+        }
+
+    @Test
+    fun aRetryWaitsForTheRunningSignInAndGetsItsResult() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val client =
+                FakeClient().apply {
+                    signIn = {
+                        gate.await()
+                        "late-user"
+                    }
+                }
+            val repository = AuthRepositoryImpl(client, backgroundScope, timeoutMillis = 5_000)
+            assertTrue(repository.ensureSignedIn().isFailure)
+
+            val retry = async { repository.ensureSignedIn() }
+            runCurrent()
+            gate.complete(Unit)
+
+            assertEquals("late-user", retry.await().getOrThrow())
+            assertEquals(1, client.signInCalls)
+        }
+
+    @Test
+    fun aFailedSignInIsRetriedWithANewOperation() =
+        runTest {
+            val client = FakeClient().apply { signIn = { throw IOException("offline") } }
+            val repository = AuthRepositoryImpl(client, backgroundScope)
+            assertTrue(repository.ensureSignedIn().isFailure)
+
+            client.signIn = { "online-user" }
+
+            assertEquals("online-user", repository.ensureSignedIn().getOrThrow())
+            assertEquals(2, client.signInCalls)
+        }
+
+    @Test
+    fun cancellingTheCallerIsNotReportedAsAFailure() =
+        runTest {
+            val client = FakeClient().apply { signIn = { awaitCancellation() } }
+            val repository = AuthRepositoryImpl(client, backgroundScope)
+
+            val caller = async { repository.ensureSignedIn() }
+            runCurrent()
+            caller.cancel()
+
+            assertTrue(runCatching { caller.await() }.exceptionOrNull() is CancellationException)
         }
 }
