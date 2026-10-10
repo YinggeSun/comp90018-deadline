@@ -1,5 +1,6 @@
 package com.comp90018.deadline.data.fake
 
+import com.comp90018.deadline.data.sync.ConflictResolver
 import com.comp90018.deadline.domain.progress.CompletionOutcome
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.progress.PlayerProgress
@@ -20,4 +21,7 @@ class FakeProgressRepository(initial: PlayerProgress = PlayerProgress()) : Progr
         state.value = updated
         return outcome
     }
+
+    override suspend fun mergeIn(other: PlayerProgress): PlayerProgress =
+        ConflictResolver.merge(state.value, other).also { state.value = it }
 }
