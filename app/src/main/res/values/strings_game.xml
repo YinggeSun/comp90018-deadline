@@ -1,6 +1,8 @@
 <resources>
     <!-- Game screen -->
     <string name="game_level_not_found">This level could not be found.</string>
+    <string name="game_level_preparing">Preparing your board…</string>
+    <string name="game_level_load_failed">This level could not be loaded.</string>
     <string name="game_tile_default">Paper tile</string>
     <string name="game_tile_book">Book tile</string>
     <string name="game_tile_coffee">Coffee tile</string>

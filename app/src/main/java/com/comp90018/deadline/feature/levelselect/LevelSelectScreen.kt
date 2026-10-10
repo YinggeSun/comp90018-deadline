@@ -133,6 +133,11 @@ private fun LevelCard(
             ) {
                 Text(text = level.name, style = MaterialTheme.typography.titleMedium)
                 Text(
+                    text = stringResource(R.string.level_select_weeks, level.firstWeek, level.lastWeek),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
                     text =
                         pluralStringResource(R.plurals.level_select_tiles, level.tileCount, level.tileCount) +
                             " · " +
@@ -171,9 +176,9 @@ private fun LevelSelectPreview() {
                     LevelSelectUiState(
                         levels =
                             listOf(
-                                LevelItemUiModel("level_1", "Level 1", 6, 1, isLocked = false, bestTimeSeconds = 42),
-                                LevelItemUiModel("level_2", "Level 2", 9, 1, isLocked = false, bestTimeSeconds = null),
-                                LevelItemUiModel("level_3", "Level 3", 9, 2, isLocked = true, bestTimeSeconds = null),
+                                LevelItemUiModel("level_1", "Level 1", 1, 2, 24, 2, isLocked = false, bestTimeSeconds = 42),
+                                LevelItemUiModel("level_2", "Level 2", 3, 4, 30, 2, isLocked = false, bestTimeSeconds = null),
+                                LevelItemUiModel("level_3", "Level 3", 5, 6, 36, 3, isLocked = true, bestTimeSeconds = null),
                             ),
                     ),
                 onLevelSelected = {},

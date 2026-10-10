@@ -2,7 +2,8 @@ package com.comp90018.deadline.feature.levelselect
 
 import com.comp90018.deadline.MainDispatcherRule
 import com.comp90018.deadline.data.fake.FakeProgressRepository
-import com.comp90018.deadline.domain.level.model.FixedLevels
+import com.comp90018.deadline.domain.level.model.SemesterDifficulty
+import com.comp90018.deadline.domain.level.model.SemesterLevel
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.progress.PersonalBest
 import com.comp90018.deadline.domain.progress.PlayerProgress
@@ -20,58 +21,75 @@ class LevelSelectViewModelTest {
     @get:Rule
     val mainDispatcher = MainDispatcherRule()
 
+    private val level1 = SemesterLevel(1)
+    private val level2 = SemesterLevel(2)
+    private val level3 = SemesterLevel(3)
+
     @Test
-    fun listsFixedLevelsInOrder() {
+    fun listsTheSixLevelsInOrder() {
         val levels = LevelSelectViewModel().uiState.value.levels
 
-        assertEquals(FixedLevels.ALL_LEVELS.map { it.id }, levels.map { it.id })
-        assertEquals(FixedLevels.ALL_LEVELS.map { it.name }, levels.map { it.name })
+        assertEquals(SemesterDifficulty.TOTAL_LEVELS, levels.size)
+        assertEquals((1..6).map { "level_$it" }, levels.map { it.id })
+        assertEquals((1..6).map { "Level $it" }, levels.map { it.name })
     }
 
     @Test
-    fun describesTileAndLayerCounts() {
-        val level3 = LevelSelectViewModel().uiState.value.levels.single { it.id == FixedLevels.LEVEL_3.id }
+    fun eachLevelCoversTwoWeeks() {
+        val levels = LevelSelectViewModel().uiState.value.levels
 
-        assertEquals(9, level3.tileCount)
-        assertEquals(2, level3.layerCount)
+        assertEquals((1..6).map { it * 2 - 1 }, levels.map { it.firstWeek })
+        assertEquals((1..6).map { it * 2 }, levels.map { it.lastWeek })
     }
 
     @Test
-    fun newPlayerHasOnlyWeekOneUnlockedAndNoBestTimes() {
-        val levels = LevelSelectViewModel().uiState.value.levels.associateBy { it.id }
+    fun describesTileAndLayerCountsFromTheConfiguration() {
+        val levels = LevelSelectViewModel().uiState.value.levels
 
-        assertFalse(levels.getValue(FixedLevels.LEVEL_1.id).isLocked)
-        assertTrue(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
-        assertTrue(levels.getValue(FixedLevels.LEVEL_3.id).isLocked)
-        assertTrue(levels.values.all { it.bestTimeSeconds == null })
+        SemesterLevel.ALL.zip(levels).forEach { (expected, item) ->
+            val config = SemesterDifficulty.forLevel(expected.number).levels.single()
+            assertEquals(config.tileCount, item.tileCount)
+            assertEquals(config.maxLayer + 1, item.layerCount)
+        }
+    }
+
+    @Test
+    fun newPlayerHasOnlyLevelOneUnlockedAndNoBestTimes() {
+        val levels = LevelSelectViewModel().uiState.value.levels
+
+        assertFalse(levels.first().isLocked)
+        assertTrue(levels.drop(1).all { it.isLocked })
+        assertTrue(levels.all { it.bestTimeSeconds == null })
     }
 
     @Test
     fun usesSuppliedProgress() {
         val progress =
             PlayerProgress(
-                highestUnlockedWeek = 2,
-                personalBests = mapOf(FixedLevels.LEVEL_1.id to PersonalBest(FixedLevels.LEVEL_1.id, 42_900, 0)),
+                highestUnlockedWeek = level2.firstWeek,
+                personalBests = mapOf(level1.id to PersonalBest(level1.id, 42_900, 0)),
             )
         val levels = LevelSelectViewModel(progress = flowOf(progress)).uiState.value.levels.associateBy { it.id }
 
-        assertFalse(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
-        assertTrue(levels.getValue(FixedLevels.LEVEL_3.id).isLocked)
-        assertEquals(42L, levels.getValue(FixedLevels.LEVEL_1.id).bestTimeSeconds)
-        assertNull(levels.getValue(FixedLevels.LEVEL_2.id).bestTimeSeconds)
+        assertFalse(levels.getValue(level2.id).isLocked)
+        assertTrue(levels.getValue(level3.id).isLocked)
+        assertEquals(42L, levels.getValue(level1.id).bestTimeSeconds)
+        assertNull(levels.getValue(level2.id).bestTimeSeconds)
     }
 
     @Test
-    fun updatesWhenALevelIsCompleted() =
+    fun winningALevelUnlocksTheNextOne() =
         runBlocking {
             val repository = FakeProgressRepository()
             val viewModel = LevelSelectViewModel(progress = repository.progress)
 
-            repository.recordCompletion(CompletionResult(FixedLevels.LEVEL_1.id, 1, 30_000, 1))
+            // The game records a level's last week, which unlocks the next level's first week.
+            repository.recordCompletion(CompletionResult(level1.id, level1.lastWeek, 30_000, 1))
             val levels = viewModel.uiState.value.levels.associateBy { it.id }
 
-            assertFalse(levels.getValue(FixedLevels.LEVEL_2.id).isLocked)
-            assertEquals(30L, levels.getValue(FixedLevels.LEVEL_1.id).bestTimeSeconds)
+            assertFalse(levels.getValue(level2.id).isLocked)
+            assertTrue(levels.getValue(level3.id).isLocked)
+            assertEquals(30L, levels.getValue(level1.id).bestTimeSeconds)
         }
 
     @Test

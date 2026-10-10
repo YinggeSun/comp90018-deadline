@@ -17,6 +17,7 @@ import com.comp90018.deadline.domain.game.model.Tile
 import com.comp90018.deadline.domain.game.stress.StressManager
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.domain.level.model.Level
+import com.comp90018.deadline.domain.level.model.SemesterDifficulty
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.settings.PlayerSettings
@@ -248,7 +249,9 @@ class GameViewModel(
         completionRecorder.record(
             CompletionResult(
                 levelId = level.id,
-                week = level.week,
+                // Record the level's last week: clearing week N unlocks week N + 1, which is
+                // the first week of the next level.
+                week = SemesterDifficulty.lastWeekForLevel(level.levelNumber),
                 // A sub-millisecond win still counts as a completion.
                 timeMillis = timer.elapsedMillis.coerceAtLeast(1L),
                 completedAtMillis = nowMillis(),
@@ -297,12 +300,14 @@ class GameViewModel(
 
         private const val NANOS_PER_MILLISECOND = 1_000_000L
 
-        fun factory(levelId: String): ViewModelProvider.Factory =
+        /** A ViewModel for [level], whose board is already generated. */
+        fun factory(level: Level): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
                     val container = (this[APPLICATION_KEY] as DeadlineApp).container
                     GameViewModel(
-                        levelId,
+                        level.id,
+                        findLevel = { level },
                         completionRecorder = container.completionRecorder,
                         personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
                         settings = container.settingsRepository.settings,

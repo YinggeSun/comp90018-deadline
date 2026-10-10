@@ -9,6 +9,7 @@
         <item quantity="one">%d layer</item>
         <item quantity="other">%d layers</item>
     </plurals>
+    <string name="level_select_weeks">Weeks %1$d–%2$d</string>
     <string name="level_select_best_time">Best %1$s</string>
     <string name="level_select_no_best_time">No best time yet</string>
     <string name="level_select_locked">Locked</string>
