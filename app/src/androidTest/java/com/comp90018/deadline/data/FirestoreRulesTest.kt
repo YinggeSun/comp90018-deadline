@@ -59,6 +59,13 @@ class FirestoreRulesTest {
             )
     }
 
+    /**
+     * A client-chosen timestamp an hour in the past, the realistic way to forge one. A timestamp
+     * of "now" can equal the emulator's server time to the millisecond, because the Android
+     * emulator shares the host's clock, which would make such tests flaky.
+     */
+    private fun backdated() = Timestamp(java.util.Date(System.currentTimeMillis() - 60 * 60 * 1000L))
+
     /** True if the rules allowed [operation]; false if they refused it. */
     private fun allowed(operation: suspend () -> Unit): Boolean =
         runBlocking {
@@ -223,7 +230,7 @@ class FirestoreRulesTest {
     @Test
     fun clientChosenTimestampIsRefused() {
         val player = Player()
-        assertFalse(allowed { player.entry().set(player.valid() + ("submittedAt" to Timestamp.now())).await() })
+        assertFalse(allowed { player.entry().set(player.valid() + ("submittedAt" to backdated())).await() })
     }
 
     private companion object {
