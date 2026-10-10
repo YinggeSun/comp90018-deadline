@@ -2,6 +2,7 @@ package com.comp90018.deadline.data.remote.firebase
 
 import com.comp90018.deadline.domain.leaderboard.LeaderboardEntry
 import com.comp90018.deadline.domain.leaderboard.LeaderboardFailure
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -69,7 +70,7 @@ class FirestoreLeaderboardDataSource(
                             snapshot != null ->
                                 trySend(
                                     LeaderboardPage(
-                                        entries = snapshot.documents.mapNotNull { it.toEntry(levelId) },
+                                        entries = snapshot.documents.mapNotNull { it.toEntryOrNull(levelId) },
                                         isFromCache = snapshot.metadata.isFromCache,
                                     ),
                                 )
@@ -83,7 +84,7 @@ class FirestoreLeaderboardDataSource(
         userId: String,
     ): LeaderboardEntry? =
         try {
-            entries(levelId).document(userId).get().await().toEntry(levelId)
+            entries(levelId).document(userId).get().await().toEntryOrNull(levelId)
         } catch (error: FirebaseFirestoreException) {
             throw error.toStoreException()
         }
@@ -111,16 +112,30 @@ class FirestoreLeaderboardDataSource(
 
     private fun entries(levelId: String) = db.collection(COLLECTION).document(levelId).collection(ENTRIES)
 
-    /** Reads defensively: a document with missing or wrong-typed fields is skipped, not thrown. */
+    /**
+     * Reads defensively: a document with missing or wrong-typed fields is skipped rather than
+     * thrown. This matters most in the snapshot listener, whose callback runs on the main
+     * thread, where an exception would crash the app. Records written before the rules were
+     * tightened can still be malformed.
+     */
+    private fun DocumentSnapshot.toEntryOrNull(levelId: String): LeaderboardEntry? =
+        try {
+            toEntry(levelId)
+        } catch (error: RuntimeException) {
+            null
+        }
+
     private fun DocumentSnapshot.toEntry(levelId: String): LeaderboardEntry? {
         if (!exists()) return null
         val userId = get(FIELD_UID) as? String ?: return null
         val nickname = get(FIELD_NICKNAME) as? String ?: return null
         val timeMillis = (get(FIELD_TIME) as? Long)?.takeIf { it > 0 } ?: return null
+        // get() with a type check, because getTimestamp() throws on a value of another type.
+        // A pending server timestamp reads as an estimate, so a real entry always has one.
         val submittedAt =
-            getTimestamp(FIELD_SUBMITTED_AT, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            (get(FIELD_SUBMITTED_AT, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE) as? Timestamp)
                 ?.toDate()
-                ?.time ?: 0L
+                ?.time ?: return null
         return LeaderboardEntry(userId, nickname, levelId, timeMillis, submittedAt)
     }
 

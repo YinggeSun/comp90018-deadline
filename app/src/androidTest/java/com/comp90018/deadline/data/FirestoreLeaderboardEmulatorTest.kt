@@ -34,8 +34,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.net.URL
 import java.util.UUID
 
 /**
@@ -136,6 +138,73 @@ class FirestoreLeaderboardEmulatorTest {
                 listening.cancel()
             }
         }
+
+    @Test
+    fun malformedEntriesAreSkippedInTheRankingWithoutCrashing() =
+        runBlocking {
+            withTimeout(TIMEOUT) {
+                val player = Player()
+                player.repository.submit(result(30_000), "Valid")
+                writeAsAdmin("leaderboard/$levelId/entries/broken", malformedEntry(uid = "broken", timeMillis = 20_000))
+
+                val ranking = player.rankingWhere { it.isNotEmpty() }
+
+                assertEquals(listOf("Valid"), ranking.map { it.nickname })
+            }
+        }
+
+    @Test
+    fun submittingOverAMalformedOwnEntryDoesNotThrow() =
+        runBlocking {
+            withTimeout(TIMEOUT) {
+                val player = Player()
+                val uid = player.signIn()
+                writeAsAdmin("leaderboard/$levelId/entries/$uid", malformedEntry(uid = uid, timeMillis = 50_000))
+
+                assertEquals(SubmitResult.Submitted, player.repository.submit(result(30_000), "Lav"))
+                assertEquals(
+                    listOf(30_000L),
+                    player.rankingWhere {
+                            entries ->
+                        entries.any { it.timeMillis == 30_000L }
+                    }.map { it.timeMillis },
+                )
+            }
+        }
+
+    /** An entry whose submittedAt is text, as an older or hand-edited record could be. */
+    private fun malformedEntry(
+        uid: String,
+        timeMillis: Long,
+    ) = """{"fields": {
+        "uid": {"stringValue": "$uid"}, "nickname": {"stringValue": "Broken"},
+        "timeMillis": {"integerValue": "$timeMillis"}, "week": {"integerValue": "2"},
+        "submittedAt": {"stringValue": "yesterday"}}}"""
+
+    /**
+     * Writes a document with the emulator's admin access, bypassing the rules, to stand in for
+     * records that already exist (for example from before the rules were tightened).
+     */
+    private fun writeAsAdmin(
+        path: String,
+        json: String,
+    ) {
+        val collection = path.substringBeforeLast('/')
+        val documentId = path.substringAfterLast('/')
+        val url =
+            URL("http://$HOST:$FIRESTORE_PORT/v1/projects/$PROJECT_ID/databases/(default)/documents/$collection?documentId=$documentId")
+        val connection = url.openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Authorization", "Bearer owner")
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.outputStream.use { it.write(json.toByteArray()) }
+            check(connection.responseCode == HttpURLConnection.HTTP_OK) { "Admin write failed: ${connection.responseCode}" }
+        } finally {
+            connection.disconnect()
+        }
+    }
 
     @Test
     fun rulesRejectWritingAnotherPlayersEntry() =

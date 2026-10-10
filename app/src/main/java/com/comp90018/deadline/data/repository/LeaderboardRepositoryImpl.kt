@@ -74,12 +74,14 @@ class LeaderboardRepositoryImpl(
             auth.ensureSignedIn().getOrElse {
                 return SubmitResult.Failed(LeaderboardFailure.NOT_SIGNED_IN)
             }
-        // If the existing entry cannot be read in time, write anyway: the server only
-        // accepts an update that is faster than the stored time.
+        // If the existing entry cannot be read in time or is malformed, write anyway: the
+        // server only accepts an update that is faster than the stored time.
         val existing =
             try {
                 withTimeoutOrNull(readTimeoutMillis) { store.entryFor(result.levelId, userId) }
-            } catch (error: LeaderboardStoreException) {
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
                 null
             }
         if (existing != null && existing.timeMillis <= result.timeMillis) return SubmitResult.NotFaster
