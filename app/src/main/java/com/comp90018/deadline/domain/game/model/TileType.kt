@@ -8,4 +8,8 @@ enum class TileType {
     ASSIGNMENT,
     QUIZ,
     READING,
+    MUSIC,
+    EXAM,
+    PRESENTATION,
+    LECTURE_SLIDE,
 }

@@ -8,6 +8,6 @@ import com.comp90018.deadline.core.ui.components.PlaceholderScreen
 fun LeaderboardScreen(onBack: () -> Unit) {
     PlaceholderScreen(
         title = "Leaderboard",
-        actions = listOf(PlaceholderAction("Back", onBack))
+        actions = listOf(PlaceholderAction("Back", onBack)),
     )
 }

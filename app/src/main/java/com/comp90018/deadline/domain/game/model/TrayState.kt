@@ -7,7 +7,7 @@ package com.comp90018.deadline.domain.game.model
  */
 data class TrayState(
     val tiles: List<Tile> = emptyList(),
-    val capacity: Int = DEFAULT_CAPACITY
+    val capacity: Int = DEFAULT_CAPACITY,
 ) {
     init {
         require(capacity > 0) { "Tray capacity must be positive." }

@@ -2,11 +2,20 @@ package com.comp90018.deadline.feature.game
 
 import com.comp90018.deadline.domain.game.engine.CompletionTimer
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
+import com.comp90018.deadline.domain.game.model.Board
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.domain.game.model.Tile
+import com.comp90018.deadline.domain.game.model.TilePosition
+import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.domain.game.stress.StressConfig
 import com.comp90018.deadline.domain.level.model.FixedLevels
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -190,8 +199,6 @@ class GameViewModelTest {
             StressConfig(
                 maximum = 100,
                 highStressThreshold = 75,
-                baseRate = 0,
-                rateGrowthPerWeek = 0,
                 coffeeRecoveryBase = 20,
                 coffeeRecoveryDeclinePerWeek = 0,
             )
@@ -216,17 +223,100 @@ class GameViewModelTest {
 
     @Test
     fun restartReturnsTheStressGaugeToItsStartingValue() {
-        val stressConfig = StressConfig(baseRate = 5, rateGrowthPerWeek = 0)
         val viewModel =
             GameViewModel(FixedLevels.LEVEL_1.id) { level ->
-                DefaultGameEngine(level, stressConfig = stressConfig, initialStress = 30)
+                DefaultGameEngine(level, initialStress = 30)
             }
 
         viewModel.onEvent(GameUiEvent.TileTapped("level_1_book_1"))
-        assertEquals(35, viewModel.uiState.value.stress)
+        assertEquals("Tapping a tile adds no stress", 30, viewModel.uiState.value.stress)
+        viewModel.onTimeElapsed(10_000L)
+        assertEquals(45, viewModel.uiState.value.stress)
 
         viewModel.restart()
 
         assertEquals(30, viewModel.uiState.value.stress)
+    }
+
+    @Test
+    fun elapsedTimeRaisesStressIntoTheMaxStressStateAndCoffeeEndsIt() {
+        val viewModel =
+            GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+                DefaultGameEngine(level, initialStress = 90, stressConfig = StressConfig(degradationProbability = 0.0))
+            }
+        assertFalse(viewModel.uiState.value.isMaxStress)
+
+        viewModel.onTimeElapsed(10_000L)
+
+        assertEquals(100, viewModel.uiState.value.stress)
+        assertTrue(viewModel.uiState.value.isMaxStress)
+
+        for (id in listOf("level_1_coffee_1", "level_1_coffee_2", "level_1_coffee_3")) {
+            viewModel.onEvent(GameUiEvent.TileTapped(id))
+        }
+
+        assertEquals(80, viewModel.uiState.value.stress)
+        assertFalse(viewModel.uiState.value.isMaxStress)
+    }
+
+    @Test
+    fun maxStressWarningClearsOnceTheGameEnds() {
+        val viewModel =
+            GameViewModel(FixedLevels.LEVEL_1.id) { level ->
+                // No recovery, so stress is still at its maximum when the game is won.
+                DefaultGameEngine(
+                    level,
+                    initialStress = 100,
+                    stressConfig = StressConfig(degradationProbability = 0.0, coffeeRecoveryBase = 0),
+                )
+            }
+        assertTrue(viewModel.uiState.value.isMaxStress)
+
+        FixedLevels.LEVEL_1.board.tiles.forEach { viewModel.onEvent(GameUiEvent.TileTapped(it.id)) }
+
+        assertEquals(GameStatus.WON, viewModel.uiState.value.status)
+        assertEquals(100, viewModel.uiState.value.stress)
+        assertFalse(viewModel.uiState.value.isMaxStress)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun stressClockAddsOnePointFivePercentPerSecond() =
+        runTest {
+            val viewModel =
+                GameViewModel(
+                    FixedLevels.LEVEL_1.id,
+                    stressClockNanos = { testScheduler.currentTime * 1_000_000L },
+                )
+
+            val clock = launch { viewModel.runStressClock() }
+            advanceTimeBy(10_000L)
+            runCurrent()
+            clock.cancel()
+
+            assertEquals(15, viewModel.uiState.value.stress)
+
+            // A stopped clock (screen paused) adds nothing.
+            advanceTimeBy(10_000L)
+            runCurrent()
+            assertEquals(15, viewModel.uiState.value.stress)
+        }
+
+    @Test
+    fun musicTripleShowsTheSlowdownUntilItExpires() {
+        val tiles =
+            (listOf(TileType.MUSIC, TileType.MUSIC, TileType.MUSIC) + List(3) { TileType.BOOK })
+                .mapIndexed { index, type -> Tile("t$index", type, TilePosition(0, index * 2, 0)) }
+        val level = FixedLevels.LEVEL_1.copy(id = "music", board = Board(tiles))
+        val viewModel = GameViewModel(level.id, findLevel = { level })
+        assertFalse(viewModel.uiState.value.isStressSlowed)
+
+        listOf("t0", "t1", "t2").forEach { viewModel.onEvent(GameUiEvent.TileTapped(it)) }
+        assertTrue(viewModel.uiState.value.isStressSlowed)
+
+        viewModel.onTimeElapsed(7_900L)
+        assertTrue(viewModel.uiState.value.isStressSlowed)
+        viewModel.onTimeElapsed(100L)
+        assertFalse(viewModel.uiState.value.isStressSlowed)
     }
 }

@@ -8,6 +8,10 @@
     <string name="game_tile_assignment">Assignment tile</string>
     <string name="game_tile_quiz">Quiz tile</string>
     <string name="game_tile_reading">Reading tile</string>
+    <string name="game_tile_music">Music tile</string>
+    <string name="game_tile_exam">Exam tile</string>
+    <string name="game_tile_presentation">Presentation tile</string>
+    <string name="game_tile_lecture_slide">Lecture slide tile</string>
     <string name="game_tile_selectable">Available</string>
     <string name="game_tile_blocked">Covered</string>
 
@@ -15,6 +19,9 @@
     <string name="game_timer_description">Time %1$s</string>
     <string name="game_stress_label">Stress</string>
     <string name="game_stress_high">High stress!</string>
+    <string name="game_stress_max">Maximum stress!</string>
+    <string name="game_stress_slowed">🎵 Slowed</string>
+    <string name="game_stress_max_warning">Maximum stress — some tile selections may be incorrect.</string>
     <string name="game_stress_description">Stress %1$d of %2$d</string>
     <string name="game_tray_label">Task Tray</string>
     <string name="game_tray_count">%1$d/%2$d</string>

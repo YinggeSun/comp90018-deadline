@@ -41,8 +41,6 @@ class GameEngineSequenceTest(private val seed: Int) {
                 stressConfig =
                     StressConfig(
                         maximum = 60,
-                        baseRate = 5,
-                        rateGrowthPerWeek = 2,
                         coffeeRecoveryBase = 17,
                         coffeeRecoveryDeclinePerWeek = 3,
                     ),
@@ -93,13 +91,12 @@ class GameEngineSequenceTest(private val seed: Int) {
                                 tiles = if (match) appended.filterNot { it.type == tile.type } else appended,
                             )
                         val board = Board(expected.board.tiles.filterNot { it.id == id })
-                        val accumulated = (expected.stress + 9).coerceAtMost(60)
                         expected =
                             expected.copy(
                                 board = board,
                                 taskTray = tray,
                                 stress =
-                                    (accumulated - if (match && tile.type == TileType.COFFEE) 11 else 0)
+                                    (expected.stress - if (match && tile.type == TileType.COFFEE) 11 else 0)
                                         .coerceAtLeast(0),
                                 status =
                                     when {
@@ -119,7 +116,8 @@ class GameEngineSequenceTest(private val seed: Int) {
                 }
                 6, 7 -> {
                     if (expected.status == GameStatus.RUNNING && history.isNotEmpty()) {
-                        expected = history.removeLast()
+                        // Undo keeps stress: it follows play time, not moves.
+                        expected = history.removeLast().copy(stress = expected.stress)
                     }
                     engine.undo()
                 }

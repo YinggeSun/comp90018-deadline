@@ -1,64 +1,112 @@
+
 package com.comp90018.deadline.domain.level.model
 
-/**
- * Defines the difficulty progression across the 12 semester weeks.
- *
- * Difficulty increases through board size, tile count and layer count.
- * The values are kept outside the UI so they can be adjusted independently.
- */
 object SemesterDifficulty {
     const val FIRST_WEEK = 1
-
     const val SEMESTER_WEEKS = 12
+    const val WEEKS_PER_LEVEL = 2
+    const val TOTAL_LEVELS = 6
 
+    val levels: List<WeekConfig> =
+        (1..TOTAL_LEVELS).map { level ->
+            WeekConfig(
+                week = firstWeekForLevel(level),
+                levels = listOf(configForLevel(level)),
+            )
+        }
     val weeks: List<WeekConfig> =
-        (1..SEMESTER_WEEKS).map { week ->
+        (FIRST_WEEK..SEMESTER_WEEKS).map { week ->
             WeekConfig(
                 week = week,
-                levels = listOf(configForWeek(week)),
+                levels =
+                    listOf(
+                        configForLevel(levelForWeek(week)),
+                    ),
             )
         }
 
     fun forWeek(week: Int): WeekConfig {
-        require(week in 1..SEMESTER_WEEKS) {
+        require(week in FIRST_WEEK..SEMESTER_WEEKS) {
             "Week must be between 1 and $SEMESTER_WEEKS."
         }
-
-        return weeks[week - 1]
+        return weeks[week - FIRST_WEEK]
     }
 
-    private fun configForWeek(week: Int): LevelConfig =
-        when (week) {
-            in 1..3 ->
+    fun forLevel(level: Int): WeekConfig {
+        require(level in 1..TOTAL_LEVELS) {
+            "Level must be between 1 and $TOTAL_LEVELS."
+        }
+        return levels[level - 1]
+    }
+
+    fun levelForWeek(week: Int): Int {
+        require(week in FIRST_WEEK..SEMESTER_WEEKS) {
+            "Invalid semester week: $week"
+        }
+        return (week - FIRST_WEEK) / WEEKS_PER_LEVEL + 1
+    }
+
+    fun firstWeekForLevel(level: Int): Int {
+        require(level in 1..TOTAL_LEVELS) {
+            "Invalid level: $level"
+        }
+        return (level - 1) * WEEKS_PER_LEVEL + FIRST_WEEK
+    }
+
+    fun lastWeekForLevel(level: Int): Int = firstWeekForLevel(level) + WEEKS_PER_LEVEL - 1
+
+    private fun configForLevel(level: Int): LevelConfig =
+        when (level) {
+            1 ->
                 LevelConfig(
-                    layout = LayoutTemplate(rows = 3, columns = 3),
-                    tileCount = 9,
-                    maxLayer = 0,
+                    layout = LayoutTemplate(4, 4),
+                    tileCount = 18,
+                    maxLayer = 1,
                     tileVariety = 3,
                 )
 
-            in 4..6 ->
+            2 ->
                 LevelConfig(
-                    layout = LayoutTemplate(rows = 4, columns = 4),
-                    tileCount = 12,
+                    layout = LayoutTemplate(4, 4),
+                    tileCount = 27,
                     maxLayer = 1,
-                    tileVariety = 4,
-                )
-
-            in 7..9 ->
-                LevelConfig(
-                    layout = LayoutTemplate(rows = 5, columns = 5),
-                    tileCount = 18,
-                    maxLayer = 2,
                     tileVariety = 5,
                 )
 
-            else ->
+            3 ->
                 LevelConfig(
-                    layout = LayoutTemplate(rows = 6, columns = 6),
-                    tileCount = 24,
-                    maxLayer = 3,
-                    tileVariety = 6,
+                    layout = LayoutTemplate(5, 5),
+                    tileCount = 36,
+                    maxLayer = 2,
+                    tileVariety = 8,
                 )
+
+            4 ->
+                LevelConfig(
+                    layout = LayoutTemplate(5, 5),
+                    tileCount = 45,
+                    maxLayer = 3,
+                    tileVariety = 8,
+                )
+
+            5 ->
+                LevelConfig(
+                    layout = LayoutTemplate(6, 6),
+                    tileCount = 54,
+                    maxLayer = 4,
+                    tileVariety = 9,
+                )
+
+            6 ->
+                LevelConfig(
+                    layout = LayoutTemplate(6, 6),
+                    tileCount = 63,
+                    maxLayer = 5,
+                    tileVariety = 10,
+                )
+
+            else -> throw IllegalArgumentException(
+                "Invalid level: $level",
+            )
         }
 }

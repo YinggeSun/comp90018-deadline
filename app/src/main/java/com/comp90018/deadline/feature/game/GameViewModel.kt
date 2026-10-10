@@ -22,6 +22,7 @@ import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.settings.PlayerSettings
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.isActive
 
 /**
  * Owns one game session. Forwards taps to the [GameEngine] and republishes
@@ -39,6 +41,10 @@ import kotlinx.coroutines.flow.flowOf
  * once the game is won or lost, and restarts with the level. Each win is passed to
  * [completionRecorder] with the timer's final reading, stamped by [nowMillis].
  * [personalBestMillis] returns the level's currently saved best, if any.
+ *
+ * Stress grows with active play time: the screen runs [runStressClock] while it is resumed,
+ * which feeds the engine the time measured by [stressClockNanos]. Time spent with the screen
+ * paused therefore adds no stress.
  */
 class GameViewModel(
     levelId: String,
@@ -49,6 +55,7 @@ class GameViewModel(
     private val personalBestMillis: (levelId: String) -> Long? = { null },
     settings: Flow<PlayerSettings> = flowOf(PlayerSettings()),
     private val audio: GameAudio = GameAudio.None,
+    private val stressClockNanos: () -> Long = System::nanoTime,
     createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) },
 ) : ViewModel(), GameSensorActions {
     private val audioSession = Any()
@@ -120,13 +127,7 @@ class GameViewModel(
                 audio.play(audioSession, GameAudioEvent.MATCH)
             }
         }
-        if (
-            after.status == GameStatus.RUNNING &&
-            before.stress < engine.stressConfig.maximum &&
-            after.stress >= engine.stressConfig.maximum
-        ) {
-            audio.play(audioSession, GameAudioEvent.STRESS_MAX)
-        }
+        playMaximumStressWarning(before, after, engine.stressConfig.maximum)
         setAudioForeground(audioForeground)
         if (after.board.tiles.size == before.board.tiles.size - 1) {
             haptics?.perform(
@@ -163,6 +164,54 @@ class GameViewModel(
             _uiState.value.copy(
                 peekAmount = if (amount.isFinite()) amount.coerceIn(0f, 1f) else 0f,
             )
+    }
+
+    /**
+     * Feeds [elapsedMillis] of active play to the engine's Stress System and republishes.
+     * Entering Maximum Stress fires audio and [GameHaptic.MAX_STRESS] warnings once.
+     */
+    fun onTimeElapsed(
+        elapsedMillis: Long,
+        haptics: HapticFeedbackManager? = null,
+    ) {
+        val engine = engine ?: return
+        if (engine.state.status != GameStatus.RUNNING) return
+        val before = engine.state
+        val wasMaxStress = _uiState.value.isMaxStress
+        engine.advanceTime(elapsedMillis)
+        publish(engine)
+        playMaximumStressWarning(before, engine.state, engine.stressConfig.maximum)
+        setAudioForeground(audioForeground)
+        if (!wasMaxStress && _uiState.value.isMaxStress) haptics?.perform(GameHaptic.MAX_STRESS)
+    }
+
+    private fun playMaximumStressWarning(
+        before: GameState,
+        after: GameState,
+        maximum: Int,
+    ) {
+        if (
+            before.status == GameStatus.RUNNING && after.status == GameStatus.RUNNING &&
+            before.stress < maximum && after.stress >= maximum
+        ) {
+            audio.play(audioSession, GameAudioEvent.STRESS_MAX)
+        }
+    }
+
+    /**
+     * Ticks the Stress System until cancelled. Each run measures time from its own start, so
+     * cancelling it while the screen is paused and starting it again on resume skips the pause.
+     */
+    suspend fun runStressClock(haptics: HapticFeedbackManager? = null) {
+        var last = stressClockNanos()
+        while (currentCoroutineContext().isActive) {
+            delay(STRESS_TICK_MILLIS)
+            val now = stressClockNanos()
+            val elapsedMillis = ((now - last) / NANOS_PER_MILLISECOND).coerceAtLeast(0L)
+            // Keep the sub-millisecond remainder for the next tick.
+            last += elapsedMillis * NANOS_PER_MILLISECOND
+            onTimeElapsed(elapsedMillis, haptics)
+        }
     }
 
     fun undo() = onEvent(GameUiEvent.UndoClicked)
@@ -221,6 +270,8 @@ class GameViewModel(
             stress = stressManager.clamp(state.stress),
             stressMaximum = engine.stressConfig.maximum,
             isHighStress = stressManager.isHighStress(state.stress),
+            isMaxStress = state.status == GameStatus.RUNNING && stressManager.isMaxStress(state.stress),
+            isStressSlowed = state.status == GameStatus.RUNNING && state.musicSlowdownRemainingMillis > 0L,
             canUndo = engine.canUndo,
         )
     }
@@ -240,6 +291,11 @@ class GameViewModel(
         const val TILE_SPAN = 2
 
         private const val TIMER_TICK_MILLIS = 200L
+
+        /** How often the stress gauge advances; short enough that the bar moves smoothly. */
+        private const val STRESS_TICK_MILLIS = 100L
+
+        private const val NANOS_PER_MILLISECOND = 1_000_000L
 
         fun factory(levelId: String): ViewModelProvider.Factory =
             viewModelFactory {

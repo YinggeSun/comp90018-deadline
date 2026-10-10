@@ -11,13 +11,15 @@ import kotlin.random.Random
 
 class InputDegradationTest {
     @Test
-    fun selectionIsUntouchedBelowTheHighStressThreshold() {
+    fun selectionIsUntouchedBelowMaximumStress() {
         val degradation = degradation(probability = 1.0)
 
-        assertEquals(
-            "requested",
-            degradation.resolveSelection("requested", stress = 74, eligibleNeighbours = listOf("other")),
-        )
+        for (stress in listOf(0, 75, 99)) {
+            assertEquals(
+                "requested",
+                degradation.resolveSelection("requested", stress = stress, eligibleNeighbours = listOf("other")),
+            )
+        }
     }
 
     @Test
@@ -62,15 +64,15 @@ class InputDegradationTest {
     }
 
     @Test
-    fun probabilityGovernsHowOftenSelectionSlips() {
-        val degradation = degradation(probability = 0.25)
+    fun defaultProbabilityMakesAboutTwentyPercentOfSelectionsSlip() {
+        val degradation = InputDegradation(random = Random(20250929))
 
         val redirects =
             (1..1000).count {
                 degradation.resolveSelection("requested", 100, listOf("a", "b")) != "requested"
             }
 
-        assertTrue("Expected roughly a quarter of 1000 selections to slip, got $redirects", redirects in 200..300)
+        assertTrue("Expected roughly 20% of 1000 selections to slip, got $redirects", redirects in 150..250)
     }
 
     @Test
@@ -138,7 +140,7 @@ class InputDegradationTest {
     }
 
     private fun degradation(
-        probability: Double = 0.25,
+        probability: Double = StressConfig.DEFAULT_DEGRADATION_PROBABILITY,
         seed: Int = 20250929,
     ) = InputDegradation(
         config = StressConfig(degradationProbability = probability),

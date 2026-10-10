@@ -1,5 +1,13 @@
 package com.comp90018.deadline.feature.game
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,12 +36,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
@@ -93,6 +104,13 @@ fun GameScreen(
         onDispose {
             owner.lifecycle.removeObserver(observer)
             viewModel.setAudioForeground(false)
+        }
+    }
+
+    // Stress only builds while the game is on screen and resumed.
+    LaunchedEffect(viewModel, owner, haptics) {
+        owner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.runStressClock(haptics)
         }
     }
 
@@ -160,7 +178,7 @@ fun GameContent(
     val minimumBoard = minimumBoardSize(uiState.boardRows, uiState.boardColumns)
     GameLayout(
         minimumBoardHeight = minimumBoard.height + BoardPadding * 2,
-        modifier = modifier,
+        modifier = modifier.maxStressFlash(uiState.isMaxStress),
         header = {
             Column {
                 topBar()
@@ -169,8 +187,24 @@ fun GameContent(
                     stress = uiState.stress,
                     stressMaximum = uiState.stressMaximum,
                     isHighStress = uiState.isHighStress,
+                    isMaxStress = uiState.isMaxStress,
+                    isStressSlowed = uiState.isStressSlowed,
                     modifier = Modifier.padding(horizontal = Spacing.large),
                 )
+                if (uiState.isMaxStress) {
+                    Text(
+                        text = stringResource(R.string.game_stress_max_warning),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier =
+                            Modifier
+                                .testTag(MAX_STRESS_WARNING_TAG)
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.large, vertical = Spacing.extraSmall)
+                                .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.small)
+                                .padding(Spacing.small),
+                    )
+                }
             }
         },
         board = {
@@ -212,6 +246,24 @@ fun GameContent(
 }
 
 private val BoardPadding = Spacing.large
+
+const val MAX_STRESS_WARNING_TAG = "max_stress_warning"
+
+/**
+ * Pulsing red frame drawn over the whole screen while [active], for the Maximum Stress
+ * warning. It only draws, so taps still reach the board underneath.
+ */
+@Composable
+private fun Modifier.maxStressFlash(active: Boolean): Modifier {
+    if (!active) return this
+    val alpha by rememberInfiniteTransition(label = "maxStress").animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 500, easing = LinearEasing), RepeatMode.Reverse),
+        label = "maxStressAlpha",
+    )
+    return border(6.dp, MaterialTheme.colorScheme.error.copy(alpha = alpha))
+}
 
 /**
  * Stacks [header], [board] and [footer]. The board fills the height left in

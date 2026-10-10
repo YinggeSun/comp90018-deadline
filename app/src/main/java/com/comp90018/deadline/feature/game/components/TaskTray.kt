@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -24,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
-import androidx.compose.ui.unit.sp
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
@@ -47,27 +47,28 @@ private val MaxSlotSize = 56.dp
 fun TaskTray(
     tiles: List<TileUiModel>,
     capacity: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val almostFull = capacity - tiles.size <= 1
     val description = pluralStringResource(R.plurals.game_tray_description, capacity, tiles.size, capacity)
 
     Column(
-        modifier = modifier
-            .testTag(TASK_TRAY_TAG)
-            .semantics { contentDescription = description },
-        verticalArrangement = Arrangement.spacedBy(Spacing.small)
+        modifier =
+            modifier
+                .testTag(TASK_TRAY_TAG)
+                .semantics { contentDescription = description },
+        verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
             Text(
                 text = stringResource(R.string.game_tray_label),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = stringResource(R.string.game_tray_count, tiles.size, capacity),
                 style = MaterialTheme.typography.labelLarge,
-                color = if (almostFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (almostFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -76,7 +77,7 @@ fun TaskTray(
             val slotSize = min((maxWidth - gap * (capacity - 1)) / capacity, MaxSlotSize)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
             ) {
                 repeat(capacity) { index ->
                     TraySlot(tile = tiles.getOrNull(index), size = slotSize)
@@ -87,22 +88,28 @@ fun TaskTray(
 }
 
 @Composable
-private fun TraySlot(tile: TileUiModel?, size: Dp) {
+private fun TraySlot(
+    tile: TileUiModel?,
+    size: Dp,
+) {
     val colors = MaterialTheme.colorScheme
     val emptyLabel = stringResource(R.string.game_tray_empty_slot)
     val label = tile?.let { stringResource(it.type.labelRes) } ?: emptyLabel
     Surface(
-        modifier = Modifier
-            .size(size)
-            .then(if (tile != null) Modifier.testTag(trayTileTestTag(tile.id)) else Modifier)
-            .semantics { contentDescription = label },
+        modifier =
+            Modifier
+                .size(size)
+                .then(if (tile != null) Modifier.testTag(trayTileTestTag(tile.id)) else Modifier)
+                .semantics { contentDescription = label },
         shape = MaterialTheme.shapes.small,
         color = if (tile != null) colors.surface else colors.surfaceVariant,
-        border = BorderStroke(1.dp, if (tile != null) colors.primary else colors.outline)
+        border = BorderStroke(1.dp, if (tile != null) colors.primary else colors.outline),
     ) {
         if (tile != null) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = tile.type.symbol, fontSize = (size.value * 0.5f).sp)
+                // Sized from the slot in dp, like the board tiles, so it ignores the font scale.
+                val iconSize = with(LocalDensity.current) { (size * 0.5f).toSp() }
+                Text(text = tile.type.symbol, fontSize = iconSize)
             }
         }
     }
@@ -111,8 +118,9 @@ private fun TraySlot(tile: TileUiModel?, size: Dp) {
 @Preview(showBackground = true)
 @Composable
 private fun TaskTrayPreview() {
-    val tiles = listOf(TileType.BOOK, TileType.BOOK, TileType.COFFEE, TileType.LAPTOP, TileType.COFFEE, TileType.LAPTOP)
-        .mapIndexed { index, type -> TileUiModel("t$index", type, 0, 0, 0, isSelectable = false) }
+    val tiles =
+        listOf(TileType.BOOK, TileType.BOOK, TileType.COFFEE, TileType.LAPTOP, TileType.COFFEE, TileType.LAPTOP)
+            .mapIndexed { index, type -> TileUiModel("t$index", type, 0, 0, 0, isSelectable = false) }
     DeadlineTheme {
         Surface {
             TaskTray(tiles = tiles, capacity = 7, modifier = Modifier.padding(Spacing.large))
