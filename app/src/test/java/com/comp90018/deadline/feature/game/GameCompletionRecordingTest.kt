@@ -12,16 +12,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameCompletionRecordingTest {
-
     private val recorded = mutableListOf<CompletionResult>()
     private var nowNanos = 0L
 
-    private fun viewModel(levelId: String) = GameViewModel(
-        levelId,
-        timer = CompletionTimer { nowNanos },
-        completionRecorder = CompletionRecorder { recorded += it },
-        nowMillis = { 123L }
-    )
+    private fun viewModel(levelId: String) =
+        GameViewModel(
+            levelId,
+            timer = CompletionTimer { nowNanos },
+            completionRecorder = CompletionRecorder { recorded += it },
+            nowMillis = { 123L },
+        )
 
     private fun GameViewModel.clearBoard(levelId: String) {
         val level = (FixedLevels.ALL_LEVELS + FixedLevels.SAMPLE_LEVEL).single { it.id == levelId }
@@ -57,21 +57,28 @@ class GameCompletionRecordingTest {
     fun lossIsNotRecorded() {
         // No fixed level can be lost yet (three tile types never fill a 7-slot tray),
         // so drive the ViewModel with an engine whose next selection loses.
-        val losingEngine = object : GameEngine {
-            override var state = GameState(board = FixedLevels.LEVEL_1.board)
-            override val canUndo = false
-            override fun selectTile(tileId: String) {
-                state = state.copy(status = GameStatus.LOST)
+        val losingEngine =
+            object : GameEngine {
+                override var state = GameState(board = FixedLevels.LEVEL_1.board)
+                override val canUndo = false
+
+                override fun selectTile(tileId: String) {
+                    state = state.copy(status = GameStatus.LOST)
+                }
+
+                override fun isTileSelectable(tileId: String) = true
+
+                override fun undo() = Unit
+
+                override fun shuffle() = Unit
+
+                override fun restart() = Unit
             }
-            override fun isTileSelectable(tileId: String) = true
-            override fun undo() = Unit
-            override fun shuffle() = Unit
-            override fun restart() = Unit
-        }
-        val viewModel = GameViewModel(
-            FixedLevels.LEVEL_1.id,
-            completionRecorder = CompletionRecorder { recorded += it }
-        ) { losingEngine }
+        val viewModel =
+            GameViewModel(
+                FixedLevels.LEVEL_1.id,
+                completionRecorder = CompletionRecorder { recorded += it },
+            ) { losingEngine }
 
         viewModel.onEvent(GameUiEvent.TileTapped("level_1_book_1"))
 

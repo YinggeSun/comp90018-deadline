@@ -1,4 +1,7 @@
 [versions]
+# Pinned: verified to build with this project's Kotlin 1.9. Check compatibility before upgrading.
+firebaseBom = "33.7.0"
+googleServices = "4.4.2"
 agp = "8.5.1"
 kotlin = "1.9.0"
 coreKtx = "1.10.1"
@@ -11,11 +14,12 @@ composeBom = "2024.04.01"
 navigationCompose = "2.7.7"
 kotlinxCoroutines = "1.7.3"
 datastore = "1.1.1"
-# Pinned: verified to build with this project's Kotlin 1.9. Check compatibility before upgrading.
-firebaseBom = "33.7.0"
-googleServices = "4.4.2"
 
 [libraries]
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -36,10 +40,6 @@ androidx-navigation-testing = { group = "androidx.navigation", name = "navigatio
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
-firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

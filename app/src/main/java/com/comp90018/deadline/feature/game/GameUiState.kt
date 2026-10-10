@@ -14,7 +14,7 @@ data class TileUiModel(
     val row: Int,
     val column: Int,
     val layer: Int,
-    val isSelectable: Boolean
+    val isSelectable: Boolean,
 )
 
 /**
@@ -24,8 +24,16 @@ data class TileUiModel(
  * tiles are removed.
  *
  * [stress] and [stressMaximum] describe the Stress System gauge, and
- * [isHighStress] is the warning state the engine's configuration defines, so
- * the HUD never has to re-derive the threshold.
+ * [isHighStress] is the warning band the engine's configuration defines, so
+ * the HUD never has to re-derive the threshold. [isMaxStress] is the Maximum
+ * Stress state of a running game, in which selections may slip onto a
+ * neighbouring tile and the screen flashes a warning. [isStressSlowed] is true while
+ * the Music effect slows stress accumulation in a running game.
+ *
+ * [previousBestMillis] is this level's Personal Best from before the current run. It is
+ * read in the same update that sets [status] to WON, before the new time is saved, so the
+ * Result screen can tell whether this run set a new record without waiting for the save.
+ * It is null while the game is running and when the level had no best yet.
  *
  * Elapsed time is not part of this state; it is published separately by
  * [GameViewModel.elapsedSeconds] so the whole screen does not recompose every
@@ -44,5 +52,8 @@ data class GameUiState(
     val stress: Int = 0,
     val stressMaximum: Int = StressConfig.DEFAULT_MAXIMUM,
     val isHighStress: Boolean = false,
-    val canUndo: Boolean = false
+    val isMaxStress: Boolean = false,
+    val isStressSlowed: Boolean = false,
+    val canUndo: Boolean = false,
+    val previousBestMillis: Long? = null,
 )

@@ -5,7 +5,7 @@ import kotlin.math.abs
 import kotlin.random.Random
 
 /**
- * High Stress makes the player's touch unreliable: a selection can slip onto a neighbouring
+ * Maximum Stress makes the player's touch unreliable: a selection can slip onto a neighbouring
  * tile instead of the requested one.
  *
  * These rules never read the board's availability tracking themselves. The caller supplies
@@ -14,13 +14,13 @@ import kotlin.random.Random
  */
 class InputDegradation(
     private val config: StressConfig = StressConfig(),
-    private val random: Random = Random.Default
+    private val random: Random = Random.Default,
 ) {
     private val stressManager = StressManager(config)
 
     /**
-     * The tile that is actually selected. Returns [requestedTileId] unchanged below the High
-     * Stress threshold, when no candidate remains, or when the probability roll does not
+     * The tile that is actually selected. Returns [requestedTileId] unchanged below Maximum
+     * Stress, when no candidate remains, or when the probability roll does not
      * trigger; otherwise one of [eligibleNeighbours] chosen uniformly.
      *
      * The requested tile is dropped from the candidates so a triggered redirect always moves
@@ -29,9 +29,9 @@ class InputDegradation(
     fun resolveSelection(
         requestedTileId: String,
         stress: Int,
-        eligibleNeighbours: List<String>
+        eligibleNeighbours: List<String>,
     ): String {
-        if (!stressManager.isHighStress(stress)) return requestedTileId
+        if (!stressManager.isMaxStress(stress)) return requestedTileId
         val candidates = eligibleNeighbours.filter { it != requestedTileId }
         if (candidates.isEmpty()) return requestedTileId
         if (random.nextDouble() >= config.degradationProbability) return requestedTileId
@@ -49,7 +49,7 @@ class InputDegradation(
     fun eligibleNeighbours(
         requestedTileId: String,
         tiles: List<Tile>,
-        selectableIds: Set<String>
+        selectableIds: Set<String>,
     ): List<String> {
         val requested = tiles.find { it.id == requestedTileId } ?: return emptyList()
         return tiles.filter { candidate ->
@@ -59,7 +59,10 @@ class InputDegradation(
         }.map { it.id }
     }
 
-    private fun isNeighbour(requested: Tile, candidate: Tile): Boolean =
+    private fun isNeighbour(
+        requested: Tile,
+        candidate: Tile,
+    ): Boolean =
         abs(requested.position.row.toLong() - candidate.position.row.toLong()) <= 2L &&
             abs(requested.position.column.toLong() - candidate.position.column.toLong()) <= 2L
 }

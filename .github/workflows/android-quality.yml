@@ -1,0 +1,61 @@
+name: Android quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Android quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Java 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          cmdline-tools-version: '12266719'
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Install compile SDK
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Kotlin formatting
+        run: bash ./gradlew ktlintCheck --console=plain
+      - name: JVM tests
+        if: ${{ !cancelled() }}
+        run: bash ./gradlew :app:testDebugUnitTest --console=plain
+      - name: Debug build
+        if: ${{ !cancelled() }}
+        run: bash ./gradlew :app:assembleDebug --console=plain
+      - name: Android lint
+        if: ${{ !cancelled() }}
+        run: bash ./gradlew :app:lintDebug --console=plain
+      - name: Upload QA reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-quality-reports
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            build/reports/ktlint/
+            app/build/reports/
+            app/build/test-results/testDebugUnitTest/

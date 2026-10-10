@@ -7,9 +7,11 @@ package com.comp90018.deadline.domain.settings
  */
 data class PlayerSettings(
     val nickname: String? = null,
+    val backgroundMusicEnabled: Boolean = true,
+    val soundEffectsEnabled: Boolean = true,
     val hapticsEnabled: Boolean = true,
     val shakeToShuffleEnabled: Boolean = true,
-    val tiltToPeekEnabled: Boolean = true
+    val tiltToPeekEnabled: Boolean = true,
 ) {
     init {
         require(nickname == null || nickname.isNotBlank()) { "Nickname must not be blank." }

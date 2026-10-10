@@ -11,32 +11,26 @@ class StressConfigTest {
 
         assertEquals(100, config.maximum)
         assertEquals(75, config.highStressThreshold)
-        assertEquals(0.25, config.degradationProbability, 0.0)
+        assertEquals(0.20, config.degradationProbability, 0.0)
     }
 
     @Test
-    fun rateGrowsLinearlyFromTheFirstWeek() {
-        val config = StressConfig(baseRate = 2, rateGrowthPerWeek = 3)
+    fun defaultsAccumulateOnePointFivePercentOfTheRangePerSecond() {
+        val config = StressConfig()
 
-        assertEquals(2, config.rateForWeek(1))
-        assertEquals(5, config.rateForWeek(2))
-        assertEquals(14, config.rateForWeek(5))
+        assertEquals(1.5, config.accumulationPercentPerSecond, 0.0)
+        assertEquals(1.5, config.accumulationPerSecond, 1e-9)
     }
 
     @Test
-    fun flatRateIgnoresTheWeek() {
-        val config = StressConfig(baseRate = 4, rateGrowthPerWeek = 0)
-
-        assertEquals(4, config.rateForWeek(1))
-        assertEquals(4, config.rateForWeek(12))
+    fun accumulationPerSecondScalesWithTheConfiguredRange() {
+        assertEquals(3.0, StressConfig(maximum = 200).accumulationPerSecond, 1e-9)
+        assertEquals(5.0, StressConfig(maximum = 50, accumulationPercentPerSecond = 10.0).accumulationPerSecond, 1e-9)
     }
 
     @Test
-    fun oneStepNeverExceedsTheFullRangeEvenForAnExtremeWeek() {
-        val config = StressConfig(maximum = 50, baseRate = 1, rateGrowthPerWeek = 9)
-
-        assertEquals(50, config.rateForWeek(100))
-        assertEquals(50, config.rateForWeek(Int.MAX_VALUE))
+    fun zeroAccumulationIsAValidConfiguration() {
+        assertEquals(0.0, StressConfig(accumulationPercentPerSecond = 0.0).accumulationPerSecond, 0.0)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -65,18 +59,13 @@ class StressConfigTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun rejectsNegativeBaseRate() {
-        StressConfig(baseRate = -1)
+    fun rejectsNegativeAccumulationRate() {
+        StressConfig(accumulationPercentPerSecond = -0.1)
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun rejectsNegativeGrowth() {
-        StressConfig(rateGrowthPerWeek = -1)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun rejectsNonPositiveWeek() {
-        StressConfig().rateForWeek(0)
+    fun rejectsNonFiniteAccumulationRate() {
+        StressConfig(accumulationPercentPerSecond = Double.NaN)
     }
 
     @Test
@@ -97,28 +86,21 @@ class StressConfigTest {
     }
 
     @Test
-    fun defaultsGiveCoffeeRecoveryThatOutweighsSeveralAccumulationSteps() {
+    fun defaultsGiveCoffeeRecoveryThatOutweighsSeveralSecondsOfAccumulation() {
         val config = StressConfig()
 
         assertEquals(20, config.coffeeRecoveryBase)
         assertEquals(20, config.coffeeRecoveryForWeek(1))
-        assertTrue(config.coffeeRecoveryForWeek(1) > config.rateForWeek(1))
+        assertTrue(config.coffeeRecoveryForWeek(1) > config.accumulationPerSecond * 10)
     }
 
     @Test
-    fun coffeeRecoveryShrinksLinearlyWhileAccumulationGrows() {
-        val config = StressConfig(
-            baseRate = 2,
-            rateGrowthPerWeek = 1,
-            coffeeRecoveryBase = 20,
-            coffeeRecoveryDeclinePerWeek = 2
-        )
+    fun coffeeRecoveryShrinksLinearlyAsTheSemesterProgresses() {
+        val config = StressConfig(coffeeRecoveryBase = 20, coffeeRecoveryDeclinePerWeek = 2)
 
         assertEquals(20, config.coffeeRecoveryForWeek(1))
         assertEquals(18, config.coffeeRecoveryForWeek(2))
         assertEquals(12, config.coffeeRecoveryForWeek(5))
-        // The semester tightens from both directions.
-        assertTrue(config.rateForWeek(5) > config.rateForWeek(1))
     }
 
     @Test
@@ -163,5 +145,29 @@ class StressConfigTest {
     @Test(expected = IllegalArgumentException::class)
     fun rejectsNonPositiveWeekForCoffeeRecovery() {
         StressConfig().coffeeRecoveryForWeek(0)
+    }
+
+    @Test
+    fun musicDefaultsGiveASmallRecoveryAndAHalfSpeedSlowdown() {
+        val config = StressConfig()
+
+        assertEquals(8, config.musicRecovery)
+        assertEquals(0.5, config.musicSlowdownMultiplier, 0.0)
+        assertEquals(8_000L, config.musicSlowdownMillis)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeMusicRecovery() {
+        StressConfig(musicRecovery = -1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsMusicMultiplierAboveOneBecauseItWouldSpeedStressUp() {
+        StressConfig(musicSlowdownMultiplier = 1.5)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeMusicDuration() {
+        StressConfig(musicSlowdownMillis = -1L)
     }
 }

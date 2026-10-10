@@ -30,7 +30,7 @@ class BoardShuffler(
         return Board(
             board.tiles.mapIndexed { index, tile ->
                 tile.copy(type = shuffledTypes[index])
-            }
+            },
         )
     }
 

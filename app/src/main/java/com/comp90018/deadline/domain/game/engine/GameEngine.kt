@@ -16,10 +16,17 @@ interface GameEngine {
         get() = StressConfig()
 
     /**
-     * Resolves selection, matching, stress, then win/loss; terminal games, unavailable IDs
-     * and full trays are no-ops that leave [GameState.stress] unchanged.
+     * Resolves selection, matching, Coffee Recovery, then win/loss; terminal games,
+     * unavailable IDs and full trays are no-ops. Selection never adds stress. At Maximum
+     * Stress the selection may slip onto a neighbouring selectable tile.
      */
     fun selectTile(tileId: String)
+
+    /**
+     * Accumulates stress for [elapsedMillis] of active play. Terminal games ignore it.
+     * Engines without a Stress System may keep the default no-op.
+     */
+    fun advanceTime(elapsedMillis: Long) {}
 
     /** True only while running, for a tile still on the board with no active covering tiles. */
     fun isTileSelectable(tileId: String): Boolean

@@ -16,29 +16,30 @@ import org.junit.Test
  */
 class CoffeeRecoveryIntegrationTest {
     @Test
-    fun coffeeTripleClearsTheTrayAndLowersStressWhileOtherTriplesOnlyAccumulate() {
-        val engine = engine(FixedLevels.LEVEL_1, config(baseRate = 10, recoveryBase = 25))
+    fun coffeeTripleClearsTheTrayAndLowersStressWhileOtherTriplesLeaveItAlone() {
+        val engine = engine(FixedLevels.LEVEL_1, config(recoveryBase = 25), initialStress = 40)
 
         select(engine, "level_1_coffee_1", "level_1_coffee_2")
-        assertEquals(20, engine.state.stress)
+        assertEquals("Selections never add stress", 40, engine.state.stress)
         assertEquals(COFFEE_IDS.take(2), engine.state.taskTray.tiles.map { it.id })
 
         engine.selectTile("level_1_coffee_3")
-        assertEquals(5, engine.state.stress)
+        assertEquals(15, engine.state.stress)
         assertTrue(engine.state.taskTray.tiles.isEmpty())
         assertEquals(BOOK_IDS, engine.state.board.tiles.map { it.id })
         assertEquals(GameStatus.RUNNING, engine.state.status)
 
         select(engine, *BOOK_IDS.toTypedArray())
-        // A Book triple accumulates like any other selection but never recovers.
-        assertEquals(35, engine.state.stress)
+        // A Book triple neither recovers nor adds stress.
+        assertEquals(15, engine.state.stress)
         assertTrue(engine.state.board.tiles.isEmpty())
         assertTrue(engine.state.taskTray.tiles.isEmpty())
         assertEquals(GameStatus.WON, engine.state.status)
 
         // A terminal game ignores further selections, so stress stops moving too.
         engine.selectTile("level_1_coffee_1")
-        assertEquals(35, engine.state.stress)
+        engine.advanceTime(10_000L)
+        assertEquals(15, engine.state.stress)
     }
 
     @Test
@@ -109,7 +110,7 @@ class CoffeeRecoveryIntegrationTest {
 
     @Test
     fun rejectedSelectionsLeaveStressUntouched() {
-        val engine = engine(FixedLevels.LEVEL_3, config(baseRate = 7), initialStress = 20)
+        val engine = engine(FixedLevels.LEVEL_3, config(), initialStress = 20)
 
         for (invalid in listOf("level_3_coffee_1", "unknown-tile")) {
             engine.selectTile(invalid)
@@ -118,16 +119,17 @@ class CoffeeRecoveryIntegrationTest {
     }
 
     @Test
-    fun undoRestoresStressUntilACoffeeMatchCommitsIt() {
-        val engine = engine(FixedLevels.LEVEL_1, config(baseRate = 5, recoveryBase = 25))
+    fun undoKeepsTheStressThatTimeHasAdded() {
+        val engine = engine(FixedLevels.LEVEL_1, config(recoveryBase = 25))
 
         engine.selectTile("level_1_coffee_1")
-        assertEquals(5, engine.state.stress)
+        engine.advanceTime(2_000L)
         engine.selectTile("level_1_coffee_2")
-        assertEquals(10, engine.state.stress)
+        engine.advanceTime(2_000L)
+        assertEquals(6, engine.state.stress)
 
         engine.undo()
-        assertEquals(5, engine.state.stress)
+        assertEquals("Undo must not rewind time-based stress", 6, engine.state.stress)
         assertEquals(listOf("level_1_coffee_1"), engine.state.taskTray.tiles.map { it.id })
 
         select(engine, "level_1_coffee_2", "level_1_coffee_3")
@@ -141,13 +143,15 @@ class CoffeeRecoveryIntegrationTest {
 
     @Test
     fun restartReturnsStressToTheStartingValue() {
-        val engine = engine(
-            FixedLevels.LEVEL_1,
-            config(baseRate = 5, recoveryBase = 25),
-            initialStress = 30
-        )
+        val engine =
+            engine(
+                FixedLevels.LEVEL_1,
+                config(recoveryBase = 25),
+                initialStress = 30,
+            )
 
         select(engine, *COFFEE_IDS.toTypedArray())
+        engine.advanceTime(10_000L)
         assertEquals(20, engine.state.stress)
 
         engine.restart()
@@ -167,7 +171,7 @@ class CoffeeRecoveryIntegrationTest {
 
         select(engine, *COFFEE_IDS.toTypedArray())
 
-        // Three default accumulation steps are far smaller than one default recovery.
+        // Selecting adds nothing, and recovery stops at zero.
         assertEquals(0, engine.state.stress)
     }
 
@@ -180,29 +184,30 @@ class CoffeeRecoveryIntegrationTest {
         level: Level,
         stressConfig: StressConfig,
         initialStress: Int = 0,
-        week: Int = 1
-    ): GameEngine = DefaultGameEngine(
-        level = level,
-        week = week,
-        stressConfig = stressConfig,
-        initialStress = initialStress
-    )
+        week: Int = 1,
+    ): GameEngine =
+        DefaultGameEngine(
+            level = level,
+            week = week,
+            stressConfig = stressConfig,
+            initialStress = initialStress,
+        )
 
-    /** Flat rates by default so each test reads one rule at a time. */
+    /** Flat recovery by default so each test reads one rule at a time. */
     private fun config(
         maximum: Int = 100,
-        baseRate: Int = 0,
         recoveryBase: Int = StressConfig.DEFAULT_COFFEE_RECOVERY_BASE,
-        recoveryDecline: Int = 0
+        recoveryDecline: Int = 0,
     ) = StressConfig(
         maximum = maximum,
-        baseRate = baseRate,
-        rateGrowthPerWeek = 0,
         coffeeRecoveryBase = recoveryBase,
-        coffeeRecoveryDeclinePerWeek = recoveryDecline
+        coffeeRecoveryDeclinePerWeek = recoveryDecline,
     )
 
-    private fun select(engine: GameEngine, vararg tileIds: String) {
+    private fun select(
+        engine: GameEngine,
+        vararg tileIds: String,
+    ) {
         for (id in tileIds) engine.selectTile(id)
     }
 

@@ -77,6 +77,32 @@ class GameHudTest {
     }
 
     @Test
+    fun maxStressShowsUnreliableInputWarning() {
+        setContent(baseState.copy(stress = 100, isHighStress = true, isMaxStress = true))
+
+        composeRule.onNodeWithTag(STRESS_INDICATOR_TAG)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Maximum stress!"))
+        composeRule.onNodeWithTag(MAX_STRESS_WARNING_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("Maximum stress — some tile selections may be incorrect.").assertIsDisplayed()
+    }
+
+    @Test
+    fun belowMaxStressHasNoUnreliableInputWarning() {
+        setContent(baseState.copy(stress = 90, isHighStress = true))
+
+        composeRule.onNodeWithTag(MAX_STRESS_WARNING_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun musicSlowdownShowsLabelAndState() {
+        setContent(baseState.copy(stress = 40, isStressSlowed = true))
+
+        composeRule.onNodeWithTag("stress_slowed", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag(STRESS_INDICATOR_TAG)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "🎵 Slowed"))
+    }
+
+    @Test
     fun normalStressHasNoWarning() {
         setContent(baseState.copy(stress = 20, isHighStress = false))
 

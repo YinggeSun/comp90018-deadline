@@ -32,9 +32,10 @@ class SensorIntegrationTest {
     }
 
     @Test fun viewModelPublishesShuffleAndKeepsBoardDimensions() {
-        val vm = GameViewModel(FixedLevels.LEVEL_3.id, createEngine = {
-            DefaultGameEngine(it, boardShuffler = BoardShuffler(Random(42)))
-        })
+        val vm =
+            GameViewModel(FixedLevels.LEVEL_3.id, createEngine = {
+                DefaultGameEngine(it, boardShuffler = BoardShuffler(Random(42)))
+            })
         val before = vm.uiState.value
         assertTrue(vm.onShuffleRequested())
         assertNotEquals(before.boardTiles, vm.uiState.value.boardTiles)

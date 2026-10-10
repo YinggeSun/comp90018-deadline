@@ -63,10 +63,15 @@ class OverlapGraphTest {
 
     @Test
     fun removalUpdatesEveryCoveredNeighbourAndLeavesUnrelatedBlockersIntact() {
-        val graph = graph(
-            tile("upper", 1, 1, 1), tile("left", 0, 0), tile("right", 2, 2),
-            tile("otherUpper", 8, 8, 1), tile("otherLower", 8, 8), tile("unrelated", 16, 16)
-        )
+        val graph =
+            graph(
+                tile("upper", 1, 1, 1),
+                tile("left", 0, 0),
+                tile("right", 2, 2),
+                tile("otherUpper", 8, 8, 1),
+                tile("otherLower", 8, 8),
+                tile("unrelated", 16, 16),
+            )
         assertTrue(graph.remove("unrelated"))
         assertFalse(graph.isSelectable("left"))
         assertFalse(graph.isSelectable("right"))
@@ -80,10 +85,12 @@ class OverlapGraphTest {
 
     @Test
     fun maximumCoordinatesDoNotOverflowIntersectionArithmetic() {
-        val graph = graph(
-            tile("upper", Int.MAX_VALUE, Int.MAX_VALUE, 1),
-            tile("lower", Int.MAX_VALUE - 1, Int.MAX_VALUE - 1), tile("far", 0, 0)
-        )
+        val graph =
+            graph(
+                tile("upper", Int.MAX_VALUE, Int.MAX_VALUE, 1),
+                tile("lower", Int.MAX_VALUE - 1, Int.MAX_VALUE - 1),
+                tile("far", 0, 0),
+            )
         assertFalse(graph.isSelectable("lower"))
         assertTrue(graph.isSelectable("far"))
         assertTrue(graph.remove("upper"))
@@ -104,7 +111,10 @@ class OverlapGraphTest {
         graph(tile("duplicate", 0, 0), tile("duplicate", 1, 1))
     }
 
-    private fun assertCovered(row: Int, column: Int) {
+    private fun assertCovered(
+        row: Int,
+        column: Int,
+    ) {
         // Exercise both coordinate directions and input orders.
         for (reverse in listOf(false, true)) {
             val upper = tile("upper", if (reverse) row else 0, if (reverse) column else 0, 1)
@@ -118,8 +128,12 @@ class OverlapGraphTest {
         }
     }
 
-    private fun tile(id: String, row: Int, column: Int, layer: Int = 0) =
-        Tile(id, TileType.DEFAULT, TilePosition(row, column, layer))
+    private fun tile(
+        id: String,
+        row: Int,
+        column: Int,
+        layer: Int = 0,
+    ) = Tile(id, TileType.DEFAULT, TilePosition(row, column, layer))
 
     private fun graph(vararg tiles: Tile) = OverlapGraph(Board(tiles.toList()))
 }
