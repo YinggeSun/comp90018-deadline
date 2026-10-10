@@ -1,7 +1,7 @@
 # Firestore security and validation
 
-The online leaderboard (#38) is the only data the app stores in Cloud Firestore.
-`firestore.rules` protects it (#51). The rules run on Google's servers in front of the
+The app stores two things in Cloud Firestore: the online leaderboard (#38) and each player's
+cloud copy of their progress (#39). `firestore.rules` protects both (#51). The rules run on Google's servers in front of the
 database, so they hold even against a modified app or a client that skips the app
 entirely: anything they do not allow is refused.
 
@@ -21,6 +21,27 @@ leaderboard/{levelId}/entries/{userId}
 Players are identified by Firebase Anonymous Authentication (#37), so no personal data is
 collected. The app reads a level's ranking with a live query ordered by `timeMillis`.
 
+Each player also has one progress document, the cloud copy of what is stored on the device:
+
+```text
+progress/{userId}
+  completedLevelIds   list of strings      levels cleared, from level_1 … level_6
+  highestUnlockedWeek integer              1–12
+  personalBests       map                  levelId → { timeMillis, achievedAtMillis }
+  lastModifiedMillis  integer              latest local change, for reference
+  updatedAt           timestamp            set by the server
+```
+
+### How progress sync works
+
+A sync runs at startup (once the device is online), after every win, and whenever the device
+reconnects. It reads the cloud copy, merges it with local progress, and writes the result back
+in one Firestore transaction, then merges that result into local progress. The merge never
+makes anything worse: completed levels are combined, the furthest unlocked week wins, and each
+level keeps its faster Personal Best. Because the write is a transaction, a stale copy cannot
+overwrite progress saved from another device in the meantime. Offline, a sync simply fails and
+the next one, after reconnecting, uploads what was played.
+
 ## What the rules allow
 
 Everything not listed here is denied, including every path outside `leaderboard/`.
@@ -31,8 +52,12 @@ Everything not listed here is denied, including every path outside `leaderboard/
 | Create an entry | the caller owns it (`{userId}` is their ID) and the document is valid |
 | Update an entry | as for create, and the new `timeMillis` is strictly lower than the stored one |
 | Delete an entry | never |
+| Read own progress | the caller is the owner (`{userId}` is their ID) |
+| Create own progress | the caller is the owner and the document is valid (below) |
+| Update own progress | as for create, and nothing gets worse: no completed level is dropped, the unlocked week does not go down, and no Personal Best gets slower or disappears |
+| Delete progress | never |
 
-## What makes a document valid
+## What makes a leaderboard entry valid
 
 - **Shape:** exactly the five fields above, no more and no fewer.
 - **Ownership:** `uid` equals `{userId}`, which equals the caller's ID, so nobody can write or
@@ -57,6 +82,15 @@ Everything not listed here is denied, including every path outside `leaderboard/
   tile counts in `SemesterDifficulty` change, update the floors and the week map in the rules.
 - **Timestamp:** `submittedAt` must be the server's time (`request.time`), so entries cannot be
   backdated.
+
+## What makes a progress document valid
+
+- **Shape:** exactly the five fields above, no more and no fewer.
+- **Values:** `completedLevelIds` only lists the six levels; `highestUnlockedWeek` is 1–12;
+  `personalBests` only has keys for the six levels, each holding an integer `timeMillis` at
+  or above that level's minimum time (the same floors as the leaderboard) and an integer
+  `achievedAtMillis`.
+- **Timestamp:** `updatedAt` must be the server's time.
 
 Several checks overlap on purpose. For example, a document with a missing field also fails the
 type checks, and a level outside the six has no expected week. Each requirement is still
@@ -83,6 +117,8 @@ locally on the `demo-deadline` project, never the real one.
   case and every refusal above, each changing one field from a valid entry.
 - `FirestoreLeaderboardEmulatorTest` runs the app's leaderboard code against the same rules:
   ranking order, faster-only updates, live updates, and refusals.
+- `FirestoreProgressSyncEmulatorTest` runs progress sync against the same rules, including two
+  devices on one account ending up with everything.
 
 Both test classes clear the emulator database before each test, and skip themselves when the
 emulators are not running, so normal instrumented test runs are unaffected.
