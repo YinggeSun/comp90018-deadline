@@ -37,6 +37,32 @@ object FirebaseEmulator {
         }
     }
 
+    /**
+     * Creates the document at [path] from Firestore REST [json] with the emulator's admin access,
+     * bypassing the rules, to stand in for records that already exist (for example from before
+     * the rules were tightened).
+     */
+    fun writeAsAdmin(
+        path: String,
+        json: String,
+    ) {
+        val collection = path.substringBeforeLast('/')
+        val documentId = path.substringAfterLast('/')
+        val url =
+            URL("http://$HOST:$FIRESTORE_PORT/v1/projects/$PROJECT_ID/databases/(default)/documents/$collection?documentId=$documentId")
+        val connection = url.openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Authorization", "Bearer owner")
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.outputStream.use { it.write(json.toByteArray()) }
+            check(connection.responseCode == HttpURLConnection.HTTP_OK) { "Admin write failed: ${connection.responseCode}" }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     /** A separate Firebase app, i.e. a separate player, connected to the emulators. */
     fun newApp(context: Context): FirebaseApp {
         val app =

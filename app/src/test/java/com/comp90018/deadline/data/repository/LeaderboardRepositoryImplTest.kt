@@ -34,6 +34,7 @@ class LeaderboardRepositoryImplTest {
         var observeFailure: LeaderboardFailure? = null
         var writeFailure: LeaderboardFailure? = null
         var readHangs = false
+        var readThrows = false
         var writeHangs = false
         val writes = mutableListOf<Pair<LeaderboardEntry, Int>>()
 
@@ -55,6 +56,7 @@ class LeaderboardRepositoryImplTest {
             userId: String,
         ): LeaderboardEntry? {
             if (readHangs) awaitCancellation()
+            if (readThrows) throw IllegalStateException("Field 'submittedAt' is not a Timestamp")
             return stored.value[levelId to userId]
         }
 
@@ -119,6 +121,14 @@ class LeaderboardRepositoryImplTest {
     fun unreadableExistingEntryStillAttemptsTheWrite() =
         runTest {
             store.readHangs = true
+
+            assertEquals(SubmitResult.Submitted, repository.submit(result(30_000), "Lav"))
+        }
+
+    @Test
+    fun anExistingEntryThatCannotBeReadDoesNotMakeSubmitThrow() =
+        runTest {
+            store.readThrows = true
 
             assertEquals(SubmitResult.Submitted, repository.submit(result(30_000), "Lav"))
         }
