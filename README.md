@@ -215,6 +215,22 @@ The project plans to include:
 - Usability testing
 - Performance and recomposition testing
 
+## Image Credits
+
+The app uses photos of the University of Melbourne Parkville campus as backgrounds. University logos and crests have been cropped out. The app icon is an original vector drawing.
+
+| File | Photo | Used for | Source |
+|---|---|---|---|
+| `bg_home.webp` | Old Arts clock tower reflected in the pond | Home | To be added |
+| `bg_level_1.webp` | Sandstone heritage building | Level 1 (Weeks 1–2) | To be added |
+| `bg_level_2.webp` | Arches outside the Raymond Priestley Building | Level 2 (Weeks 3–4) | To be added |
+| `bg_level_3.webp` | Arched walkway | Level 3 (Weeks 5–6) | To be added |
+| `bg_level_4.webp` | Sports centre and running track | Level 4 (Weeks 7–8) | To be added |
+| `bg_level_5.webp` | Library staircase at night | Level 5 (Weeks 9–10) | To be added |
+| `bg_level_6.webp` | Old Arts clock tower | Level 6 (Weeks 11–12) | To be added |
+
+The images are in `app/src/main/res/drawable-nodpi/`.
+
 ## Team
 
 COMP90018  
