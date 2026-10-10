@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Minimal leaderboard rules (#38): signed-in players can read every ranking and can only
+// create or improve their own entry. #51 adds field validation and plausible-time checks.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/{levelId}/entries/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.timeMillis < resource.data.timeMillis;
+      allow delete: if false;
+    }
+  }
+}
