@@ -22,7 +22,7 @@ import kotlinx.coroutines.withTimeout
 class AuthRepositoryImpl(
     private val client: AnonymousAuthClient,
     private val scope: CoroutineScope,
-    private val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS
+    private val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
 ) : AuthRepository {
     private val attemptLock = Mutex()
     private var currentAttempt: Deferred<Result<String>>? = null
@@ -31,22 +31,24 @@ class AuthRepositoryImpl(
 
     override suspend fun ensureSignedIn(): Result<String> {
         client.currentUserId?.let { return Result.success(it) }
-        val attempt = attemptLock.withLock {
-            currentAttempt?.takeIf { it.isActive }
-                ?: scope.async { signIn() }.also { currentAttempt = it }
-        }
+        val attempt =
+            attemptLock.withLock {
+                currentAttempt?.takeIf { it.isActive }
+                    ?: scope.async { signIn() }.also { currentAttempt = it }
+            }
         return attempt.await()
     }
 
-    private suspend fun signIn(): Result<String> = try {
-        Result.success(withTimeout(timeoutMillis) { client.signInAnonymously() })
-    } catch (timeout: TimeoutCancellationException) {
-        Result.failure(timeout)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: Exception) {
-        Result.failure(error)
-    }
+    private suspend fun signIn(): Result<String> =
+        try {
+            Result.success(withTimeout(timeoutMillis) { client.signInAnonymously() })
+        } catch (timeout: TimeoutCancellationException) {
+            Result.failure(timeout)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
 
     private companion object {
         const val DEFAULT_TIMEOUT_MILLIS = 10_000L

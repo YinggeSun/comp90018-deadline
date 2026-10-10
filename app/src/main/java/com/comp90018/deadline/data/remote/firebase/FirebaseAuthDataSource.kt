@@ -20,15 +20,15 @@ interface AnonymousAuthClient {
 }
 
 class FirebaseAuthDataSource(private val auth: FirebaseAuth) : AnonymousAuthClient {
-
     override val currentUserId: String?
         get() = auth.currentUser?.uid
 
-    override fun userIdChanges(): Flow<String?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser?.uid) }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
-    }.distinctUntilChanged()
+    override fun userIdChanges(): Flow<String?> =
+        callbackFlow {
+            val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser?.uid) }
+            auth.addAuthStateListener(listener)
+            awaitClose { auth.removeAuthStateListener(listener) }
+        }.distinctUntilChanged()
 
     override suspend fun signInAnonymously(): String =
         checkNotNull(auth.signInAnonymously().await().user?.uid) { "Sign-in returned no user." }
