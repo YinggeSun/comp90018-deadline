@@ -13,37 +13,45 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
 /**
- * Anonymous identity with no sign-up step. An existing user is reused, and callers that
- * arrive while a sign-in is running share that attempt and its result, success or failure.
- * Failures (offline, timeout, server error) come back as [Result.failure] so no caller can
- * be blocked or crashed by the network. The attempt runs in [scope], so one caller giving
- * up does not cancel it for the others.
+ * Anonymous identity with no sign-up step. An existing user is reused. Only one Firebase
+ * sign-in runs at a time: it is started in [scope] and kept until Firebase finishes it, and
+ * every caller that arrives meanwhile waits on that same operation. [timeoutMillis] limits
+ * each caller's wait, not the operation, so a retry after a timeout joins the sign-in that is
+ * still running instead of starting a second one (which could replace the identity when the
+ * first completes late). Failures (offline, timeout, server error) come back as
+ * [Result.failure]; cancelling a caller stops only that caller's wait and is rethrown to it.
  */
 class AuthRepositoryImpl(
     private val client: AnonymousAuthClient,
     private val scope: CoroutineScope,
     private val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
 ) : AuthRepository {
-    private val attemptLock = Mutex()
-    private var currentAttempt: Deferred<Result<String>>? = null
+    private val operationLock = Mutex()
+    private var currentOperation: Deferred<Result<String>>? = null
 
     override val userId: Flow<String?> = client.userIdChanges()
 
     override suspend fun ensureSignedIn(): Result<String> {
         client.currentUserId?.let { return Result.success(it) }
-        val attempt =
-            attemptLock.withLock {
-                currentAttempt?.takeIf { it.isActive }
-                    ?: scope.async { signIn() }.also { currentAttempt = it }
+        val operation =
+            operationLock.withLock {
+                currentOperation?.takeIf { it.isActive }
+                    ?: scope.async { signInOnce() }.also { currentOperation = it }
             }
-        return attempt.await()
-    }
-
-    private suspend fun signIn(): Result<String> =
-        try {
-            Result.success(withTimeout(timeoutMillis) { client.signInAnonymously() })
+        return try {
+            withTimeout(timeoutMillis) { operation.await() }
         } catch (timeout: TimeoutCancellationException) {
             Result.failure(timeout)
+        }
+    }
+
+    /**
+     * The shared operation. It keeps its failure as a result instead of throwing, so a failed
+     * sign-in reaches every waiting caller and never fails [scope] or the work running in it.
+     */
+    private suspend fun signInOnce(): Result<String> =
+        try {
+            Result.success(client.signInAnonymously())
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
