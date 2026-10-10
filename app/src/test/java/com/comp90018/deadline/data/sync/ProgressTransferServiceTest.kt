@@ -9,12 +9,16 @@ import com.comp90018.deadline.domain.progress.PersonalBest
 import com.comp90018.deadline.domain.progress.PlayerProgress
 import com.comp90018.deadline.domain.progress.RedeemResult
 import com.comp90018.deadline.domain.progress.TransferCode
+import com.comp90018.deadline.domain.repository.AuthRepository
+import com.comp90018.deadline.domain.repository.ProgressRepository
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 class ProgressTransferServiceTest {
     /** In-memory codes with switches for Firestore's failure modes. */
@@ -150,6 +154,37 @@ class ProgressTransferServiceTest {
 
             assertEquals(RedeemResult.InvalidFormat, service(FakeProgressRepository()).redeem("K7QM-3XP0"))
             assertEquals(RedeemResult.InvalidFormat, service(FakeProgressRepository()).redeem("hello"))
+        }
+
+    @Test
+    fun aFailureToSaveTheTransferredProgressIsReportedNotThrown() =
+        runTest {
+            store.codes["K7QM3XPD"] = "old-phone" to progress(5, "level_1" to 40_000)
+            val brokenDisk =
+                object : ProgressRepository by FakeProgressRepository() {
+                    override suspend fun mergeIn(other: PlayerProgress): PlayerProgress = throw IOException("disk full")
+                }
+
+            val result =
+                ProgressTransferService(brokenDisk, store, FakeAuthRepository("me"), sync = { syncResult }, newCode = { "ABCD2345" })
+                    .redeem("K7QM-3XPD")
+
+            assertEquals(RedeemResult.Failed, result)
+        }
+
+    @Test
+    fun aSignInFailureThatIsNotTheNetworkIsNotCalledOffline() =
+        runTest {
+            val refused =
+                object : AuthRepository {
+                    override val userId = MutableStateFlow<String?>(null)
+
+                    override suspend fun ensureSignedIn() = Result.failure<String>(IllegalStateException("anonymous sign-in disabled"))
+                }
+            val transfer = ProgressTransferService(FakeProgressRepository(), store, refused, sync = { syncResult })
+
+            assertEquals(CreateCodeResult.Failed, transfer.createCode())
+            assertEquals(RedeemResult.Failed, transfer.redeem("K7QM-3XPD"))
         }
 
     @Test

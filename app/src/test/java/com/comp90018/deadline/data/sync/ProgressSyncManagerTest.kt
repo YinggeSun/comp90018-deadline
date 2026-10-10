@@ -7,6 +7,7 @@ import com.comp90018.deadline.data.remote.firebase.RemoteProgressStore
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.progress.PersonalBest
 import com.comp90018.deadline.domain.progress.PlayerProgress
+import com.comp90018.deadline.domain.repository.ProgressRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -19,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressSyncManagerTest {
@@ -180,6 +182,18 @@ class ProgressSyncManagerTest {
             syncing.await()
 
             assertEquals(40_000L, local.progress.first().bestFor("level_1")?.timeMillis)
+        }
+
+    @Test
+    fun aFailureToSaveMergedProgressIsReportedNotThrown() =
+        runTest {
+            remote.stored["me"] = progress(5, "level_1" to 30_000)
+            val brokenDisk =
+                object : ProgressRepository by FakeProgressRepository(progress(3)) {
+                    override suspend fun mergeIn(other: PlayerProgress): PlayerProgress = throw IOException("disk full")
+                }
+
+            assertEquals(SyncResult.Failed, ProgressSyncManager(brokenDisk, remote, auth).sync())
         }
 
     @Test

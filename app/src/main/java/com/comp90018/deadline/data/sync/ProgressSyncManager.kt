@@ -68,8 +68,16 @@ class ProgressSyncManager(
                 } catch (error: Exception) {
                     return@withLock SyncResult.Failed
                 }
-            // Local progress may have improved during the sync; merging keeps both.
-            SyncResult.Synced(local.mergeIn(synced))
+            // Local progress may have improved during the sync; merging keeps both. Saving can
+            // still fail (for example a full disk); that is reported, never thrown, because a
+            // sync runs in the background where an exception would crash the app.
+            try {
+                SyncResult.Synced(local.mergeIn(synced))
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                SyncResult.Failed
+            }
         }
 
     private companion object {

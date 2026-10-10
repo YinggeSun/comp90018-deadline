@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Security rules for the online leaderboard (#38, #51), cloud progress and transfer codes
-// (#39). Everything not matched below is denied. See docs/firestore-security.md for the reasoning behind each check.
+// (#39). Everything not matched below is denied. See docs/firestore-security.md for the
+// reasoning behind each check.
 service cloud.firestore {
   match /databases/{database}/documents {
 

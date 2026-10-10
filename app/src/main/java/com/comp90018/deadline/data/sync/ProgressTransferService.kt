@@ -2,6 +2,7 @@ package com.comp90018.deadline.data.sync
 
 import com.comp90018.deadline.data.remote.firebase.TransferStore
 import com.comp90018.deadline.data.remote.firebase.TransferStoreException
+import com.comp90018.deadline.data.remote.isNetworkError
 import com.comp90018.deadline.domain.progress.CreateCodeResult
 import com.comp90018.deadline.domain.progress.ProgressTransfer
 import com.comp90018.deadline.domain.progress.RedeemResult
@@ -18,6 +19,10 @@ import kotlinx.coroutines.withTimeout
  * code carries everything this account has, then stores a snapshot of local progress under a
  * new code. Redeeming merges the code's progress into this device with [ConflictResolver] (so
  * nothing on this device is lost) and then syncs it to this device's cloud copy.
+ *
+ * If storing a code times out offline, Firestore keeps the write and uploads it later, leaving
+ * an unused code that expires within a day. That is harmless, and rare because creating a code
+ * syncs first and stops early when offline.
  */
 class ProgressTransferService(
     private val local: ProgressRepository,
@@ -29,7 +34,10 @@ class ProgressTransferService(
     private val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
 ) : ProgressTransfer {
     override suspend fun createCode(): CreateCodeResult {
-        val ownerId = auth.ensureSignedIn().getOrElse { return CreateCodeResult.Offline }
+        val ownerId =
+            auth.ensureSignedIn().getOrElse { error ->
+                return if (error.isNetworkError()) CreateCodeResult.Offline else CreateCodeResult.Failed
+            }
         if (sync() == SyncResult.Offline) return CreateCodeResult.Offline
         val progress = local.progress.first()
         // Slightly under the full period, so a device clock running a little fast is still accepted.
@@ -55,7 +63,9 @@ class ProgressTransferService(
 
     override suspend fun redeem(input: String): RedeemResult {
         val code = TransferCode.normalize(input) ?: return RedeemResult.InvalidFormat
-        auth.ensureSignedIn().getOrElse { return RedeemResult.Offline }
+        auth.ensureSignedIn().getOrElse { error ->
+            return if (error.isNetworkError()) RedeemResult.Offline else RedeemResult.Failed
+        }
         val transferred =
             try {
                 withTimeout(timeoutMillis) { store.read(code) } ?: return RedeemResult.NotFound
@@ -68,7 +78,14 @@ class ProgressTransferService(
             } catch (error: Exception) {
                 return RedeemResult.Failed
             }
-        val merged = local.mergeIn(transferred)
+        val merged =
+            try {
+                local.mergeIn(transferred)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                return RedeemResult.Failed
+            }
         sync()
         return RedeemResult.Redeemed(merged)
     }
