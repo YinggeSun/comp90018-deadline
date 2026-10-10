@@ -124,6 +124,42 @@ class FirestoreLeaderboardEmulatorTest {
         }
 
     @Test
+    fun malformedEntriesAreSkippedInTheRankingWithoutCrashing() =
+        runBlocking {
+            withTimeout(TIMEOUT) {
+                val player = Player()
+                player.repository.submit(result(30_000), "Valid")
+                FirebaseEmulator.writeAsAdmin("leaderboard/$levelId/entries/broken", malformedEntry(uid = "broken", timeMillis = 20_000))
+
+                val ranking = player.rankingWhere { it.isNotEmpty() }
+
+                assertEquals(listOf("Valid"), ranking.map { it.nickname })
+            }
+        }
+
+    @Test
+    fun submittingOverAMalformedOwnEntryDoesNotThrow() =
+        runBlocking {
+            withTimeout(TIMEOUT) {
+                val player = Player()
+                val uid = player.signIn()
+                FirebaseEmulator.writeAsAdmin("leaderboard/$levelId/entries/$uid", malformedEntry(uid = uid, timeMillis = 50_000))
+
+                assertEquals(SubmitResult.Submitted, player.repository.submit(result(30_000), "Lav"))
+                assertEquals(listOf(30_000L), player.rankingWhere { entries -> entries.any { it.timeMillis == 30_000L } }.map { it.timeMillis })
+            }
+        }
+
+    /** An entry whose submittedAt is text, as an older or hand-edited record could be. */
+    private fun malformedEntry(
+        uid: String,
+        timeMillis: Long,
+    ) = """{"fields": {
+        "uid": {"stringValue": "$uid"}, "nickname": {"stringValue": "Broken"},
+        "timeMillis": {"integerValue": "$timeMillis"}, "week": {"integerValue": "2"},
+        "submittedAt": {"stringValue": "yesterday"}}}"""
+
+    @Test
     fun rulesRejectWritingAnotherPlayersEntry() =
         runBlocking {
             withTimeout(TIMEOUT) {
