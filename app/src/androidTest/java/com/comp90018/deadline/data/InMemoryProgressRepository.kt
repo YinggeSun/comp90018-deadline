@@ -1,4 +1,4 @@
-package com.comp90018.deadline.data.fake
+package com.comp90018.deadline.data
 
 import com.comp90018.deadline.data.sync.ConflictResolver
 import com.comp90018.deadline.domain.progress.CompletionOutcome
@@ -8,20 +8,18 @@ import com.comp90018.deadline.domain.repository.ProgressRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/** In-memory [ProgressRepository] for ViewModel and integration tests. */
-class FakeProgressRepository(initial: PlayerProgress = PlayerProgress()) : ProgressRepository {
+/** A device's local progress, kept in memory, for emulator tests that stand in for devices. */
+class InMemoryProgressRepository(
+    initial: PlayerProgress = PlayerProgress(),
+) : ProgressRepository {
     private val state = MutableStateFlow(initial)
     override val progress: StateFlow<PlayerProgress> = state
 
-    val recorded = mutableListOf<CompletionResult>()
-
     override suspend fun recordCompletion(result: CompletionResult): CompletionOutcome {
-        recorded += result
         val (updated, outcome) = state.value.withCompletion(result)
         state.value = updated
         return outcome
     }
 
-    override suspend fun mergeIn(other: PlayerProgress): PlayerProgress =
-        ConflictResolver.merge(state.value, other).also { state.value = it }
+    override suspend fun mergeIn(other: PlayerProgress) = ConflictResolver.merge(state.value, other).also { state.value = it }
 }

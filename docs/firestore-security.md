@@ -1,7 +1,8 @@
 # Firestore security and validation
 
-The online leaderboard (#38) is the only data the app stores in Cloud Firestore.
-`firestore.rules` protects it (#51). The rules run on Google's servers in front of the
+The app stores three things in Cloud Firestore: the online leaderboard (#38), each player's
+cloud copy of their progress (#39), and short-lived transfer codes for moving progress to
+another phone (#39). `firestore.rules` protects both (#51). The rules run on Google's servers in front of the
 database, so they hold even against a modified app or a client that skips the app
 entirely: anything they do not allow is refused.
 
@@ -21,6 +22,47 @@ leaderboard/{levelId}/entries/{userId}
 Players are identified by Firebase Anonymous Authentication (#37), so no personal data is
 collected. The app reads a level's ranking with a live query ordered by `timeMillis`.
 
+Each player also has one progress document, the cloud copy of what is stored on the device:
+
+```text
+progress/{userId}
+  completedLevelIds   list of strings      levels cleared, from level_1 … level_6
+  highestUnlockedWeek integer              1–12
+  personalBests       map                  levelId → { timeMillis, achievedAtMillis }
+  lastModifiedMillis  integer              latest local change, for reference
+  updatedAt           timestamp            set by the server
+```
+
+### How progress sync works
+
+A sync runs at startup (once the device is online), after every win, and whenever the device
+reconnects. It reads the cloud copy, merges it with local progress, and writes the result back
+in one Firestore transaction, then merges that result into local progress. The merge never
+makes anything worse: completed levels are combined, the furthest unlocked week wins, and each
+level keeps its faster Personal Best. Because the write is a transaction, a stale copy cannot
+overwrite progress saved from another device in the meantime. Offline, a sync simply fails and
+the next one, after reconnecting, uploads what was played.
+
+### Transfer codes
+
+Anonymous identities exist only on the device, so a new phone or a reinstall starts with a new
+one. To move progress, Settings → *Move to another phone* creates a code on the old phone (it
+syncs first), and entering that code on the new phone merges the code's progress in and syncs it
+to the new identity's cloud copy. A code is a snapshot:
+
+```text
+transfers/{code}       code: 8 characters from 23456789ABCDEFGHJKLMNPQRSTUVWXYZ
+  ownerId            string     the creator's ID
+  completedLevelIds, highestUnlockedWeek, personalBests, lastModifiedMillis
+                                 as in progress/{userId}
+  createdAt          timestamp  set by the server
+  expiresAt          timestamp  at most 24 hours after creation
+```
+
+The alphabet leaves out look-alikes (0, O, 1, I), giving 32^8, about a trillion, possible codes,
+generated with `SecureRandom`. A missing code and an expired code both read as refused, so
+nobody can tell which codes exist.
+
 ## What the rules allow
 
 Everything not listed here is denied, including every path outside `leaderboard/`.
@@ -31,8 +73,16 @@ Everything not listed here is denied, including every path outside `leaderboard/
 | Create an entry | the caller owns it (`{userId}` is their ID) and the document is valid |
 | Update an entry | as for create, and the new `timeMillis` is strictly lower than the stored one |
 | Delete an entry | never |
+| Read own progress | the caller is the owner (`{userId}` is their ID) |
+| Create own progress | the caller is the owner and the document is valid (below) |
+| Update own progress | as for create, and nothing gets worse: no completed level is dropped, the unlocked week does not go down, and no Personal Best gets slower or disappears |
+| Delete progress | never |
+| Read a transfer code | the caller is signed in, asks for that exact code, and it has not expired |
+| List transfer codes | never |
+| Create a transfer code | the caller is signed in, the code has the right format, `ownerId` is the caller, the progress fields are valid, `createdAt` is the server time, and `expiresAt` is in the future and at most 24 hours away |
+| Change or delete a transfer code | never |
 
-## What makes a document valid
+## What makes a leaderboard entry valid
 
 - **Shape:** exactly the five fields above, no more and no fewer.
 - **Ownership:** `uid` equals `{userId}`, which equals the caller's ID, so nobody can write or
@@ -58,11 +108,25 @@ Everything not listed here is denied, including every path outside `leaderboard/
 - **Timestamp:** `submittedAt` must be the server's time (`request.time`), so entries cannot be
   backdated.
 
+## What makes a progress document valid
+
+- **Shape:** exactly the five fields above, no more and no fewer.
+- **Values:** `completedLevelIds` only lists the six levels; `highestUnlockedWeek` is 1–12;
+  `personalBests` only has keys for the six levels, each holding an integer `timeMillis` at
+  or above that level's minimum time (the same floors as the leaderboard) and an integer
+  `achievedAtMillis`.
+- **Timestamp:** `updatedAt` must be the server's time.
+
 Several checks overlap on purpose. For example, a document with a missing field also fails the
 type checks, and a level outside the six has no expected week. Each requirement is still
 stated explicitly so the rules read as a specification.
 
 ## What the rules cannot prevent
+
+- **Guessing codes.** With about a trillion codes and a 24-hour lifetime, guessing a live code is
+  impractical, but the rules cannot rate-limit attempts. A guessed code only reveals a snapshot
+  of someone's levels and times, and redeeming it can only add progress to the guesser's own
+  device.
 
 - **Plausible fake times.** A modified client can submit any time above the floor. Stopping
   that would need server-side replay of the game, which is out of scope.
@@ -83,6 +147,15 @@ locally on the `demo-deadline` project, never the real one.
   case and every refusal above, each changing one field from a valid entry.
 - `FirestoreLeaderboardEmulatorTest` runs the app's leaderboard code against the same rules:
   ranking order, faster-only updates, live updates, and refusals.
+- `FirestoreProgressSyncEmulatorTest` runs progress sync against the same rules, including two
+  devices on one account ending up with everything.
+- `FirestoreTransferEmulatorTest` moves progress between two separate accounts with a transfer
+  code, including the new phone's cloud copy. The rules tests also create a code that expires
+  after three seconds and check it is refused afterwards.
+
+Tests that forge a timestamp use one an hour in the past. A client timestamp of "now" can equal
+the emulator's server time to the millisecond, because the Android emulator shares the host's
+clock, which would make those tests flaky.
 
 Both test classes clear the emulator database before each test, and skip themselves when the
 emulators are not running, so normal instrumented test runs are unaffected.

@@ -9,14 +9,20 @@ import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
 import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreLeaderboardDataSource
+import com.comp90018.deadline.data.remote.firebase.FirestoreProgressDataSource
+import com.comp90018.deadline.data.remote.firebase.FirestoreTransferDataSource
 import com.comp90018.deadline.data.repository.AuthRepositoryImpl
 import com.comp90018.deadline.data.repository.LeaderboardRepositoryImpl
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
+import com.comp90018.deadline.data.sync.NetworkWatcher
+import com.comp90018.deadline.data.sync.ProgressSyncManager
+import com.comp90018.deadline.data.sync.ProgressTransferService
 import com.comp90018.deadline.domain.level.generator.GeneratedLevelSource
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.PlayerProgress
+import com.comp90018.deadline.domain.progress.ProgressTransfer
 import com.comp90018.deadline.domain.repository.AuthRepository
 import com.comp90018.deadline.domain.repository.LeaderboardRepository
 import com.comp90018.deadline.domain.repository.ProgressRepository
@@ -69,6 +75,7 @@ class AppContainer(context: Context) {
                 val nickname = settingsRepository.settings.first().nickname ?: DEFAULT_NICKNAME
                 val submitted = leaderboardRepository.submit(result, nickname)
                 Log.d(TAG, "Leaderboard submission for ${result.levelId}: $submitted")
+                syncProgress("win")
             }
         }
 
@@ -81,6 +88,28 @@ class AppContainer(context: Context) {
 
     val leaderboardRepository: LeaderboardRepository =
         LeaderboardRepositoryImpl(FirestoreLeaderboardDataSource(FirebaseFirestore.getInstance()), authRepository)
+
+    private val progressSync =
+        ProgressSyncManager(progressRepository, FirestoreProgressDataSource(FirebaseFirestore.getInstance()), authRepository)
+
+    /** Moves progress to another phone with a transfer code (Settings). */
+    val progressTransfer: ProgressTransfer =
+        ProgressTransferService(
+            progressRepository,
+            FirestoreTransferDataSource(FirebaseFirestore.getInstance()),
+            authRepository,
+            progressSync::sync,
+        )
+
+    private val networkWatcher = NetworkWatcher(context)
+
+    /** Syncs progress whenever the device is or becomes online (#39). */
+    fun startProgressSync() = networkWatcher.start { syncProgress("network available") }
+
+    /** Merges local progress with its cloud copy in the background; failures only wait for the next sync. */
+    private fun syncProgress(reason: String) {
+        applicationScope.launch { Log.d(TAG, "Progress sync ($reason): ${progressSync.sync()}") }
+    }
 
     /** Obtains the anonymous identity without blocking anything; offline just means "not yet". */
     fun signInInBackground() {
