@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.comp90018.deadline.core.theme.DeadlineTheme
+import com.comp90018.deadline.core.ui.components.PHOTO_BACKGROUND_TAG
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.feature.game.components.tileTestTag
 import com.comp90018.deadline.testing.TestLevels
@@ -69,5 +70,12 @@ class GameRouteTest {
 
         assertEquals(2, calls)
         composeRule.onNodeWithTag(tileTestTag(TestLevels.board(levelId)!!.board.tiles.first().id)).assertIsDisplayed()
+    }
+
+    @Test
+    fun showsTheLevelsCampusPhoto() {
+        setRoute(TestLevels.source)
+
+        composeRule.onNodeWithTag(PHOTO_BACKGROUND_TAG).assertExists()
     }
 }
