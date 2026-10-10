@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Security rules for the online leaderboard (#38, #51). Everything not matched below is
-// denied. See docs/firestore-security.md for the reasoning behind each check.
+// Security rules for the online leaderboard (#38, #51) and cloud progress (#39). Everything
+// not matched below is denied. See docs/firestore-security.md for the reasoning behind each check.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -53,6 +53,63 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
+    }
+
+    // A stored Personal Best for [level]: absent, or a well-formed, plausible time.
+    function isValidBest(bests, level) {
+      return !(level in bests)
+        || (bests[level] is map
+          && bests[level].keys().hasAll(['timeMillis', 'achievedAtMillis'])
+          && bests[level].keys().hasOnly(['timeMillis', 'achievedAtMillis'])
+          && bests[level].timeMillis is int
+          && bests[level].timeMillis >= minTimeMillis(level)
+          && bests[level].achievedAtMillis is int);
+    }
+
+    // The new Personal Best for [level] is no slower than the stored one, if there was one.
+    function keepsBest(newBests, oldBests, level) {
+      return !(level in oldBests)
+        || (level in newBests && newBests[level].timeMillis <= oldBests[level].timeMillis);
+    }
+
+    // Exactly the fields the app writes for a player's progress, with valid values.
+    function isValidProgress() {
+      let progress = request.resource.data;
+      let bests = progress.personalBests;
+      return progress.keys().hasAll(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
+        && progress.keys().hasOnly(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
+        && progress.completedLevelIds is list
+        && progress.completedLevelIds.hasOnly(['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6'])
+        && progress.highestUnlockedWeek is int
+        && progress.highestUnlockedWeek >= 1
+        && progress.highestUnlockedWeek <= 12
+        && bests is map
+        && bests.keys().hasOnly(['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6'])
+        && isValidBest(bests, 'level_1') && isValidBest(bests, 'level_2') && isValidBest(bests, 'level_3')
+        && isValidBest(bests, 'level_4') && isValidBest(bests, 'level_5') && isValidBest(bests, 'level_6')
+        && progress.lastModifiedMillis is int
+        && progress.updatedAt == request.time;
+    }
+
+    // An update never loses a completed level, an unlocked week or a faster Personal Best.
+    function neverWorse() {
+      let next = request.resource.data;
+      let stored = resource.data;
+      return next.completedLevelIds.hasAll(stored.completedLevelIds)
+        && next.highestUnlockedWeek >= stored.highestUnlockedWeek
+        && keepsBest(next.personalBests, stored.personalBests, 'level_1')
+        && keepsBest(next.personalBests, stored.personalBests, 'level_2')
+        && keepsBest(next.personalBests, stored.personalBests, 'level_3')
+        && keepsBest(next.personalBests, stored.personalBests, 'level_4')
+        && keepsBest(next.personalBests, stored.personalBests, 'level_5')
+        && keepsBest(next.personalBests, stored.personalBests, 'level_6');
+    }
+
+    match /progress/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidProgress();
+      allow update: if isOwner(userId) && isValidProgress() && neverWorse();
+      allow delete: if false;
     }
 
     match /leaderboard/{levelId}/entries/{userId} {
