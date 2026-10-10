@@ -59,6 +59,13 @@ class FirestoreRulesTest {
             )
     }
 
+    /**
+     * A client-chosen timestamp an hour in the past, the realistic way to forge one. A timestamp
+     * of "now" can equal the emulator's server time to the millisecond, because the Android
+     * emulator shares the host's clock, which would make such tests flaky.
+     */
+    private fun backdated() = Timestamp(java.util.Date(System.currentTimeMillis() - 60 * 60 * 1000L))
+
     /** True if the rules allowed [operation]; false if they refused it. */
     private fun allowed(operation: suspend () -> Unit): Boolean =
         runBlocking {
@@ -223,7 +230,7 @@ class FirestoreRulesTest {
     @Test
     fun clientChosenTimestampIsRefused() {
         val player = Player()
-        assertFalse(allowed { player.entry().set(player.valid() + ("submittedAt" to Timestamp.now())).await() })
+        assertFalse(allowed { player.entry().set(player.valid() + ("submittedAt" to backdated())).await() })
     }
 
     // Progress (#39)
@@ -328,7 +335,66 @@ class FirestoreRulesTest {
         assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_9" to 40_000L))).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_1" to 4_499L))).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress() + ("highestUnlockedWeek" to "3")).await() })
-        assertFalse(allowed { player.progressDoc().set(validProgress() + ("updatedAt" to Timestamp.now())).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress() + ("updatedAt" to backdated())).await() })
+    }
+
+    // Transfer codes (#39)
+
+    private fun Player.transferDoc(code: String = "K7QM3XPD") = db.document("transfers/$code")
+
+    /** A transfer document exactly as the app writes it; tests change one thing at a time. */
+    private fun Player.validTransfer(expiresInMillis: Long = 23 * 60 * 60 * 1000L): MutableMap<String, Any> =
+        (validProgress() - "updatedAt").toMutableMap().apply {
+            put("ownerId", uid)
+            put("createdAt", FieldValue.serverTimestamp())
+            put("expiresAt", Timestamp(java.util.Date(System.currentTimeMillis() + expiresInMillis)))
+        }
+
+    @Test
+    fun aCodeCanBeCreatedAndReadByAnotherPlayerWhoKnowsIt() {
+        val creator = Player()
+        assertTrue(allowed { creator.transferDoc().set(creator.validTransfer()).await() })
+        val other = Player()
+        assertTrue(allowed { other.transferDoc().get().await() })
+    }
+
+    @Test
+    fun codesCannotBeListedChangedOrDeleted() {
+        val creator = Player()
+        creator.transferDoc().set(creator.validTransfer()).let { runBlocking { it.await() } }
+        assertFalse(allowed { creator.db.collection("transfers").get().await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("highestUnlockedWeek" to 12)).await() })
+        assertFalse(allowed { creator.transferDoc().delete().await() })
+    }
+
+    @Test
+    fun signedOutAndMissingCodesCannotBeRead() {
+        val creator = Player()
+        creator.transferDoc().set(creator.validTransfer()).let { runBlocking { it.await() } }
+        assertFalse(allowed { Player(signedIn = false).transferDoc().get().await() })
+        assertFalse(allowed { creator.transferDoc("ZZZZ2222").get().await() })
+    }
+
+    @Test
+    fun anExpiredCodeCannotBeRead() {
+        val creator = Player()
+        assertTrue(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = 3_000)).await() })
+        Thread.sleep(5_000)
+        assertFalse(allowed { Player().transferDoc().get().await() })
+    }
+
+    @Test
+    fun invalidCodesAreRefused() {
+        val creator = Player()
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("ownerId" to "someone-else")).await() })
+        assertFalse(allowed { creator.transferDoc("k7qm3xpd").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc("K7QM3XP0").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc("K7QM3XP").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("highestUnlockedWeek" to 13)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("extra" to 1)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("createdAt" to backdated())).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = 25 * 60 * 60 * 1000L)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = -60_000)).await() })
     }
 
     private companion object {

@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Security rules for the online leaderboard (#38, #51) and cloud progress (#39). Everything
-// not matched below is denied. See docs/firestore-security.md for the reasoning behind each check.
+// Security rules for the online leaderboard (#38, #51), cloud progress and transfer codes
+// (#39). Everything not matched below is denied. See docs/firestore-security.md for the reasoning behind each check.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -72,13 +72,10 @@ service cloud.firestore {
         || (level in newBests && newBests[level].timeMillis <= oldBests[level].timeMillis);
     }
 
-    // Exactly the fields the app writes for a player's progress, with valid values.
-    function isValidProgress() {
-      let progress = request.resource.data;
+    // The progress fields (shared by cloud progress and transfer codes) have valid values.
+    function hasValidProgressFields(progress) {
       let bests = progress.personalBests;
-      return progress.keys().hasAll(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
-        && progress.keys().hasOnly(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
-        && progress.completedLevelIds is list
+      return progress.completedLevelIds is list
         && progress.completedLevelIds.hasOnly(['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6'])
         && progress.highestUnlockedWeek is int
         && progress.highestUnlockedWeek >= 1
@@ -87,8 +84,42 @@ service cloud.firestore {
         && bests.keys().hasOnly(['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6'])
         && isValidBest(bests, 'level_1') && isValidBest(bests, 'level_2') && isValidBest(bests, 'level_3')
         && isValidBest(bests, 'level_4') && isValidBest(bests, 'level_5') && isValidBest(bests, 'level_6')
-        && progress.lastModifiedMillis is int
+        && progress.lastModifiedMillis is int;
+    }
+
+    // Exactly the fields the app writes for a player's progress, with valid values.
+    function isValidProgress() {
+      let progress = request.resource.data;
+      return progress.keys().hasAll(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
+        && progress.keys().hasOnly(['completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'updatedAt'])
+        && hasValidProgressFields(progress)
         && progress.updatedAt == request.time;
+    }
+
+    // Transfer codes use 8 characters without look-alikes (TransferCode.ALPHABET).
+    function isValidCode(code) {
+      return code.matches('^[2-9A-HJ-NP-Z]{8}$');
+    }
+
+    // A snapshot of the creator's own progress that expires within a day.
+    function isValidTransfer() {
+      let transfer = request.resource.data;
+      return transfer.keys().hasAll(['ownerId', 'completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'createdAt', 'expiresAt'])
+        && transfer.keys().hasOnly(['ownerId', 'completedLevelIds', 'highestUnlockedWeek', 'personalBests', 'lastModifiedMillis', 'createdAt', 'expiresAt'])
+        && transfer.ownerId == request.auth.uid
+        && hasValidProgressFields(transfer)
+        && transfer.createdAt == request.time
+        && transfer.expiresAt is timestamp
+        && transfer.expiresAt > request.time
+        && transfer.expiresAt <= request.time + duration.value(24, 'h');
+    }
+
+    // Anyone signed in who knows a code may read it until it expires; codes cannot be listed,
+    // changed or deleted. A missing code also reads as refused, so codes cannot be probed.
+    match /transfers/{code} {
+      allow get: if request.auth != null && request.time < resource.data.expiresAt;
+      allow create: if request.auth != null && isValidCode(code) && isValidTransfer();
+      allow list, update, delete: if false;
     }
 
     // An update never loses a completed level, an unlocked week or a faster Personal Best.

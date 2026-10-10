@@ -6,14 +6,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreProgressDataSource
 import com.comp90018.deadline.data.repository.AuthRepositoryImpl
-import com.comp90018.deadline.data.sync.ConflictResolver
 import com.comp90018.deadline.data.sync.ProgressSyncManager
 import com.comp90018.deadline.data.sync.SyncResult
-import com.comp90018.deadline.domain.progress.CompletionOutcome
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.progress.PersonalBest
 import com.comp90018.deadline.domain.progress.PlayerProgress
-import com.comp90018.deadline.domain.repository.ProgressRepository
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,8 +18,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -44,22 +39,6 @@ class FirestoreProgressSyncEmulatorTest {
     private lateinit var app: FirebaseApp
     private lateinit var auth: AuthRepositoryImpl
     private lateinit var remote: FirestoreProgressDataSource
-
-    /** A device's local progress, kept in memory. */
-    private class Device(
-        initial: PlayerProgress,
-    ) : ProgressRepository {
-        private val state = MutableStateFlow(initial)
-        override val progress: StateFlow<PlayerProgress> = state
-
-        override suspend fun recordCompletion(result: CompletionResult): CompletionOutcome {
-            val (updated, outcome) = state.value.withCompletion(result)
-            state.value = updated
-            return outcome
-        }
-
-        override suspend fun mergeIn(other: PlayerProgress) = ConflictResolver.merge(state.value, other).also { state.value = it }
-    }
 
     private fun progress(
         week: Int,
@@ -89,7 +68,7 @@ class FirestoreProgressSyncEmulatorTest {
     fun firstSyncStoresLocalProgressInTheCloud() =
         runBlocking {
             withTimeout(TIMEOUT) {
-                val phone = Device(progress(3, "level_1" to 40_000))
+                val phone = InMemoryProgressRepository(progress(3, "level_1" to 40_000))
 
                 assertEquals(SyncResult.Synced(progress(3, "level_1" to 40_000)), ProgressSyncManager(phone, remote, auth).sync())
 
@@ -102,8 +81,8 @@ class FirestoreProgressSyncEmulatorTest {
     fun twoDevicesOnOneAccountEndUpWithEverything() =
         runBlocking {
             withTimeout(TIMEOUT) {
-                val phone = Device(progress(3, "level_1" to 40_000))
-                val tablet = Device(progress(5, "level_1" to 55_000, "level_2" to 70_000))
+                val phone = InMemoryProgressRepository(progress(3, "level_1" to 40_000))
+                val tablet = InMemoryProgressRepository(progress(5, "level_1" to 55_000, "level_2" to 70_000))
                 val phoneSync = ProgressSyncManager(phone, remote, auth)
                 val tabletSync = ProgressSyncManager(tablet, remote, auth)
 
@@ -121,7 +100,7 @@ class FirestoreProgressSyncEmulatorTest {
     fun aWinAfterSyncingIsUploadedByTheNextSync() =
         runBlocking {
             withTimeout(TIMEOUT) {
-                val phone = Device(progress(1))
+                val phone = InMemoryProgressRepository(progress(1))
                 val sync = ProgressSyncManager(phone, remote, auth)
                 sync.sync()
 
