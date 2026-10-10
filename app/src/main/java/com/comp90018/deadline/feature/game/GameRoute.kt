@@ -18,8 +18,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
+import com.comp90018.deadline.core.ui.CampusBackgrounds
+import com.comp90018.deadline.core.ui.components.BackdropStrength
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.LoadingContent
+import com.comp90018.deadline.core.ui.components.PhotoBackground
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.level.model.SemesterLevel
@@ -38,6 +41,19 @@ fun GameRoute(
     val loader: GameLoadViewModel = viewModel(factory = GameLoadViewModel.factory(levelId, levelSource))
     val state by loader.state.collectAsState()
 
+    PhotoBackground(image = CampusBackgrounds.forLevel(levelId), strength = BackdropStrength.Strong) {
+        GameRouteBody(state = state, levelId = levelId, loader = loader, onGameFinished = onGameFinished, onBack = onBack)
+    }
+}
+
+@Composable
+private fun GameRouteBody(
+    state: GameLoadState,
+    levelId: String,
+    loader: GameLoadViewModel,
+    onGameFinished: (GameOutcome) -> Unit,
+    onBack: () -> Unit,
+) {
     when (val current = state) {
         is GameLoadState.Ready ->
             GameScreen(
