@@ -146,7 +146,13 @@ class FirestoreLeaderboardEmulatorTest {
                 FirebaseEmulator.writeAsAdmin("leaderboard/$levelId/entries/$uid", malformedEntry(uid = uid, timeMillis = 50_000))
 
                 assertEquals(SubmitResult.Submitted, player.repository.submit(result(30_000), "Lav"))
-                assertEquals(listOf(30_000L), player.rankingWhere { entries -> entries.any { it.timeMillis == 30_000L } }.map { it.timeMillis })
+                assertEquals(
+                    listOf(30_000L),
+                    player.rankingWhere {
+                            entries ->
+                        entries.any { it.timeMillis == 30_000L }
+                    }.map { it.timeMillis },
+                )
             }
         }
 
