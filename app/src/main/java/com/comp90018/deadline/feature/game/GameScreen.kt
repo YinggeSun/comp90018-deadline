@@ -32,6 +32,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
@@ -78,6 +80,19 @@ fun GameScreen(
         onDispose {
             owner.lifecycle.removeObserver(binder)
             binder.stop()
+        }
+    }
+
+    DisposableEffect(owner, viewModel) {
+        val observer =
+            LifecycleEventObserver { _, _ ->
+                viewModel.setAudioForeground(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+            }
+        owner.lifecycle.addObserver(observer)
+        viewModel.setAudioForeground(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+        onDispose {
+            owner.lifecycle.removeObserver(observer)
+            viewModel.setAudioForeground(false)
         }
     }
 

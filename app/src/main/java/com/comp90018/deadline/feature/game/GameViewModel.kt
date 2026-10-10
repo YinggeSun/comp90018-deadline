@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.comp90018.deadline.app.DeadlineApp
+import com.comp90018.deadline.core.audio.GameAudio
+import com.comp90018.deadline.core.audio.GameAudioEvent
 import com.comp90018.deadline.domain.game.engine.CompletionTimer
 import com.comp90018.deadline.domain.game.engine.DefaultGameEngine
 import com.comp90018.deadline.domain.game.engine.GameEngine
@@ -46,8 +48,12 @@ class GameViewModel(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val personalBestMillis: (levelId: String) -> Long? = { null },
     settings: Flow<PlayerSettings> = flowOf(PlayerSettings()),
+    private val audio: GameAudio = GameAudio.None,
     createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) },
 ) : ViewModel(), GameSensorActions {
+    private val audioSession = Any()
+    private var audioForeground = false
+
     private val level = findLevel(levelId)
     private val engine = level?.let(createEngine)
 
@@ -106,6 +112,22 @@ class GameViewModel(
         publish(engine)
         if (event == GameUiEvent.RestartClicked) _uiState.value = _uiState.value.copy(peekAmount = 0f, previousBestMillis = null)
         val after = engine.state
+        // The engine removes exactly one board tile for an accepted selection, including redirects.
+        // Tray delta +1 -3 identifies a resolved triple of any type (including Coffee and Music).
+        if (event is GameUiEvent.TileTapped && after.board.tiles.size == before.board.tiles.size - 1) {
+            audio.play(audioSession, GameAudioEvent.TILE_CLICK)
+            if (after.taskTray.tiles.size == before.taskTray.tiles.size - 2) {
+                audio.play(audioSession, GameAudioEvent.MATCH)
+            }
+        }
+        if (
+            after.status == GameStatus.RUNNING &&
+            before.stress < engine.stressConfig.maximum &&
+            after.stress >= engine.stressConfig.maximum
+        ) {
+            audio.play(audioSession, GameAudioEvent.STRESS_MAX)
+        }
+        setAudioForeground(audioForeground)
         if (after.board.tiles.size == before.board.tiles.size - 1) {
             haptics?.perform(
                 when {
@@ -116,6 +138,16 @@ class GameViewModel(
                 },
             )
         }
+    }
+
+    /** Screen lifecycle controls visibility; the ViewModel retains the session across rotation. */
+    fun setAudioForeground(foreground: Boolean) {
+        audioForeground = foreground
+        audio.setForeground(audioSession, foreground && engine != null, engine?.state?.status == GameStatus.RUNNING)
+    }
+
+    override fun onCleared() {
+        audio.release(audioSession)
     }
 
     override fun onShuffleRequested(): Boolean {
@@ -218,6 +250,7 @@ class GameViewModel(
                         completionRecorder = container.completionRecorder,
                         personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
                         settings = container.settingsRepository.settings,
+                        audio = container.gameAudioManager,
                     )
                 }
             }
