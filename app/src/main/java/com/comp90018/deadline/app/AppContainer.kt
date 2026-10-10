@@ -7,14 +7,18 @@ import com.comp90018.deadline.core.audio.GameAudioManager
 import com.comp90018.deadline.data.local.datastore.DeadlineDataStore
 import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
+import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
+import com.comp90018.deadline.data.repository.AuthRepositoryImpl
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
 import com.comp90018.deadline.domain.level.generator.GeneratedLevelSource
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.PlayerProgress
+import com.comp90018.deadline.domain.repository.AuthRepository
 import com.comp90018.deadline.domain.repository.ProgressRepository
 import com.comp90018.deadline.domain.repository.SettingsRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,6 +63,18 @@ class AppContainer(context: Context) {
     /** Latest saved progress, for callers that must read it synchronously (e.g. at a win). */
     val currentProgress: StateFlow<PlayerProgress> =
         progressRepository.progress.stateIn(applicationScope, SharingStarted.Eagerly, PlayerProgress())
+
+    val authRepository: AuthRepository =
+        AuthRepositoryImpl(FirebaseAuthDataSource(FirebaseAuth.getInstance()), applicationScope)
+
+    /** Obtains the anonymous identity without blocking anything; offline just means "not yet". */
+    fun signInInBackground() {
+        applicationScope.launch {
+            authRepository.ensureSignedIn()
+                .onSuccess { Log.d(TAG, "Signed in anonymously") }
+                .onFailure { Log.w(TAG, "Anonymous sign-in failed; will retry when needed", it) }
+        }
+    }
 
     private companion object {
         const val TAG = "AppContainer"
