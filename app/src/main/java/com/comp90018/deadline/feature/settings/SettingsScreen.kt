@@ -54,6 +54,8 @@ fun SettingsScreen(
     SettingsContent(
         uiState = uiState,
         onBack = onBack,
+        onBackgroundMusicChange = viewModel::setBackgroundMusicEnabled,
+        onSoundEffectsChange = viewModel::setSoundEffectsEnabled,
         onHapticsChange = viewModel::setHapticsEnabled,
         onShakeChange = viewModel::setShakeToShuffleEnabled,
         onTiltChange = viewModel::setTiltToPeekEnabled,
@@ -75,6 +77,8 @@ fun SettingsContent(
     onSaveNickname: () -> Unit,
     onRetrySave: () -> Unit,
     modifier: Modifier = Modifier,
+    onBackgroundMusicChange: (Boolean) -> Unit = {},
+    onSoundEffectsChange: (Boolean) -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -108,6 +112,18 @@ fun SettingsContent(
         ) {
             if (uiState.saveFailed) SaveFailedBanner(onRetry = onRetrySave)
             SectionHeader(stringResource(R.string.settings_section_feedback))
+            SettingSwitch(
+                title = stringResource(R.string.settings_background_music),
+                summary = stringResource(R.string.settings_background_music_summary),
+                checked = uiState.backgroundMusicEnabled,
+                onCheckedChange = onBackgroundMusicChange,
+            )
+            SettingSwitch(
+                title = stringResource(R.string.settings_sound_effects),
+                summary = stringResource(R.string.settings_sound_effects_summary),
+                checked = uiState.soundEffectsEnabled,
+                onCheckedChange = onSoundEffectsChange,
+            )
             SettingSwitch(
                 title = stringResource(R.string.settings_haptics),
                 summary = stringResource(R.string.settings_haptics_summary),
