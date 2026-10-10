@@ -1,7 +1,8 @@
 # Firestore security and validation
 
-The app stores two things in Cloud Firestore: the online leaderboard (#38) and each player's
-cloud copy of their progress (#39). `firestore.rules` protects both (#51). The rules run on Google's servers in front of the
+The app stores three things in Cloud Firestore: the online leaderboard (#38), each player's
+cloud copy of their progress (#39), and short-lived transfer codes for moving progress to
+another phone (#39). `firestore.rules` protects both (#51). The rules run on Google's servers in front of the
 database, so they hold even against a modified app or a client that skips the app
 entirely: anything they do not allow is refused.
 
@@ -42,6 +43,26 @@ level keeps its faster Personal Best. Because the write is a transaction, a stal
 overwrite progress saved from another device in the meantime. Offline, a sync simply fails and
 the next one, after reconnecting, uploads what was played.
 
+### Transfer codes
+
+Anonymous identities exist only on the device, so a new phone or a reinstall starts with a new
+one. To move progress, Settings → *Move to another phone* creates a code on the old phone (it
+syncs first), and entering that code on the new phone merges the code's progress in and syncs it
+to the new identity's cloud copy. A code is a snapshot:
+
+```text
+transfers/{code}       code: 8 characters from 23456789ABCDEFGHJKLMNPQRSTUVWXYZ
+  ownerId            string     the creator's ID
+  completedLevelIds, highestUnlockedWeek, personalBests, lastModifiedMillis
+                                 as in progress/{userId}
+  createdAt          timestamp  set by the server
+  expiresAt          timestamp  at most 24 hours after creation
+```
+
+The alphabet leaves out look-alikes (0, O, 1, I), giving 32^8, about a trillion, possible codes,
+generated with `SecureRandom`. A missing code and an expired code both read as refused, so
+nobody can tell which codes exist.
+
 ## What the rules allow
 
 Everything not listed here is denied, including every path outside `leaderboard/`.
@@ -56,6 +77,10 @@ Everything not listed here is denied, including every path outside `leaderboard/
 | Create own progress | the caller is the owner and the document is valid (below) |
 | Update own progress | as for create, and nothing gets worse: no completed level is dropped, the unlocked week does not go down, and no Personal Best gets slower or disappears |
 | Delete progress | never |
+| Read a transfer code | the caller is signed in, asks for that exact code, and it has not expired |
+| List transfer codes | never |
+| Create a transfer code | the caller is signed in, the code has the right format, `ownerId` is the caller, the progress fields are valid, `createdAt` is the server time, and `expiresAt` is in the future and at most 24 hours away |
+| Change or delete a transfer code | never |
 
 ## What makes a leaderboard entry valid
 
@@ -98,6 +123,11 @@ stated explicitly so the rules read as a specification.
 
 ## What the rules cannot prevent
 
+- **Guessing codes.** With about a trillion codes and a 24-hour lifetime, guessing a live code is
+  impractical, but the rules cannot rate-limit attempts. A guessed code only reveals a snapshot
+  of someone's levels and times, and redeeming it can only add progress to the guesser's own
+  device.
+
 - **Plausible fake times.** A modified client can submit any time above the floor. Stopping
   that would need server-side replay of the game, which is out of scope.
 - **Many anonymous accounts.** Anyone can create new anonymous identities, so one person could
@@ -119,6 +149,13 @@ locally on the `demo-deadline` project, never the real one.
   ranking order, faster-only updates, live updates, and refusals.
 - `FirestoreProgressSyncEmulatorTest` runs progress sync against the same rules, including two
   devices on one account ending up with everything.
+- `FirestoreTransferEmulatorTest` moves progress between two separate accounts with a transfer
+  code, including the new phone's cloud copy. The rules tests also create a code that expires
+  after three seconds and check it is refused afterwards.
+
+Tests that forge a timestamp use one an hour in the past. A client timestamp of "now" can equal
+the emulator's server time to the millisecond, because the Android emulator shares the host's
+clock, which would make those tests flaky.
 
 Both test classes clear the emulator database before each test, and skip themselves when the
 emulators are not running, so normal instrumented test runs are unaffected.
