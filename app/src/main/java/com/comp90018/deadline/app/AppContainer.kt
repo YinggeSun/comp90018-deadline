@@ -2,6 +2,8 @@ package com.comp90018.deadline.app
 
 import android.content.Context
 import android.util.Log
+import com.comp90018.deadline.core.audio.AndroidAudioPlayer
+import com.comp90018.deadline.core.audio.GameAudioManager
 import com.comp90018.deadline.data.local.datastore.DeadlineDataStore
 import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
@@ -34,6 +36,16 @@ class AppContainer(context: Context) {
 
     /** Work that must finish even after the screen that started it is gone. */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private val audioScope = CoroutineScope(applicationScope.coroutineContext + Dispatchers.Main.immediate)
+
+    val gameAudioManager = GameAudioManager(AndroidAudioPlayer(context, audioScope), audioScope)
+
+    init {
+        applicationScope.launch(Dispatchers.Main.immediate) {
+            settingsRepository.settings.collect { gameAudioManager.updateSettings(it) }
+        }
+    }
 
     /** A failed save costs one record, never the game, so errors are logged and not rethrown. */
     val completionRecorder =

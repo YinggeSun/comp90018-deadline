@@ -17,4 +17,8 @@
     <string name="settings_nickname_saved">Saved</string>
     <string name="settings_nickname_save">Save</string>
     <string name="settings_save_failed">Your last change could not be saved.</string>
+    <string name="settings_background_music">Background Music</string>
+    <string name="settings_background_music_summary">Play looping music during gameplay.</string>
+    <string name="settings_sound_effects">Sound Effects</string>
+    <string name="settings_sound_effects_summary">Play sounds for tile selections, matches, and maximum Stress.</string>
 </resources>
