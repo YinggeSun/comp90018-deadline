@@ -4,6 +4,9 @@ package com.comp90018.deadline.feature.levelselect
 data class LevelItemUiModel(
     val id: String,
     val name: String,
+    /** The semester weeks the level covers, e.g. 1 and 2. */
+    val firstWeek: Int,
+    val lastWeek: Int,
     val tileCount: Int,
     val layerCount: Int,
     val isLocked: Boolean,

@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
@@ -63,7 +62,7 @@ fun GameScreen(
     levelId: String,
     onGameFinished: (GameOutcome) -> Unit,
     onBack: () -> Unit,
-    viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId)),
+    viewModel: GameViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState(initial = 0L)

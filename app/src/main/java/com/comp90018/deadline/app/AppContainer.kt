@@ -7,6 +7,8 @@ import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
+import com.comp90018.deadline.domain.level.generator.GeneratedLevelSource
+import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.PlayerProgress
 import com.comp90018.deadline.domain.repository.ProgressRepository
@@ -26,6 +28,9 @@ class AppContainer(context: Context) {
     val progressRepository: ProgressRepository = ProgressRepositoryImpl(ProgressDataSource(dataStore))
 
     val settingsRepository: SettingsRepository = SettingsRepositoryImpl(SettingsDataSource(dataStore))
+
+    /** Generates a new board each time a level starts. */
+    val levelSource: LevelSource = GeneratedLevelSource()
 
     /** Work that must finish even after the screen that started it is gone. */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
