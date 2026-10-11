@@ -13,6 +13,7 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.feature.game.components.tileTestTag
+import com.comp90018.deadline.testing.TestLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -38,7 +39,7 @@ class AppNavHostTest {
                 TestNavHostController(LocalContext.current).apply {
                     navigatorProvider.addNavigator(ComposeNavigator())
                 }
-            AppNavHost(navController = navController)
+            AppNavHost(navController = navController, levelSource = TestLevels.source)
         }
     }
 

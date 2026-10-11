@@ -2,7 +2,10 @@ package com.comp90018.deadline.feature.levelselect
 
 import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,7 +26,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -34,10 +39,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
+import com.comp90018.deadline.core.ui.CampusBackgrounds
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.LoadingContent
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.core.util.TimeFormatter
+
+/** How much of the campus photo shows through a level card. */
+private const val CARD_OVERLAY_ALPHA = 0.82f
+private const val LOCKED_CARD_OVERLAY_ALPHA = 0.92f
 
 /** Test tag of the level card with [levelId], for UI tests. */
 fun levelCardTestTag(levelId: String) = "level_$levelId"
@@ -120,41 +130,69 @@ private fun LevelCard(
                 color = if (level.isLocked) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
             ),
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.large),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
-            ) {
-                Text(text = level.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text =
-                        pluralStringResource(R.plurals.level_select_tiles, level.tileCount, level.tileCount) +
-                            " · " +
-                            pluralStringResource(R.plurals.level_select_layers, level.layerCount, level.layerCount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // The level's campus photo, toned down so the text stays readable.
+        Box {
+            CampusBackgrounds.forLevel(level.id)?.let { photo ->
+                Image(
+                    painter = painterResource(photo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
                 )
-                Text(
-                    text =
-                        level.bestTimeSeconds
-                            ?.let { stringResource(R.string.level_select_best_time, TimeFormatter.formatSeconds(it)) }
-                            ?: stringResource(R.string.level_select_no_best_time),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                if (level.isLocked) {
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = LOCKED_CARD_OVERLAY_ALPHA)
+                                } else {
+                                    MaterialTheme.colorScheme.surface.copy(alpha = CARD_OVERLAY_ALPHA)
+                                },
+                            ),
                 )
             }
-            if (level.isLocked) {
-                Text(
-                    text = lockedLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(Spacing.large),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
+                ) {
+                    Text(text = level.name, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.level_select_weeks, level.firstWeek, level.lastWeek),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text =
+                            pluralStringResource(R.plurals.level_select_tiles, level.tileCount, level.tileCount) +
+                                " · " +
+                                pluralStringResource(R.plurals.level_select_layers, level.layerCount, level.layerCount),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text =
+                            level.bestTimeSeconds
+                                ?.let { stringResource(R.string.level_select_best_time, TimeFormatter.formatSeconds(it)) }
+                                ?: stringResource(R.string.level_select_no_best_time),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (level.isLocked) {
+                    Text(
+                        text = lockedLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -171,9 +209,9 @@ private fun LevelSelectPreview() {
                     LevelSelectUiState(
                         levels =
                             listOf(
-                                LevelItemUiModel("level_1", "Level 1", 6, 1, isLocked = false, bestTimeSeconds = 42),
-                                LevelItemUiModel("level_2", "Level 2", 9, 1, isLocked = false, bestTimeSeconds = null),
-                                LevelItemUiModel("level_3", "Level 3", 9, 2, isLocked = true, bestTimeSeconds = null),
+                                LevelItemUiModel("level_1", "Level 1", 1, 2, 24, 2, isLocked = false, bestTimeSeconds = 42),
+                                LevelItemUiModel("level_2", "Level 2", 3, 4, 30, 2, isLocked = false, bestTimeSeconds = null),
+                                LevelItemUiModel("level_3", "Level 3", 5, 6, 36, 3, isLocked = true, bestTimeSeconds = null),
                             ),
                     ),
                 onLevelSelected = {},

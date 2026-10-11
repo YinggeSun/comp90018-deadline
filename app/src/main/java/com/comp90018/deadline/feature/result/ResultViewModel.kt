@@ -4,8 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.comp90018.deadline.domain.level.model.FixedLevels
-import com.comp90018.deadline.domain.level.model.Level
+import com.comp90018.deadline.domain.level.model.SemesterLevel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +23,7 @@ class ResultViewModel(
     won: Boolean,
     elapsedMillis: Long,
     previousBestMillis: Long?,
-    levels: List<Level> = FixedLevels.ALL_LEVELS,
+    levels: List<SemesterLevel> = SemesterLevel.ALL,
 ) : ViewModel() {
     private val _uiState =
         MutableStateFlow(

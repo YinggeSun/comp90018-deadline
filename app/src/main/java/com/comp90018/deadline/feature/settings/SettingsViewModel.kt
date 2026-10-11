@@ -42,6 +42,8 @@ class SettingsViewModel(
         combine(repository.settings, nicknameDraft, failedChange) { settings, draft, failed ->
             SettingsUiState(
                 isLoading = false,
+                backgroundMusicEnabled = settings.backgroundMusicEnabled,
+                soundEffectsEnabled = settings.soundEffectsEnabled,
                 hapticsEnabled = settings.hapticsEnabled,
                 shakeToShuffleEnabled = settings.shakeToShuffleEnabled,
                 tiltToPeekEnabled = settings.tiltToPeekEnabled,
@@ -50,6 +52,10 @@ class SettingsViewModel(
                 saveFailed = failed != null,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
+
+    fun setBackgroundMusicEnabled(enabled: Boolean) = update { it.copy(backgroundMusicEnabled = enabled) }
+
+    fun setSoundEffectsEnabled(enabled: Boolean) = update { it.copy(soundEffectsEnabled = enabled) }
 
     fun setHapticsEnabled(enabled: Boolean) = update { it.copy(hapticsEnabled = enabled) }
 

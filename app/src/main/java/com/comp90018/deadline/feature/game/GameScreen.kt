@@ -43,8 +43,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
@@ -63,7 +63,7 @@ fun GameScreen(
     levelId: String,
     onGameFinished: (GameOutcome) -> Unit,
     onBack: () -> Unit,
-    viewModel: GameViewModel = viewModel(factory = GameViewModel.factory(levelId)),
+    viewModel: GameViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState(initial = 0L)
@@ -73,7 +73,13 @@ fun GameScreen(
     val haptics = remember(context) { HapticFeedbackManager(context.applicationContext) }
     val binder =
         remember(context, viewModel) {
-            GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
+            GameSensorBinder(
+                AndroidSensorGateway(context.applicationContext),
+                viewModel,
+                haptics,
+                shakeConfig = viewModel.shakeConfig,
+                tiltConfig = viewModel.tiltConfig,
+            )
         }
     // Null until stored settings are read, so sensors never start with the defaults first.
     val settings by viewModel.settings.collectAsState(initial = null)
@@ -90,6 +96,19 @@ fun GameScreen(
         onDispose {
             owner.lifecycle.removeObserver(binder)
             binder.stop()
+        }
+    }
+
+    DisposableEffect(owner, viewModel) {
+        val observer =
+            LifecycleEventObserver { _, _ ->
+                viewModel.setAudioForeground(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+            }
+        owner.lifecycle.addObserver(observer)
+        viewModel.setAudioForeground(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+        onDispose {
+            owner.lifecycle.removeObserver(observer)
+            viewModel.setAudioForeground(false)
         }
     }
 

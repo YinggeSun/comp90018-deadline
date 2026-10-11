@@ -3,6 +3,7 @@ package com.comp90018.deadline.data.fake
 import com.comp90018.deadline.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.io.IOException
 
 /** [AuthRepository] that signs in as [userIdOnSignIn], or fails when it is null (offline). */
 class FakeAuthRepository(var userIdOnSignIn: String? = "test-user") : AuthRepository {
@@ -11,7 +12,7 @@ class FakeAuthRepository(var userIdOnSignIn: String? = "test-user") : AuthReposi
 
     override suspend fun ensureSignedIn(): Result<String> {
         state.value?.let { return Result.success(it) }
-        val id = userIdOnSignIn ?: return Result.failure(IllegalStateException("Offline"))
+        val id = userIdOnSignIn ?: return Result.failure(IOException("Offline"))
         state.value = id
         return Result.success(id)
     }

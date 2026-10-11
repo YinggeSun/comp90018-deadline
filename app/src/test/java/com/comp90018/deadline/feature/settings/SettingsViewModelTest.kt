@@ -39,11 +39,17 @@ class SettingsViewModelTest {
     fun switchesSaveImmediately() {
         val (viewModel, repository) = viewModel()
 
+        viewModel.setBackgroundMusicEnabled(false)
+        viewModel.setSoundEffectsEnabled(false)
         viewModel.setHapticsEnabled(false)
         viewModel.setShakeToShuffleEnabled(false)
         viewModel.setTiltToPeekEnabled(false)
 
         val stored = repository.settings.value
+        assertFalse(stored.backgroundMusicEnabled)
+        assertFalse(stored.soundEffectsEnabled)
+        assertFalse(viewModel.uiState.value.backgroundMusicEnabled)
+        assertFalse(viewModel.uiState.value.soundEffectsEnabled)
         assertFalse(stored.hapticsEnabled)
         assertFalse(stored.shakeToShuffleEnabled)
         assertFalse(stored.tiltToPeekEnabled)

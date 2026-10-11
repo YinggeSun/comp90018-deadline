@@ -12,4 +12,6 @@ class ProgressRepositoryImpl(private val local: ProgressDataSource) : ProgressRe
     override val progress: Flow<PlayerProgress> = local.progress
 
     override suspend fun recordCompletion(result: CompletionResult): CompletionOutcome = local.recordCompletion(result)
+
+    override suspend fun mergeIn(other: PlayerProgress): PlayerProgress = local.mergeIn(other)
 }

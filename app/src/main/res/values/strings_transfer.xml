@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_section_title">Move to another phone</string>
+    <string name="transfer_summary">Get a code on this phone and enter it on your new one. Your progress is added there, and anything it already has is kept.</string>
+    <string name="transfer_get_code">Get a transfer code</string>
+    <string name="transfer_creating">Creating your code…</string>
+    <string name="transfer_code_label">Your transfer code</string>
+    <string name="transfer_code_expires">Works until %1$s.</string>
+    <string name="transfer_copy">Copy code</string>
+    <string name="transfer_copied">Code copied.</string>
+    <string name="transfer_enter_label">Code from your other phone</string>
+    <string name="transfer_redeem">Transfer</string>
+    <string name="transfer_redeeming">Transferring your progress…</string>
+    <string name="transfer_redeemed">Progress transferred. You now have %1$d of 6 levels cleared, up to Week %2$d.</string>
+    <string name="transfer_invalid_code">Codes have 8 letters and numbers, like K7QM-3XPD.</string>
+    <string name="transfer_not_found">That code doesn\'t work. It may have expired, so get a new one.</string>
+    <string name="transfer_offline">You\'re offline. Connect to the internet and try again.</string>
+    <string name="transfer_failed">Something went wrong. Try again.</string>
+</resources>

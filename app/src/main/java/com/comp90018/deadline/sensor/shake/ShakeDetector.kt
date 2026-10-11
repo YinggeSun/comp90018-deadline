@@ -8,11 +8,13 @@ import kotlin.math.sqrt
  * consecutive hits and cooldown to reduce false positives.
  */
 class ShakeDetector(
-    private val thresholdG: Float = 1.7f,
-    private val requiredHits: Int = 2,
-    private val cooldownMillis: Long = 900L,
-    private val smoothing: Float = 0.25f,
+    private val thresholdG: Float = ShakeConfig.DEFAULT_THRESHOLD_G,
+    private val requiredHits: Int = ShakeConfig.DEFAULT_REQUIRED_HITS,
+    private val cooldownMillis: Long = ShakeConfig.DEFAULT_COOLDOWN_MILLIS,
+    private val smoothing: Float = ShakeConfig.DEFAULT_SMOOTHING,
 ) {
+    constructor(config: ShakeConfig) : this(config.thresholdG, config.requiredHits, config.cooldownMillis, config.smoothing)
+
     private var filteredLinearG = 0f
     private var hitCount = 0
     private var lastTriggerMillis = Long.MIN_VALUE / 2
