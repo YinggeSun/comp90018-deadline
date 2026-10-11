@@ -100,4 +100,26 @@ class ProgressDataSourceTest {
 
             assertEquals(42_000L, ProgressDataSource(store.reopen()).progress.first().bestFor("level_1")?.timeMillis)
         }
+
+    @Test
+    fun mergeInKeepsTheBetterOfEachFieldAndSurvivesRestart() =
+        runBlocking {
+            val source = ProgressDataSource(store.dataStore)
+            source.recordCompletion(CompletionResult("level_1", 2, 40_000, 1))
+            val cloud =
+                PlayerProgress(
+                    completedLevelIds = setOf("level_2"),
+                    highestUnlockedWeek = 5,
+                    personalBests = mapOf("level_1" to PersonalBest("level_1", 50_000, 0), "level_2" to PersonalBest("level_2", 70_000, 0)),
+                )
+
+            val merged = source.mergeIn(cloud)
+            val restored = ProgressDataSource(store.reopen()).progress.first()
+
+            assertEquals(merged, restored)
+            assertEquals(setOf("level_1", "level_2"), restored.completedLevelIds)
+            assertEquals(5, restored.highestUnlockedWeek)
+            assertEquals(40_000L, restored.bestFor("level_1")?.timeMillis)
+            assertEquals(70_000L, restored.bestFor("level_2")?.timeMillis)
+        }
 }

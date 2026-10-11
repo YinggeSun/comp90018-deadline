@@ -19,20 +19,22 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LevelSelectScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val unlocked = LevelItemUiModel("a", "Level A", 6, 1, isLocked = false, bestTimeSeconds = 83)
-    private val locked = LevelItemUiModel("b", "Level B", 9, 2, isLocked = true, bestTimeSeconds = null)
+    private val unlocked = LevelItemUiModel("a", "Level A", 1, 2, 6, 1, isLocked = false, bestTimeSeconds = 83)
+    private val locked = LevelItemUiModel("b", "Level B", 3, 4, 9, 2, isLocked = true, bestTimeSeconds = null)
 
-    private fun setContent(onLevelSelected: (String) -> Unit = {}, onBack: () -> Unit = {}) {
+    private fun setContent(
+        onLevelSelected: (String) -> Unit = {},
+        onBack: () -> Unit = {},
+    ) {
         composeRule.setContent {
             DeadlineTheme {
                 LevelSelectContent(
                     uiState = LevelSelectUiState(levels = listOf(unlocked, locked)),
                     onLevelSelected = onLevelSelected,
-                    onBack = onBack
+                    onBack = onBack,
                 )
             }
         }
@@ -79,5 +81,13 @@ class LevelSelectScreenTest {
         composeRule.onNodeWithText("Back").performClick()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun showsTheWeeksEachLevelCovers() {
+        setContent()
+
+        composeRule.onNodeWithText("Weeks 1–2", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Weeks 3–4", useUnmergedTree = true).assertIsDisplayed()
     }
 }

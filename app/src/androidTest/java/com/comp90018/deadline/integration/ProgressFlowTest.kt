@@ -17,6 +17,7 @@ import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.feature.game.components.tileTestTag
 import com.comp90018.deadline.feature.levelselect.levelCardTestTag
 import com.comp90018.deadline.navigation.AppNavHost
+import com.comp90018.deadline.testing.TestLevels
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
@@ -39,7 +40,7 @@ class ProgressFlowTest {
 
     @Before
     fun setUp() {
-        composeRule.setContent { AppNavHost() }
+        composeRule.setContent { AppNavHost(levelSource = TestLevels.source) }
     }
 
     private fun click(label: String) {

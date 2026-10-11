@@ -1,6 +1,6 @@
 package com.comp90018.deadline.feature.result
 
-import com.comp90018.deadline.domain.level.model.FixedLevels
+import com.comp90018.deadline.domain.level.model.SemesterLevel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -9,7 +9,7 @@ import org.junit.Test
 
 class ResultViewModelTest {
     private fun state(
-        levelId: String = FixedLevels.LEVEL_1.id,
+        levelId: String = SemesterLevel(1).id,
         won: Boolean = true,
         elapsedMillis: Long = 60_000,
         previousBest: Long? = null,
@@ -21,19 +21,19 @@ class ResultViewModelTest {
 
         assertTrue(result.won)
         assertEquals(83_000L, result.elapsedMillis)
-        assertEquals(FixedLevels.LEVEL_1.name, result.levelName)
-        assertEquals(FixedLevels.LEVEL_1.id, result.levelId)
+        assertEquals(SemesterLevel(1).name, result.levelName)
+        assertEquals(SemesterLevel(1).id, result.levelId)
     }
 
     @Test
     fun winOffersFollowingLevel() {
-        assertEquals(FixedLevels.LEVEL_2.id, state(levelId = FixedLevels.LEVEL_1.id).nextLevelId)
-        assertEquals(FixedLevels.LEVEL_3.id, state(levelId = FixedLevels.LEVEL_2.id).nextLevelId)
+        assertEquals(SemesterLevel(2).id, state(levelId = SemesterLevel(1).id).nextLevelId)
+        assertEquals(SemesterLevel(3).id, state(levelId = SemesterLevel(2).id).nextLevelId)
     }
 
     @Test
     fun lastLevelHasNoNextLevel() {
-        assertNull(state(levelId = FixedLevels.ALL_LEVELS.last().id).nextLevelId)
+        assertNull(state(levelId = SemesterLevel.ALL.last().id).nextLevelId)
     }
 
     @Test

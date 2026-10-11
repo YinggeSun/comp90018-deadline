@@ -22,7 +22,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
+import com.comp90018.deadline.core.ui.CampusBackgrounds
+import com.comp90018.deadline.core.ui.components.BackdropStrength
 import com.comp90018.deadline.core.ui.components.CenteredScrollableColumn
+import com.comp90018.deadline.core.ui.components.PhotoBackground
 import com.comp90018.deadline.core.ui.components.PrimaryButton
 import com.comp90018.deadline.core.ui.components.SecondaryButton
 import com.comp90018.deadline.core.ui.components.TertiaryButton
@@ -42,13 +45,15 @@ fun ResultScreen(
         viewModel(factory = ResultViewModel.factory(levelId, won, elapsedMillis, previousBestMillis)),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    ResultContent(
-        uiState = uiState,
-        onRetry = onRetry,
-        onNextLevel = onNextLevel,
-        onLevelSelect = onLevelSelect,
-        onHome = onHome,
-    )
+    PhotoBackground(image = CampusBackgrounds.forLevel(levelId), strength = BackdropStrength.Medium) {
+        ResultContent(
+            uiState = uiState,
+            onRetry = onRetry,
+            onNextLevel = onNextLevel,
+            onLevelSelect = onLevelSelect,
+            onHome = onHome,
+        )
+    }
 }
 
 /**

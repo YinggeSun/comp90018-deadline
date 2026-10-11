@@ -38,6 +38,19 @@ class SettingsDataSourceTest {
         }
 
     @Test
+    fun audioSettingsSurviveRepositoryAndDataStoreRestart() =
+        runBlocking {
+            val repository = com.comp90018.deadline.data.repository.SettingsRepositoryImpl(SettingsDataSource(store.dataStore))
+            repository.update { it.copy(backgroundMusicEnabled = false, soundEffectsEnabled = false) }
+            val restored = com.comp90018.deadline.data.repository.SettingsRepositoryImpl(SettingsDataSource(store.reopen()))
+            assertFalse(restored.settings.first().backgroundMusicEnabled)
+            assertFalse(restored.settings.first().soundEffectsEnabled)
+            restored.update { it.copy(backgroundMusicEnabled = true) }
+            assertEquals(true, restored.settings.first().backgroundMusicEnabled)
+            assertFalse(restored.settings.first().soundEffectsEnabled)
+        }
+
+    @Test
     fun clearingNicknameRemovesIt() =
         runBlocking {
             val source = SettingsDataSource(store.dataStore)

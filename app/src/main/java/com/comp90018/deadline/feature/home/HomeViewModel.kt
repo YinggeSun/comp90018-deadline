@@ -7,8 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.comp90018.deadline.app.DeadlineApp
-import com.comp90018.deadline.domain.level.model.FixedLevels
-import com.comp90018.deadline.domain.level.model.Level
+import com.comp90018.deadline.domain.level.model.SemesterLevel
 import com.comp90018.deadline.domain.progress.PlayerProgress
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,7 +21,7 @@ import kotlinx.coroutines.flow.stateIn
  * cleared yet, and is hidden for a new player or once every unlocked level is cleared.
  */
 class HomeViewModel(
-    private val levels: List<Level> = FixedLevels.ALL_LEVELS,
+    private val levels: List<SemesterLevel> = SemesterLevel.ALL,
     progress: Flow<PlayerProgress> = flowOf(PlayerProgress()),
 ) : ViewModel() {
     val uiState: StateFlow<HomeUiState> =
@@ -37,7 +36,7 @@ class HomeViewModel(
                     null
                 } else {
                     levels.firstOrNull {
-                        progress.isWeekUnlocked(it.week) && it.id !in progress.completedLevelIds
+                        progress.isWeekUnlocked(it.firstWeek) && it.id !in progress.completedLevelIds
                     }?.id
                 },
         )

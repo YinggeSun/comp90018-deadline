@@ -10,6 +10,8 @@ import com.comp90018.deadline.domain.settings.PlayerSettings
  */
 data class SettingsUiState(
     val isLoading: Boolean = true,
+    val backgroundMusicEnabled: Boolean = true,
+    val soundEffectsEnabled: Boolean = true,
     val hapticsEnabled: Boolean = true,
     val shakeToShuffleEnabled: Boolean = true,
     val tiltToPeekEnabled: Boolean = true,

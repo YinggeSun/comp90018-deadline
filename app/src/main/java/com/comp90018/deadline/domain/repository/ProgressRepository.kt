@@ -12,4 +12,11 @@ interface ProgressRepository {
 
     /** Applies [PlayerProgress.withCompletion] and persists the result atomically. */
     suspend fun recordCompletion(result: CompletionResult): CompletionOutcome
+
+    /**
+     * Merges [other] (for example the cloud copy) into the stored progress atomically and
+     * returns the result. Merging never makes any field worse, so better local progress is
+     * never lost.
+     */
+    suspend fun mergeIn(other: PlayerProgress): PlayerProgress
 }

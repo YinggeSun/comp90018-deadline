@@ -19,7 +19,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
+import com.comp90018.deadline.core.ui.CampusBackgrounds
+import com.comp90018.deadline.core.ui.components.BackdropStrength
 import com.comp90018.deadline.core.ui.components.CenteredScrollableColumn
+import com.comp90018.deadline.core.ui.components.PhotoBackground
 import com.comp90018.deadline.core.ui.components.PrimaryButton
 import com.comp90018.deadline.core.ui.components.SecondaryButton
 
@@ -32,13 +35,15 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    HomeContent(
-        uiState = uiState,
-        onPlay = onPlay,
-        onContinue = onContinue,
-        onLeaderboard = onLeaderboard,
-        onSettings = onSettings,
-    )
+    PhotoBackground(image = CampusBackgrounds.home, strength = BackdropStrength.Light) {
+        HomeContent(
+            uiState = uiState,
+            onPlay = onPlay,
+            onContinue = onContinue,
+            onLeaderboard = onLeaderboard,
+            onSettings = onSettings,
+        )
+    }
 }
 
 /**

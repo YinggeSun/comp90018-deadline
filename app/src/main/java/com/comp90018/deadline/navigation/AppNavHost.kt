@@ -3,13 +3,16 @@ package com.comp90018.deadline.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.comp90018.deadline.feature.game.GameScreen
+import com.comp90018.deadline.app.DeadlineApp
+import com.comp90018.deadline.domain.level.generator.LevelSource
+import com.comp90018.deadline.feature.game.GameRoute
 import com.comp90018.deadline.feature.home.HomeScreen
 import com.comp90018.deadline.feature.leaderboard.LeaderboardScreen
 import com.comp90018.deadline.feature.levelselect.LevelSelectScreen
@@ -25,7 +28,14 @@ import com.comp90018.deadline.feature.settings.SettingsScreen
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    levelSource: LevelSource? = null,
 ) {
+    // Tests pass their own boards; the app generates a new board each time a level starts.
+    val context = LocalContext.current
+    val boards =
+        remember(levelSource) {
+            levelSource ?: (context.applicationContext as DeadlineApp).container.levelSource
+        }
     val actions = remember(navController) { NavigationActions(navController) }
     val levelIdArgument =
         listOf(
@@ -71,8 +81,9 @@ fun AppNavHost(
 
         composable(Routes.GAME, arguments = levelIdArgument) { entry ->
             val levelId = entry.arguments?.getString(Routes.ARG_LEVEL_ID).orEmpty()
-            GameScreen(
+            GameRoute(
                 levelId = levelId,
+                levelSource = boards,
                 onGameFinished = { outcome -> actions.navigateToResult(levelId, outcome) },
                 onBack = actions::navigateUp,
             )
