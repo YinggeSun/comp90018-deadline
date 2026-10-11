@@ -62,6 +62,7 @@ fun SettingsScreen(
         onNicknameChange = viewModel::onNicknameChange,
         onSaveNickname = viewModel::saveNickname,
         onRetrySave = viewModel::retrySave,
+        transferSection = { TransferProgressSection() },
     )
 }
 
@@ -79,6 +80,7 @@ fun SettingsContent(
     modifier: Modifier = Modifier,
     onBackgroundMusicChange: (Boolean) -> Unit = {},
     onSoundEffectsChange: (Boolean) -> Unit = {},
+    transferSection: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -153,6 +155,12 @@ fun SettingsContent(
                 onNicknameChange = onNicknameChange,
                 onSaveNickname = onSaveNickname,
             )
+
+            if (transferSection != null) {
+                HorizontalDivider()
+                SectionHeader(stringResource(R.string.transfer_section_title))
+                transferSection()
+            }
         }
     }
 }

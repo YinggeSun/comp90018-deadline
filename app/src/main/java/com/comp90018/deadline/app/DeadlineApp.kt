@@ -8,6 +8,7 @@ class DeadlineApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container.signInInBackground()
+        container.startProgressSync()
         container.refreshConfigInBackground()
     }
 }

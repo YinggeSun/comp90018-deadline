@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.comp90018.deadline.data.sync.ConflictResolver
 import com.comp90018.deadline.domain.level.model.SemesterDifficulty
 import com.comp90018.deadline.domain.progress.CompletionOutcome
 import com.comp90018.deadline.domain.progress.CompletionResult
@@ -35,6 +36,16 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
             outcome = change
         }
         return outcome
+    }
+
+    /** Merges [other] into the stored progress in one DataStore transaction and returns the result. */
+    suspend fun mergeIn(other: PlayerProgress): PlayerProgress {
+        lateinit var merged: PlayerProgress
+        dataStore.edit { preferences ->
+            merged = ConflictResolver.merge(read(preferences), other)
+            write(preferences, merged)
+        }
+        return merged
     }
 
     private fun read(preferences: Preferences) =

@@ -233,6 +233,170 @@ class FirestoreRulesTest {
         assertFalse(allowed { player.entry().set(player.valid() + ("submittedAt" to backdated())).await() })
     }
 
+    // Progress (#39)
+
+    private fun Player.progressDoc(of: String = uid) = db.document("progress/$of")
+
+    /** A progress document exactly as the app writes it; tests change one thing at a time. */
+    private fun validProgress(
+        week: Int = 3,
+        completed: List<String> = listOf("level_1"),
+        bests: Map<String, Long> = mapOf("level_1" to 40_000L),
+    ): MutableMap<String, Any> =
+        mutableMapOf(
+            "completedLevelIds" to completed,
+            "highestUnlockedWeek" to week,
+            "personalBests" to bests.mapValues { (_, time) -> mapOf("timeMillis" to time, "achievedAtMillis" to 1L) },
+            "lastModifiedMillis" to 1L,
+            "updatedAt" to FieldValue.serverTimestamp(),
+        )
+
+    @Test
+    fun ownProgressCanBeCreatedReadAndImproved() {
+        val player = Player()
+        assertTrue(allowed { player.progressDoc().set(validProgress()).await() })
+        assertTrue(allowed { player.progressDoc().get().await() })
+        assertTrue(
+            allowed {
+                player.progressDoc().set(
+                    validProgress(
+                        week = 5,
+                        completed = listOf("level_1", "level_2"),
+                        bests = mapOf("level_1" to 30_000L, "level_2" to 70_000L),
+                    ),
+                ).await()
+            },
+        )
+    }
+
+    @Test
+    fun anotherPlayersProgressIsRefused() {
+        val owner = Player()
+        owner.progressDoc().set(validProgress()).let { runBlocking { it.await() } }
+        val other = Player()
+        assertFalse(allowed { other.progressDoc(of = owner.uid).get().await() })
+        assertFalse(allowed { other.progressDoc(of = owner.uid).set(validProgress(week = 12)).await() })
+        assertFalse(allowed { Player(signedIn = false).progressDoc(of = owner.uid).get().await() })
+    }
+
+    @Test
+    fun progressCannotBeCreatedForAnotherPlayer() {
+        val player = Player()
+        assertFalse(allowed { player.progressDoc(of = "someone-without-progress").set(validProgress()).await() })
+    }
+
+    @Test
+    fun progressCannotGetWorse() {
+        val player = Player()
+        assertTrue(
+            allowed {
+                player.progressDoc().set(
+                    validProgress(week = 5, completed = listOf("level_1", "level_2"), bests = mapOf("level_1" to 30_000L)),
+                ).await()
+            },
+        )
+        assertFalse(
+            allowed {
+                player.progressDoc().set(
+                    validProgress(week = 4, completed = listOf("level_1", "level_2"), bests = mapOf("level_1" to 30_000L)),
+                ).await()
+            },
+        )
+        assertFalse(
+            allowed {
+                player.progressDoc().set(
+                    validProgress(week = 5, completed = listOf("level_1"), bests = mapOf("level_1" to 30_000L)),
+                ).await()
+            },
+        )
+        assertFalse(
+            allowed {
+                player.progressDoc().set(
+                    validProgress(week = 5, completed = listOf("level_1", "level_2"), bests = mapOf("level_1" to 35_000L)),
+                ).await()
+            },
+        )
+        assertFalse(
+            allowed {
+                player.progressDoc().set(validProgress(week = 5, completed = listOf("level_1", "level_2"), bests = emptyMap())).await()
+            },
+        )
+        assertFalse(allowed { player.progressDoc().delete().await() })
+    }
+
+    @Test
+    fun invalidProgressIsRefused() {
+        val player = Player()
+        assertFalse(allowed { player.progressDoc().set(validProgress() + ("extra" to 1)).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress().apply { remove("lastModifiedMillis") }).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(week = 13)).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(week = 0)).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(completed = listOf("level_9"))).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_9" to 40_000L))).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_1" to 4_499L))).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress() + ("highestUnlockedWeek" to "3")).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress() + ("updatedAt" to backdated())).await() })
+    }
+
+    // Transfer codes (#39)
+
+    private fun Player.transferDoc(code: String = "K7QM3XPD") = db.document("transfers/$code")
+
+    /** A transfer document exactly as the app writes it; tests change one thing at a time. */
+    private fun Player.validTransfer(expiresInMillis: Long = 23 * 60 * 60 * 1000L): MutableMap<String, Any> =
+        (validProgress() - "updatedAt").toMutableMap().apply {
+            put("ownerId", uid)
+            put("createdAt", FieldValue.serverTimestamp())
+            put("expiresAt", Timestamp(java.util.Date(System.currentTimeMillis() + expiresInMillis)))
+        }
+
+    @Test
+    fun aCodeCanBeCreatedAndReadByAnotherPlayerWhoKnowsIt() {
+        val creator = Player()
+        assertTrue(allowed { creator.transferDoc().set(creator.validTransfer()).await() })
+        val other = Player()
+        assertTrue(allowed { other.transferDoc().get().await() })
+    }
+
+    @Test
+    fun codesCannotBeListedChangedOrDeleted() {
+        val creator = Player()
+        creator.transferDoc().set(creator.validTransfer()).let { runBlocking { it.await() } }
+        assertFalse(allowed { creator.db.collection("transfers").get().await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("highestUnlockedWeek" to 12)).await() })
+        assertFalse(allowed { creator.transferDoc().delete().await() })
+    }
+
+    @Test
+    fun signedOutAndMissingCodesCannotBeRead() {
+        val creator = Player()
+        creator.transferDoc().set(creator.validTransfer()).let { runBlocking { it.await() } }
+        assertFalse(allowed { Player(signedIn = false).transferDoc().get().await() })
+        assertFalse(allowed { creator.transferDoc("ZZZZ2222").get().await() })
+    }
+
+    @Test
+    fun anExpiredCodeCannotBeRead() {
+        val creator = Player()
+        assertTrue(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = 3_000)).await() })
+        Thread.sleep(5_000)
+        assertFalse(allowed { Player().transferDoc().get().await() })
+    }
+
+    @Test
+    fun invalidCodesAreRefused() {
+        val creator = Player()
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("ownerId" to "someone-else")).await() })
+        assertFalse(allowed { creator.transferDoc("k7qm3xpd").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc("K7QM3XP0").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc("K7QM3XP").set(creator.validTransfer()).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("highestUnlockedWeek" to 13)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("extra" to 1)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer() + ("createdAt" to backdated())).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = 25 * 60 * 60 * 1000L)).await() })
+        assertFalse(allowed { creator.transferDoc().set(creator.validTransfer(expiresInMillis = -60_000)).await() })
+    }
+
     private companion object {
         const val TIMEOUT = 20_000L
     }

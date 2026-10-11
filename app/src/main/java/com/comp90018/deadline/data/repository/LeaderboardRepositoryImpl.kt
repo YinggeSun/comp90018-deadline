@@ -2,6 +2,7 @@ package com.comp90018.deadline.data.repository
 
 import com.comp90018.deadline.data.remote.firebase.LeaderboardStore
 import com.comp90018.deadline.data.remote.firebase.LeaderboardStoreException
+import com.comp90018.deadline.data.remote.isNetworkError
 import com.comp90018.deadline.domain.leaderboard.LeaderboardEntry
 import com.comp90018.deadline.domain.leaderboard.LeaderboardFailure
 import com.comp90018.deadline.domain.leaderboard.LeaderboardState
@@ -9,7 +10,6 @@ import com.comp90018.deadline.domain.leaderboard.SubmitResult
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.repository.AuthRepository
 import com.comp90018.deadline.domain.repository.LeaderboardRepository
-import com.google.firebase.FirebaseNetworkException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 
 /**
  * Online leaderboard on top of a [LeaderboardStore]. Nothing here throws: a lost connection
@@ -100,8 +99,6 @@ class LeaderboardRepositoryImpl(
             SubmitResult.Failed(LeaderboardFailure.UNKNOWN)
         }
     }
-
-    private fun Throwable.isNetworkError() = this is FirebaseNetworkException || this is TimeoutCancellationException || this is IOException
 
     private companion object {
         const val DEFAULT_READ_TIMEOUT_MILLIS = 3_000L
