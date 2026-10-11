@@ -87,13 +87,15 @@ object RemoteBalance {
             key: String,
             range: IntRange,
             default: Int,
-        ): Int = values[key]?.trim()?.toIntOrNull()?.takeIf { it in range } ?: default.also { if (key in values) rejected += key }
+        ): Int =
+            values[key]?.let(::wholeNumber)?.takeIf { it in range.first.toLong()..range.last.toLong() }?.toInt()
+                ?: default.also { if (key in values) rejected += key }
 
         fun long(
             key: String,
             range: LongRange,
             default: Long,
-        ): Long = values[key]?.trim()?.toLongOrNull()?.takeIf { it in range } ?: default.also { if (key in values) rejected += key }
+        ): Long = values[key]?.let(::wholeNumber)?.takeIf { it in range } ?: default.also { if (key in values) rejected += key }
 
         fun double(
             key: String,
@@ -116,9 +118,11 @@ object RemoteBalance {
         val stress =
             group(stressKeys, rejected, defaults.stress) {
                 val maximum = int(STRESS_MAXIMUM, 10..1_000, defaults.stress.maximum)
+                // Unpublished, the threshold follows the chosen maximum, as StressConfig's own default does.
+                val defaultThreshold = StressConfig(maximum = maximum).highStressThreshold
                 StressConfig(
                     maximum = maximum,
-                    highStressThreshold = int(STRESS_HIGH_THRESHOLD, 1..1_000, defaults.stress.highStressThreshold),
+                    highStressThreshold = int(STRESS_HIGH_THRESHOLD, 1..1_000, defaultThreshold),
                     degradationProbability = double(STRESS_DEGRADATION_PROBABILITY, 0.0..1.0, defaults.stress.degradationProbability),
                     accumulationPercentPerSecond =
                         double(STRESS_ACCUMULATION_PERCENT_PER_SECOND, 0.0..20.0, defaults.stress.accumulationPercentPerSecond),
@@ -153,6 +157,14 @@ object RemoteBalance {
                 )
             }
         return RemoteBalanceResult(GameBalance(stress, shake, tilt), rejected)
+    }
+
+    /** A whole number, also when written with a decimal point ("900.0"), as the console allows. */
+    private fun wholeNumber(text: String): Long? {
+        val trimmed = text.trim()
+        trimmed.toLongOrNull()?.let { return it }
+        val decimal = trimmed.toDoubleOrNull() ?: return null
+        return decimal.takeIf { it.isFinite() && it == kotlin.math.floor(it) && kotlin.math.abs(it) < 1e15 }?.toLong()
     }
 
     /** Builds one group; if its values cannot form a valid config together, keeps the group's defaults. */

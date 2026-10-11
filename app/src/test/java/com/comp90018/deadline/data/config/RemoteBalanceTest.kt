@@ -99,6 +99,31 @@ class RemoteBalanceTest {
     }
 
     @Test
+    fun publishingOnlyTheMaximumDerivesTheHighStressThresholdFromIt() {
+        val result = RemoteBalance.read(mapOf(RemoteBalance.STRESS_MAXIMUM to "50"))
+
+        assertEquals(emptySet<String>(), result.rejectedKeys)
+        assertEquals(StressConfig(maximum = 50), result.balance.stress)
+        assertEquals(37, result.balance.stress.highStressThreshold)
+    }
+
+    @Test
+    fun wholeNumbersWrittenWithDecimalsAreAccepted() {
+        val result =
+            RemoteBalance.read(
+                mapOf(
+                    RemoteBalance.SHAKE_COOLDOWN_MILLIS to "1500.0",
+                    RemoteBalance.SHAKE_REQUIRED_HITS to "3.0",
+                    RemoteBalance.COFFEE_RECOVERY_BASE to "2.5",
+                ),
+            )
+
+        assertEquals(1_500L, result.balance.shake.cooldownMillis)
+        assertEquals(3, result.balance.shake.requiredHits)
+        assertEquals(setOf(RemoteBalance.COFFEE_RECOVERY_BASE), result.rejectedKeys)
+    }
+
+    @Test
     fun surroundingSpacesAreIgnoredAndUnknownKeysAreHarmless() {
         val result = RemoteBalance.read(mapOf(RemoteBalance.SHAKE_REQUIRED_HITS to " 3 ", "some_future_key" to "x"))
 

@@ -11,7 +11,7 @@ Stress values apply to Stress and recovery; Shake and Tilt values tune the motio
 | Key | Default | Valid range | What it does |
 |---|---|---|---|
 | `stress_maximum` | 100 | 10–1000 | Size of the Stress gauge. |
-| `stress_high_threshold` | 75 | 1–1000, at most stress_maximum | Stress at which High Stress warnings start. |
+| `stress_high_threshold` | 75 (¾ of `stress_maximum` when not set) | 1–1000, at most stress_maximum | Stress at which High Stress warnings start. |
 | `stress_degradation_probability` | 0.2 | 0–1 | Chance a tap slips onto a neighbouring tile at Maximum Stress. |
 | `stress_accumulation_percent_per_second` | 1.5 | 0–20 | Stress added per second of play, as a percentage of the gauge, in every week. |
 | `coffee_recovery_base` | 20 | 0–1000 | Stress removed by a Coffee triple in Week 1. |
@@ -36,7 +36,7 @@ Stress values apply to Stress and recovery; Shake and Tilt values tune the motio
    (Remote Config keeps them on the device, so this works offline), then fetches new ones in
    the background with a 10-second timeout. New values are fetched at most once an hour.
 2. Every value is parsed and range-checked by `RemoteBalance`. A missing or invalid value keeps
-   its default; if the values of one group (Stress, Shake or Tilt) clash, for example a full-peek
+   its default (whole-number values may be written with a decimal point, such as `900.0`); if the values of one group (Stress, Shake or Tilt) clash, for example a full-peek
    angle below the deadzone, that whole group keeps its defaults. Refused keys are logged.
 3. Each game reads the balance once, when it starts: the Stress values go to the game engine and
    the Shake and Tilt values to the sensors. A change never alters a game in progress, and the

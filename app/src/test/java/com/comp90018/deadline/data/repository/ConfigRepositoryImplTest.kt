@@ -18,9 +18,14 @@ class ConfigRepositoryImplTest {
         var fetchFails = false
         var fetchHangs = false
         var activatedFails = false
+        var activatedHangsOnce = false
 
         override suspend fun activated(): Map<String, String> {
             if (activatedFails) throw IllegalStateException("not initialised")
+            if (activatedHangsOnce) {
+                activatedHangsOnce = false
+                awaitCancellation()
+            }
             return cached
         }
 
@@ -83,6 +88,16 @@ class ConfigRepositoryImplTest {
 
             assertEquals(BalanceSource.DEFAULTS, repository.refresh())
             assertEquals(GameBalance(), repository.balance.value)
+        }
+
+    @Test
+    fun aHangingRemoteConfigSetupCannotBlockTheRefresh() =
+        runTest {
+            source.activatedHangsOnce = true
+            source.published = mapOf(RemoteBalance.SHAKE_COOLDOWN_MILLIS to "1500")
+
+            assertEquals(BalanceSource.REMOTE, repository.refresh())
+            assertEquals(1_500L, repository.balance.value.shake.cooldownMillis)
         }
 
     @Test

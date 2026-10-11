@@ -11,7 +11,7 @@
       "defaultValue": {
         "value": "75"
       },
-      "description": "Stress at which High Stress warnings start. Valid: 1–1000, at most stress_maximum.",
+      "description": "Stress at which High Stress warnings start; when not set, three quarters of stress_maximum. Valid: 1–1000, at most stress_maximum.",
       "valueType": "NUMBER"
     },
     "stress_degradation_probability": {

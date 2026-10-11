@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Gameplay balance from Remote Config, validated by [RemoteBalance]. [balance] starts at the
@@ -30,7 +31,8 @@ class ConfigRepositoryImpl(
     private var currentSource = BalanceSource.DEFAULTS
 
     override suspend fun refresh(): BalanceSource {
-        applyActivated()
+        // Bounded too, so a stuck Remote Config setup cannot keep the fetch from running.
+        withTimeoutOrNull(timeoutMillis) { applyActivated() }
         try {
             withTimeout(timeoutMillis) { source.fetchAndActivate() }
             applyActivated()
