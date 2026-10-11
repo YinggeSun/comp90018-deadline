@@ -61,7 +61,10 @@ transfers/{code}       code: 8 characters from 23456789ABCDEFGHJKLMNPQRSTUVWXYZ
 
 The alphabet leaves out look-alikes (0, O, 1, I), giving 32^8, about a trillion, possible codes,
 generated with `SecureRandom`. A missing code and an expired code both read as refused, so
-nobody can tell which codes exist.
+nobody can tell which codes exist. Redeeming reads a code from the server only, never from the
+device's Firestore cache, because a cached copy would skip the expiry check; without a
+connection, redeeming reports offline. A code is only created after a successful sync, so it
+always carries everything the account has.
 
 ## What the rules allow
 

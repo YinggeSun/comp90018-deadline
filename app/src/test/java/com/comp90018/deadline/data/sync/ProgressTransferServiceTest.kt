@@ -112,6 +112,17 @@ class ProgressTransferServiceTest {
         }
 
     @Test
+    fun noCodeIsCreatedUnlessTheSyncBeforeItSucceeded() =
+        runTest {
+            for (unsuccessful in listOf(SyncResult.Failed, SyncResult.Refused, SyncResult.NotSignedIn)) {
+                syncResult = unsuccessful
+
+                assertEquals(CreateCodeResult.Failed, service(FakeProgressRepository(progress(3))).createCode())
+            }
+            assertTrue(store.codes.isEmpty())
+        }
+
+    @Test
     fun redeemingMergesTheCodesProgressAndSyncs() =
         runTest {
             store.codes["K7QM3XPD"] = "old-phone" to progress(5, "level_1" to 40_000, "level_2" to 70_000)

@@ -38,7 +38,12 @@ class ProgressTransferService(
             auth.ensureSignedIn().getOrElse { error ->
                 return if (error.isNetworkError()) CreateCodeResult.Offline else CreateCodeResult.Failed
             }
-        if (sync() == SyncResult.Offline) return CreateCodeResult.Offline
+        // The code must carry everything this account has, so only a completed sync will do.
+        when (sync()) {
+            is SyncResult.Synced -> Unit
+            SyncResult.Offline -> return CreateCodeResult.Offline
+            else -> return CreateCodeResult.Failed
+        }
         val progress = local.progress.first()
         // Slightly under the full period, so a device clock running a little fast is still accepted.
         val expiresAt = nowMillis() + TransferCode.VALID_FOR_MILLIS - CLOCK_MARGIN_MILLIS

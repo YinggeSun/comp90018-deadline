@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreProgressDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreTransferDataSource
+import com.comp90018.deadline.data.remote.firebase.TransferStoreException
 import com.comp90018.deadline.data.repository.AuthRepositoryImpl
 import com.comp90018.deadline.data.sync.ProgressSyncManager
 import com.comp90018.deadline.data.sync.ProgressTransferService
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -45,12 +47,13 @@ class FirestoreTransferEmulatorTest {
         initial: PlayerProgress,
     ) {
         private val app = FirebaseEmulator.newApp(context).also { apps += it }
-        private val db = FirebaseFirestore.getInstance(app)
+        val db: FirebaseFirestore = FirebaseFirestore.getInstance(app)
         val auth = AuthRepositoryImpl(FirebaseAuthDataSource(FirebaseAuth.getInstance(app)), scope)
         val local = InMemoryProgressRepository(initial)
         val cloud = FirestoreProgressDataSource(db)
         private val sync = ProgressSyncManager(local, cloud, auth)
-        val transfer = ProgressTransferService(local, FirestoreTransferDataSource(db), auth, sync::sync)
+        val transferStore = FirestoreTransferDataSource(db)
+        val transfer = ProgressTransferService(local, transferStore, auth, sync::sync)
 
         suspend fun cloudCopy(): PlayerProgress = cloud.update(auth.ensureSignedIn().getOrThrow()) { checkNotNull(it) }
     }
@@ -105,6 +108,32 @@ class FirestoreTransferEmulatorTest {
                 newPhone.transfer.redeem(code)
 
                 assertEquals(progress(5, "level_1" to 30_000), newPhone.local.progress.value)
+            }
+        }
+
+    @Test
+    fun anExpiredCodeIsNotReadFromTheOfflineCache() =
+        runBlocking {
+            withTimeout(TIMEOUT) {
+                val oldPhone = Device(progress(3, "level_1" to 40_000))
+                val newPhone = Device(PlayerProgress())
+                val ownerId = oldPhone.auth.ensureSignedIn().getOrThrow()
+                newPhone.auth.ensureSignedIn().getOrThrow()
+                oldPhone.transferStore.create("K7QM3XPD", ownerId, progress(3, "level_1" to 40_000), System.currentTimeMillis() + 3_000)
+
+                // Read while valid, so the new phone's Firestore cache holds the code.
+                assertEquals(progress(3, "level_1" to 40_000), newPhone.transferStore.read("K7QM3XPD"))
+                newPhone.db.disableNetwork().await()
+                Thread.sleep(4_000)
+
+                val offline = runCatching { newPhone.transferStore.read("K7QM3XPD") }
+                assertTrue("an expired code must not be served from the cache", offline.getOrNull() == null)
+                assertEquals(true, (offline.exceptionOrNull() as? TransferStoreException)?.isOffline)
+                assertEquals(RedeemResult.Offline, newPhone.transfer.redeem("K7QM-3XPD"))
+                assertEquals(PlayerProgress(), newPhone.local.progress.value)
+
+                newPhone.db.enableNetwork().await()
+                assertEquals(RedeemResult.NotFound, newPhone.transfer.redeem("K7QM-3XPD"))
             }
         }
 

@@ -5,6 +5,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
@@ -58,7 +59,9 @@ class FirestoreTransferDataSource(
 
     override suspend fun read(code: String): PlayerProgress? =
         try {
-            val snapshot = db.collection(COLLECTION).document(code).get().await()
+            // Server only: a cached copy would skip the rules' expiry check, so an expired code
+            // could still be redeemed offline. Unreachable reads as offline below.
+            val snapshot = db.collection(COLLECTION).document(code).get(Source.SERVER).await()
             if (snapshot.exists()) ProgressFields.read(snapshot::get) else null
         } catch (error: FirebaseFirestoreException) {
             when (error.code) {
