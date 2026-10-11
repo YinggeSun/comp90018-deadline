@@ -14,7 +14,6 @@ import com.comp90018.deadline.domain.leaderboard.LeaderboardState
 import com.comp90018.deadline.domain.leaderboard.SubmitResult
 import com.comp90018.deadline.domain.progress.CompletionResult
 import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
@@ -34,17 +33,11 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.net.HttpURLConnection
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.URL
-import java.util.UUID
 
 /**
  * Runs the real Firestore leaderboard code and `firestore.rules` against the local Firebase
- * Emulator Suite, never the real project: each player is a separate FirebaseApp on the
- * `demo-deadline` project. Skipped when the emulators are not running; start them with
- * `firebase emulators:start --only auth,firestore --project demo-deadline`.
+ * Emulator Suite (see [FirebaseEmulator]); each player is a separate FirebaseApp. The database
+ * is cleared before each test. Skipped when the emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
 class FirestoreLeaderboardEmulatorTest {
@@ -52,22 +45,12 @@ class FirestoreLeaderboardEmulatorTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val apps = mutableListOf<FirebaseApp>()
 
-    /** A fresh level ID per test, so tests never see each other's entries. */
-    private val levelId = "test_${UUID.randomUUID()}"
+    private val levelId = "level_1"
 
     private inner class Player {
-        val app =
-            FirebaseApp.initializeApp(
-                context,
-                FirebaseOptions.Builder()
-                    .setProjectId(PROJECT_ID)
-                    .setApplicationId("1:1:android:1")
-                    .setApiKey("emulator-only")
-                    .build(),
-                "player-${UUID.randomUUID()}",
-            ).also { apps += it }
-        val auth = FirebaseAuth.getInstance(app).apply { useEmulator(HOST, AUTH_PORT) }
-        val store = FirestoreLeaderboardDataSource(FirebaseFirestore.getInstance(app).apply { useEmulator(HOST, FIRESTORE_PORT) })
+        val app = FirebaseEmulator.newApp(context).also { apps += it }
+        val auth = FirebaseAuth.getInstance(app)
+        val store = FirestoreLeaderboardDataSource(FirebaseFirestore.getInstance(app))
         val repository = LeaderboardRepositoryImpl(store, AuthRepositoryImpl(FirebaseAuthDataSource(auth), scope))
 
         suspend fun signIn(): String = checkNotNull(auth.signInAnonymously().await().user).uid
@@ -80,7 +63,8 @@ class FirestoreLeaderboardEmulatorTest {
 
     @Before
     fun requireEmulators() {
-        assumeTrue("Firebase emulators are not running on the host", reachable(FIRESTORE_PORT) && reachable(AUTH_PORT))
+        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        FirebaseEmulator.clearFirestore()
     }
 
     @After
@@ -145,7 +129,7 @@ class FirestoreLeaderboardEmulatorTest {
             withTimeout(TIMEOUT) {
                 val player = Player()
                 player.repository.submit(result(30_000), "Valid")
-                writeAsAdmin("leaderboard/$levelId/entries/broken", malformedEntry(uid = "broken", timeMillis = 20_000))
+                FirebaseEmulator.writeAsAdmin("leaderboard/$levelId/entries/broken", malformedEntry(uid = "broken", timeMillis = 20_000))
 
                 val ranking = player.rankingWhere { it.isNotEmpty() }
 
@@ -159,7 +143,7 @@ class FirestoreLeaderboardEmulatorTest {
             withTimeout(TIMEOUT) {
                 val player = Player()
                 val uid = player.signIn()
-                writeAsAdmin("leaderboard/$levelId/entries/$uid", malformedEntry(uid = uid, timeMillis = 50_000))
+                FirebaseEmulator.writeAsAdmin("leaderboard/$levelId/entries/$uid", malformedEntry(uid = uid, timeMillis = 50_000))
 
                 assertEquals(SubmitResult.Submitted, player.repository.submit(result(30_000), "Lav"))
                 assertEquals(
@@ -181,31 +165,6 @@ class FirestoreLeaderboardEmulatorTest {
         "timeMillis": {"integerValue": "$timeMillis"}, "week": {"integerValue": "2"},
         "submittedAt": {"stringValue": "yesterday"}}}"""
 
-    /**
-     * Writes a document with the emulator's admin access, bypassing the rules, to stand in for
-     * records that already exist (for example from before the rules were tightened).
-     */
-    private fun writeAsAdmin(
-        path: String,
-        json: String,
-    ) {
-        val collection = path.substringBeforeLast('/')
-        val documentId = path.substringAfterLast('/')
-        val url =
-            URL("http://$HOST:$FIRESTORE_PORT/v1/projects/$PROJECT_ID/databases/(default)/documents/$collection?documentId=$documentId")
-        val connection = url.openConnection() as HttpURLConnection
-        try {
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Authorization", "Bearer owner")
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            connection.outputStream.use { it.write(json.toByteArray()) }
-            check(connection.responseCode == HttpURLConnection.HTTP_OK) { "Admin write failed: ${connection.responseCode}" }
-        } finally {
-            connection.disconnect()
-        }
-    }
-
     @Test
     fun rulesRejectWritingAnotherPlayersEntry() =
         runBlocking {
@@ -214,7 +173,7 @@ class FirestoreLeaderboardEmulatorTest {
                 player.signIn()
 
                 val error =
-                    runCatching { player.store.write(LeaderboardEntry("someone-else", "Fake", levelId, 1_000, 0), 2) }
+                    runCatching { player.store.write(LeaderboardEntry("someone-else", "Fake", levelId, 20_000, 0), 2) }
                         .exceptionOrNull()
 
                 assertTrue(error is LeaderboardStoreException)
@@ -248,14 +207,7 @@ class FirestoreLeaderboardEmulatorTest {
             }
         }
 
-    private fun reachable(port: Int) = runCatching { Socket().use { it.connect(InetSocketAddress(HOST, port), 1_000) } }.isSuccess
-
     private companion object {
-        /** The host machine, as seen from the Android emulator. */
-        const val HOST = "10.0.2.2"
-        const val AUTH_PORT = 9099
-        const val FIRESTORE_PORT = 8080
-        const val PROJECT_ID = "demo-deadline"
         const val TIMEOUT = 20_000L
     }
 }

@@ -1,13 +1,65 @@
 rules_version = '2';
 
-// Minimal leaderboard rules (#38): signed-in players can read every ranking and can only
-// create or improve their own entry. #51 adds field validation and plausible-time checks.
+// Security rules for the online leaderboard (#38, #51). Everything not matched below is
+// denied. See docs/firestore-security.md for the reasoning behind each check.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // The six semester levels (SemesterLevel.ALL).
+    function isKnownLevel(levelId) {
+      return levelId in ['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6'];
+    }
+
+    // The week a win records for each level: its last semester week
+    // (SemesterDifficulty.lastWeekForLevel).
+    function weekFor(levelId) {
+      return {
+        'level_1': 2, 'level_2': 4, 'level_3': 6,
+        'level_4': 8, 'level_5': 10, 'level_6': 12
+      }[levelId];
+    }
+
+    // Fastest plausible completion: 250 ms per tile, a sustained four taps a second on every
+    // tile of the board (18, 27, 36, 45, 54 and 63 tiles). Real play is far slower; this only
+    // rejects forged times.
+    function minTimeMillis(levelId) {
+      return {
+        'level_1': 4500, 'level_2': 6750, 'level_3': 9000,
+        'level_4': 11250, 'level_5': 13500, 'level_6': 15750
+      }[levelId];
+    }
+
+    // No completion is plausible beyond a day.
+    function maxTimeMillis() {
+      return 86400000;
+    }
+
+    // Exactly the fields the app writes, with the right types and values.
+    function isValidEntry(levelId, userId) {
+      let entry = request.resource.data;
+      return entry.keys().hasAll(['uid', 'nickname', 'timeMillis', 'week', 'submittedAt'])
+        && entry.keys().hasOnly(['uid', 'nickname', 'timeMillis', 'week', 'submittedAt'])
+        && entry.uid == userId
+        && entry.nickname is string
+        && entry.nickname.size() <= 20
+        && entry.nickname.trim().size() > 0
+        && entry.timeMillis is int
+        && entry.timeMillis >= minTimeMillis(levelId)
+        && entry.timeMillis <= maxTimeMillis()
+        && entry.week is int
+        && entry.week == weekFor(levelId)
+        && entry.submittedAt == request.time;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
     match /leaderboard/{levelId}/entries/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId
+      allow read: if request.auth != null && isKnownLevel(levelId);
+      allow create: if isOwner(userId) && isKnownLevel(levelId) && isValidEntry(levelId, userId);
+      // A player may only replace their own entry with a faster time.
+      allow update: if isOwner(userId) && isKnownLevel(levelId) && isValidEntry(levelId, userId)
         && request.resource.data.timeMillis < resource.data.timeMillis;
       allow delete: if false;
     }
