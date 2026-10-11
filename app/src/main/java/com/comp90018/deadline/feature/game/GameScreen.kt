@@ -73,7 +73,13 @@ fun GameScreen(
     val haptics = remember(context) { HapticFeedbackManager(context.applicationContext) }
     val binder =
         remember(context, viewModel) {
-            GameSensorBinder(AndroidSensorGateway(context.applicationContext), viewModel, haptics)
+            GameSensorBinder(
+                AndroidSensorGateway(context.applicationContext),
+                viewModel,
+                haptics,
+                shakeConfig = viewModel.shakeConfig,
+                tiltConfig = viewModel.tiltConfig,
+            )
         }
     // Null until stored settings are read, so sensors never start with the defaults first.
     val settings by viewModel.settings.collectAsState(initial = null)

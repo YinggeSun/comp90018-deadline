@@ -23,6 +23,8 @@ import com.comp90018.deadline.domain.progress.CompletionResult
 import com.comp90018.deadline.domain.settings.PlayerSettings
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
+import com.comp90018.deadline.sensor.shake.ShakeConfig
+import com.comp90018.deadline.sensor.tilt.TiltConfig
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +59,9 @@ class GameViewModel(
     settings: Flow<PlayerSettings> = flowOf(PlayerSettings()),
     private val audio: GameAudio = GameAudio.None,
     private val stressClockNanos: () -> Long = System::nanoTime,
+    /** Sensor tuning for this game, from Remote Config or the compiled-in defaults (#52). */
+    val shakeConfig: ShakeConfig = ShakeConfig(),
+    val tiltConfig: TiltConfig = TiltConfig(),
     createEngine: (Level) -> GameEngine = { DefaultGameEngine(it, week = it.week) },
 ) : ViewModel(), GameSensorActions {
     private val audioSession = Any()
@@ -305,6 +310,8 @@ class GameViewModel(
             viewModelFactory {
                 initializer {
                     val container = (this[APPLICATION_KEY] as DeadlineApp).container
+                    // Read once, so a balance change from Remote Config never alters a game in progress.
+                    val balance = container.configRepository.balance.value
                     GameViewModel(
                         level.id,
                         findLevel = { level },
@@ -312,6 +319,9 @@ class GameViewModel(
                         personalBestMillis = { container.currentProgress.value.bestFor(it)?.timeMillis },
                         settings = container.settingsRepository.settings,
                         audio = container.gameAudioManager,
+                        shakeConfig = balance.shake,
+                        tiltConfig = balance.tilt,
+                        createEngine = { DefaultGameEngine(it, week = it.week, stressConfig = balance.stress) },
                     )
                 }
             }

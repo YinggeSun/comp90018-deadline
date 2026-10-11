@@ -1,0 +1,123 @@
+{
+  "parameters": {
+    "stress_maximum": {
+      "defaultValue": {
+        "value": "100"
+      },
+      "description": "Size of the Stress gauge. Valid: 10–1000.",
+      "valueType": "NUMBER"
+    },
+    "stress_high_threshold": {
+      "defaultValue": {
+        "value": "75"
+      },
+      "description": "Stress at which High Stress warnings start; when not set, three quarters of stress_maximum. Valid: 1–1000, at most stress_maximum.",
+      "valueType": "NUMBER"
+    },
+    "stress_degradation_probability": {
+      "defaultValue": {
+        "value": "0.2"
+      },
+      "description": "Chance a tap slips onto a neighbouring tile at Maximum Stress. Valid: 0–1.",
+      "valueType": "NUMBER"
+    },
+    "stress_accumulation_percent_per_second": {
+      "defaultValue": {
+        "value": "1.5"
+      },
+      "description": "Stress added per second of play, as a percentage of the gauge, in every week. Valid: 0–20.",
+      "valueType": "NUMBER"
+    },
+    "coffee_recovery_base": {
+      "defaultValue": {
+        "value": "20"
+      },
+      "description": "Stress removed by a Coffee triple in Week 1. Valid: 0–1000.",
+      "valueType": "NUMBER"
+    },
+    "coffee_recovery_decline_per_week": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "How much less a Coffee triple removes each later week. Valid: 0–100.",
+      "valueType": "NUMBER"
+    },
+    "music_recovery": {
+      "defaultValue": {
+        "value": "8"
+      },
+      "description": "Stress removed by a Music triple. Valid: 0–1000.",
+      "valueType": "NUMBER"
+    },
+    "music_slowdown_multiplier": {
+      "defaultValue": {
+        "value": "0.5"
+      },
+      "description": "Stress speed while the Music effect lasts (0.5 = half speed). Valid: 0–1.",
+      "valueType": "NUMBER"
+    },
+    "music_slowdown_millis": {
+      "defaultValue": {
+        "value": "8000"
+      },
+      "description": "How long the Music slowdown lasts, in milliseconds. Valid: 0–60000.",
+      "valueType": "NUMBER"
+    },
+    "shake_threshold_g": {
+      "defaultValue": {
+        "value": "1.7"
+      },
+      "description": "Linear acceleration (in g, gravity removed) a shake must reach. Valid: 0.5–5.",
+      "valueType": "NUMBER"
+    },
+    "shake_required_hits": {
+      "defaultValue": {
+        "value": "2"
+      },
+      "description": "Consecutive strong readings needed for a shake. Valid: 1–10.",
+      "valueType": "NUMBER"
+    },
+    "shake_cooldown_millis": {
+      "defaultValue": {
+        "value": "900"
+      },
+      "description": "Minimum time between shuffles, in milliseconds. Valid: 0–10000.",
+      "valueType": "NUMBER"
+    },
+    "shake_smoothing": {
+      "defaultValue": {
+        "value": "0.25"
+      },
+      "description": "Shake filter smoothing (1 = no smoothing). Valid: 0.01–1.",
+      "valueType": "NUMBER"
+    },
+    "tilt_deadzone_degrees": {
+      "defaultValue": {
+        "value": "8"
+      },
+      "description": "Tilt below this angle does nothing. Valid: 0–45.",
+      "valueType": "NUMBER"
+    },
+    "tilt_full_peek_degrees": {
+      "defaultValue": {
+        "value": "32"
+      },
+      "description": "Tilt angle for a full peek. Valid: 1–90, above the deadzone.",
+      "valueType": "NUMBER"
+    },
+    "tilt_smoothing": {
+      "defaultValue": {
+        "value": "0.18"
+      },
+      "description": "Tilt filter smoothing (1 = no smoothing). Valid: 0.01–1.",
+      "valueType": "NUMBER"
+    },
+    "tilt_release_hysteresis_degrees": {
+      "defaultValue": {
+        "value": "2"
+      },
+      "description": "How far below the deadzone the peek releases, to avoid flicker. Valid: 0–45, at most the deadzone.",
+      "valueType": "NUMBER"
+    }
+  }
+}
