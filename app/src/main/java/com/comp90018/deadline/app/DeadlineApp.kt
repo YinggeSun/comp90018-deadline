@@ -9,5 +9,6 @@ class DeadlineApp : Application() {
         super.onCreate()
         container.signInInBackground()
         container.startProgressSync()
+        container.refreshConfigInBackground()
     }
 }

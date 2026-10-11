@@ -7,11 +7,18 @@ import kotlin.math.abs
  * Deadzone prevents accidental activation; smoothing and hysteresis reduce flicker.
  */
 class TiltProcessor(
-    private val deadzoneDegrees: Float = 8f,
-    private val fullPeekDegrees: Float = 32f,
-    private val smoothing: Float = 0.18f,
-    private val releaseHysteresisDegrees: Float = 2f,
+    private val deadzoneDegrees: Float = TiltConfig.DEFAULT_DEADZONE_DEGREES,
+    private val fullPeekDegrees: Float = TiltConfig.DEFAULT_FULL_PEEK_DEGREES,
+    private val smoothing: Float = TiltConfig.DEFAULT_SMOOTHING,
+    private val releaseHysteresisDegrees: Float = TiltConfig.DEFAULT_RELEASE_HYSTERESIS_DEGREES,
 ) {
+    constructor(config: TiltConfig) : this(
+        config.deadzoneDegrees,
+        config.fullPeekDegrees,
+        config.smoothing,
+        config.releaseHysteresisDegrees,
+    )
+
     private var filteredPitch = 0f
     private var active = false
 
