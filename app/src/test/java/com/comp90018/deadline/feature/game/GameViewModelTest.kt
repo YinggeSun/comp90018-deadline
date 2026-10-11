@@ -231,7 +231,7 @@ class GameViewModelTest {
         viewModel.onEvent(GameUiEvent.TileTapped("level_1_book_1"))
         assertEquals("Tapping a tile adds no stress", 30, viewModel.uiState.value.stress)
         viewModel.onTimeElapsed(10_000L)
-        assertEquals(45, viewModel.uiState.value.stress)
+        assertEquals(70, viewModel.uiState.value.stress)
 
         viewModel.restart()
 
@@ -281,7 +281,7 @@ class GameViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun stressClockAddsOnePointFivePercentPerSecond() =
+    fun stressClockAddsFourPercentPerSecond() =
         runTest {
             val viewModel =
                 GameViewModel(
@@ -294,12 +294,12 @@ class GameViewModelTest {
             runCurrent()
             clock.cancel()
 
-            assertEquals(15, viewModel.uiState.value.stress)
+            assertEquals(40, viewModel.uiState.value.stress)
 
             // A stopped clock (screen paused) adds nothing.
             advanceTimeBy(10_000L)
             runCurrent()
-            assertEquals(15, viewModel.uiState.value.stress)
+            assertEquals(40, viewModel.uiState.value.stress)
         }
 
     @Test

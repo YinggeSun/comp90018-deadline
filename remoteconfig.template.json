@@ -23,7 +23,7 @@
     },
     "stress_accumulation_percent_per_second": {
       "defaultValue": {
-        "value": "1.5"
+        "value": "4.0"
       },
       "description": "Stress added per second of play, as a percentage of the gauge, in every week. Valid: 0–20.",
       "valueType": "NUMBER"

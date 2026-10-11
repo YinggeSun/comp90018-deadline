@@ -126,10 +126,10 @@ class CoffeeRecoveryIntegrationTest {
         engine.advanceTime(2_000L)
         engine.selectTile("level_1_coffee_2")
         engine.advanceTime(2_000L)
-        assertEquals(6, engine.state.stress)
+        assertEquals(16, engine.state.stress)
 
         engine.undo()
-        assertEquals("Undo must not rewind time-based stress", 6, engine.state.stress)
+        assertEquals("Undo must not rewind time-based stress", 16, engine.state.stress)
         assertEquals(listOf("level_1_coffee_1"), engine.state.taskTray.tiles.map { it.id })
 
         select(engine, "level_1_coffee_2", "level_1_coffee_3")
@@ -152,7 +152,7 @@ class CoffeeRecoveryIntegrationTest {
 
         select(engine, *COFFEE_IDS.toTypedArray())
         engine.advanceTime(10_000L)
-        assertEquals(20, engine.state.stress)
+        assertEquals(45, engine.state.stress)
 
         engine.restart()
 

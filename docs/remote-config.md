@@ -13,7 +13,7 @@ Stress values apply to Stress and recovery; Shake and Tilt values tune the motio
 | `stress_maximum` | 100 | 10–1000 | Size of the Stress gauge. |
 | `stress_high_threshold` | 75 (¾ of `stress_maximum` when not set) | 1–1000, at most stress_maximum | Stress at which High Stress warnings start. |
 | `stress_degradation_probability` | 0.2 | 0–1 | Chance a tap slips onto a neighbouring tile at Maximum Stress. |
-| `stress_accumulation_percent_per_second` | 1.5 | 0–20 | Stress added per second of play, as a percentage of the gauge, in every week. |
+| `stress_accumulation_percent_per_second` | 4.0 | 0–20 | Stress added per second of play, as a percentage of the gauge, in every week. |
 | `coffee_recovery_base` | 20 | 0–1000 | Stress removed by a Coffee triple in Week 1. |
 | `coffee_recovery_decline_per_week` | 1 | 0–100 | How much less a Coffee triple removes each later week. |
 | `music_recovery` | 8 | 0–1000 | Stress removed by a Music triple. |

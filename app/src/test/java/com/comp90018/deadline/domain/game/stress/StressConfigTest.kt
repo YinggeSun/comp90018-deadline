@@ -15,16 +15,16 @@ class StressConfigTest {
     }
 
     @Test
-    fun defaultsAccumulateOnePointFivePercentOfTheRangePerSecond() {
+    fun defaultsAccumulateFourPercentOfTheRangePerSecond() {
         val config = StressConfig()
 
-        assertEquals(1.5, config.accumulationPercentPerSecond, 0.0)
-        assertEquals(1.5, config.accumulationPerSecond, 1e-9)
+        assertEquals(4.0, config.accumulationPercentPerSecond, 0.0)
+        assertEquals(4.0, config.accumulationPerSecond, 1e-9)
     }
 
     @Test
     fun accumulationPerSecondScalesWithTheConfiguredRange() {
-        assertEquals(3.0, StressConfig(maximum = 200).accumulationPerSecond, 1e-9)
+        assertEquals(8.0, StressConfig(maximum = 200).accumulationPerSecond, 1e-9)
         assertEquals(5.0, StressConfig(maximum = 50, accumulationPercentPerSecond = 10.0).accumulationPerSecond, 1e-9)
     }
 
@@ -91,7 +91,7 @@ class StressConfigTest {
 
         assertEquals(20, config.coffeeRecoveryBase)
         assertEquals(20, config.coffeeRecoveryForWeek(1))
-        assertTrue(config.coffeeRecoveryForWeek(1) > config.accumulationPerSecond * 10)
+        assertTrue(config.coffeeRecoveryForWeek(1) > config.accumulationPerSecond * 4)
     }
 
     @Test

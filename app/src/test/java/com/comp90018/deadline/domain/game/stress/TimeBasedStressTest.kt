@@ -17,15 +17,17 @@ import kotlin.random.Random
 /** Time-based Stress accumulation and Maximum Stress input degradation (issue #58). */
 class TimeBasedStressTest {
     @Test
-    fun stressGrowsOnePointFivePercentPerSecond() {
+    fun stressGrowsFourPercentPerSecond() {
         val engine = DefaultGameEngine(FixedLevels.LEVEL_1)
 
-        engine.advanceTime(1_000L)
-        assertEquals("1.5 points round down until the half point is banked", 1, engine.state.stress)
-        engine.advanceTime(1_000L)
-        assertEquals(3, engine.state.stress)
-        engine.advanceTime(8_000L)
-        assertEquals(15, engine.state.stress)
+        engine.advanceTime(125L)
+        assertEquals("0.5 points round down until the other half is banked", 0, engine.state.stress)
+        engine.advanceTime(125L)
+        assertEquals(1, engine.state.stress)
+        engine.advanceTime(750L)
+        assertEquals(4, engine.state.stress)
+        engine.advanceTime(9_000L)
+        assertEquals(40, engine.state.stress)
     }
 
     @Test
@@ -34,7 +36,7 @@ class TimeBasedStressTest {
 
         repeat(100) { engine.advanceTime(100L) }
 
-        assertEquals(15, engine.state.stress)
+        assertEquals(40, engine.state.stress)
     }
 
     @Test
@@ -51,9 +53,9 @@ class TimeBasedStressTest {
     fun stressReachesButNeverExceedsTheMaximum() {
         val engine = DefaultGameEngine(FixedLevels.LEVEL_1)
 
-        engine.advanceTime(66_000L)
+        engine.advanceTime(24_750L)
         assertEquals(99, engine.state.stress)
-        engine.advanceTime(1_000L)
+        engine.advanceTime(250L)
         assertEquals(100, engine.state.stress)
         engine.advanceTime(Long.MAX_VALUE / 2)
         assertEquals(100, engine.state.stress)
@@ -90,12 +92,12 @@ class TimeBasedStressTest {
     @Test
     fun restartResetsStressAndTheBankedFraction() {
         val engine = DefaultGameEngine(FixedLevels.LEVEL_1)
-        engine.advanceTime(10_500L)
-        assertEquals(15, engine.state.stress)
+        engine.advanceTime(10_125L)
+        assertEquals(40, engine.state.stress)
 
         engine.restart()
         assertEquals(0, engine.state.stress)
-        engine.advanceTime(500L)
+        engine.advanceTime(125L)
 
         assertEquals("A fraction banked before restart must not carry over", 0, engine.state.stress)
     }

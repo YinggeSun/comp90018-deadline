@@ -44,14 +44,14 @@ class MusicRecoveryTest {
 
     @Test
     fun slowedTimeAccumulatesAtTheMultipliedRate() {
-        assertEquals(1.5, music.accumulationFor(elapsedMillis = 1_000L, remainingMillis = 0L), 1e-9)
-        assertEquals(0.75, music.accumulationFor(elapsedMillis = 1_000L, remainingMillis = 8_000L), 1e-9)
+        assertEquals(4.0, music.accumulationFor(elapsedMillis = 1_000L, remainingMillis = 0L), 1e-9)
+        assertEquals(2.0, music.accumulationFor(elapsedMillis = 1_000L, remainingMillis = 8_000L), 1e-9)
     }
 
     @Test
     fun aTickCrossingTheEndOfTheEffectIsSplitExactly() {
-        // 2 s slowed (1.5 points) plus 2 s at the normal rate (3 points).
-        assertEquals(4.5, music.accumulationFor(elapsedMillis = 4_000L, remainingMillis = 2_000L), 1e-9)
+        // 2 s slowed (4 points) plus 2 s at the normal rate (8 points).
+        assertEquals(12.0, music.accumulationFor(elapsedMillis = 4_000L, remainingMillis = 2_000L), 1e-9)
         assertEquals(0L, music.remainingAfter(elapsedMillis = 4_000L, remainingMillis = 2_000L))
         assertEquals(6_000L, music.remainingAfter(elapsedMillis = 2_000L, remainingMillis = 8_000L))
     }

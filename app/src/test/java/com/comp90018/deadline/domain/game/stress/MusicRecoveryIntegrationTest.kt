@@ -32,8 +32,8 @@ class MusicRecoveryIntegrationTest {
 
         engine.advanceTime(4_000L)
 
-        // Half of the normal 6 points for four seconds.
-        assertEquals(45, engine.state.stress)
+        // Half of the normal 16 points for four seconds.
+        assertEquals(50, engine.state.stress)
         assertEquals(4_000L, engine.state.musicSlowdownRemainingMillis)
     }
 
@@ -42,13 +42,13 @@ class MusicRecoveryIntegrationTest {
         val engine = engine(initialStress = 50)
         select(engine, "m1", "m2", "m3")
 
-        // 8 s slowed (6 points) then 2 s at the normal rate (3 points).
+        // 8 s slowed (16 points) then 2 s at the normal rate (8 points).
         engine.advanceTime(10_000L)
-        assertEquals(51, engine.state.stress)
+        assertEquals(66, engine.state.stress)
         assertEquals(0L, engine.state.musicSlowdownRemainingMillis)
 
         engine.advanceTime(2_000L)
-        assertEquals(54, engine.state.stress)
+        assertEquals(74, engine.state.stress)
     }
 
     @Test
@@ -64,10 +64,10 @@ class MusicRecoveryIntegrationTest {
 
         engine.advanceTime(2_000L)
 
-        // Still half speed, not a quarter: 1.5 points for two seconds.
-        assertEquals(before + 1, engine.state.stress)
+        // Still half speed, not a quarter: 4 points for two seconds.
+        assertEquals(before + 4, engine.state.stress)
         engine.advanceTime(2_000L)
-        assertEquals(before + 3, engine.state.stress)
+        assertEquals(before + 8, engine.state.stress)
     }
 
     @Test
