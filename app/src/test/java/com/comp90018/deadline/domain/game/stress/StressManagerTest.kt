@@ -11,9 +11,9 @@ class StressManagerTest {
         val manager = StressManager(StressConfig())
 
         assertEquals(0.0, manager.accumulationFor(0L), 1e-9)
-        assertEquals(0.15, manager.accumulationFor(100L), 1e-9)
-        assertEquals(1.5, manager.accumulationFor(1_000L), 1e-9)
-        assertEquals(15.0, manager.accumulationFor(10_000L), 1e-9)
+        assertEquals(0.4, manager.accumulationFor(100L), 1e-9)
+        assertEquals(4.0, manager.accumulationFor(1_000L), 1e-9)
+        assertEquals(40.0, manager.accumulationFor(10_000L), 1e-9)
     }
 
     @Test(expected = IllegalArgumentException::class)

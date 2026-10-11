@@ -90,10 +90,10 @@ data class StressConfig(
         /** One in five selections slips while at Maximum Stress. */
         const val DEFAULT_DEGRADATION_PROBABILITY = 0.20
 
-        /** An idle game reaches Maximum Stress in a little over a minute. */
-        const val DEFAULT_ACCUMULATION_PERCENT_PER_SECOND = 1.5
+        /** An idle game reaches Maximum Stress in twenty-five seconds. */
+        const val DEFAULT_ACCUMULATION_PERCENT_PER_SECOND = 4.0
 
-        /** A first-week Coffee triple undoes roughly thirteen seconds of accumulation. */
+        /** A first-week Coffee triple undoes five seconds of accumulation. */
         const val DEFAULT_COFFEE_RECOVERY_BASE = 20
 
         const val DEFAULT_COFFEE_RECOVERY_DECLINE_PER_WEEK = 1
