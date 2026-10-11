@@ -8,7 +8,9 @@ import com.comp90018.deadline.data.local.datastore.DeadlineDataStore
 import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
 import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
+import com.comp90018.deadline.data.remote.firebase.FirebaseRemoteConfigDataSource
 import com.comp90018.deadline.data.repository.AuthRepositoryImpl
+import com.comp90018.deadline.data.repository.ConfigRepositoryImpl
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
 import com.comp90018.deadline.domain.level.generator.GeneratedLevelSource
@@ -16,9 +18,11 @@ import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.progress.CompletionRecorder
 import com.comp90018.deadline.domain.progress.PlayerProgress
 import com.comp90018.deadline.domain.repository.AuthRepository
+import com.comp90018.deadline.domain.repository.ConfigRepository
 import com.comp90018.deadline.domain.repository.ProgressRepository
 import com.comp90018.deadline.domain.repository.SettingsRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -66,6 +70,18 @@ class AppContainer(context: Context) {
 
     val authRepository: AuthRepository =
         AuthRepositoryImpl(FirebaseAuthDataSource(FirebaseAuth.getInstance()), applicationScope)
+
+    /** Gameplay balance from Remote Config, or the compiled-in defaults (#40, #52). */
+    val configRepository: ConfigRepository =
+        ConfigRepositoryImpl(
+            FirebaseRemoteConfigDataSource(FirebaseRemoteConfig.getInstance()),
+            onRejected = { Log.w(TAG, "Remote Config values refused, using defaults for: $it") },
+        )
+
+    /** Applies balance values fetched earlier, then fetches new ones; nothing waits for it. */
+    fun refreshConfigInBackground() {
+        applicationScope.launch { Log.d(TAG, "Game balance from ${configRepository.refresh()}") }
+    }
 
     /** Obtains the anonymous identity without blocking anything; offline just means "not yet". */
     fun signInInBackground() {

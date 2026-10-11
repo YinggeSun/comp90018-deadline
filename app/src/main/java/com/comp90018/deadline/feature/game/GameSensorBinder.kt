@@ -5,7 +5,11 @@ import androidx.lifecycle.LifecycleOwner
 import com.comp90018.deadline.sensor.SensorGateway
 import com.comp90018.deadline.sensor.haptic.GameHaptic
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
+import com.comp90018.deadline.sensor.shake.ShakeConfig
+import com.comp90018.deadline.sensor.shake.ShakeDetector
 import com.comp90018.deadline.sensor.shake.ShakeSensorController
+import com.comp90018.deadline.sensor.tilt.TiltConfig
+import com.comp90018.deadline.sensor.tilt.TiltProcessor
 import com.comp90018.deadline.sensor.tilt.TiltSensorController
 
 /**
@@ -23,9 +27,11 @@ class GameSensorBinder(
     gateway: SensorGateway,
     private val actions: GameSensorActions,
     private val haptics: HapticFeedbackManager? = null,
+    shakeConfig: ShakeConfig = ShakeConfig(),
+    tiltConfig: TiltConfig = TiltConfig(),
 ) : DefaultLifecycleObserver {
     private val shakeController =
-        ShakeSensorController(gateway) {
+        ShakeSensorController(gateway, ShakeDetector(shakeConfig)) {
             // Only confirm the action with haptic feedback when the Game layer accepted it.
             if (actions.onShuffleRequested()) {
                 haptics?.perform(GameHaptic.SHUFFLE)
@@ -33,7 +39,7 @@ class GameSensorBinder(
         }
 
     private val tiltController =
-        TiltSensorController(gateway) { amount ->
+        TiltSensorController(gateway, TiltProcessor(tiltConfig)) { amount ->
             actions.onPeekChanged(amount)
         }
 
