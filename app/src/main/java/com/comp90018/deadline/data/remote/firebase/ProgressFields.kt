@@ -13,12 +13,15 @@ internal object ProgressFields {
     const val ACHIEVED_AT = "achievedAtMillis"
     const val LAST_MODIFIED = "lastModifiedMillis"
 
+    // The cloud schema only accepts published levels; local merges must retain all local IDs.
+    private fun knownLevel(id: String): Boolean = id in (1..6).map { "level_$it" }
+
     fun write(progress: PlayerProgress): Map<String, Any> =
         mapOf(
-            COMPLETED to progress.completedLevelIds.sorted(),
+            COMPLETED to progress.completedLevelIds.filter(::knownLevel).sorted(),
             WEEK to progress.highestUnlockedWeek,
             BESTS to
-                progress.personalBests.mapValues { (_, best) ->
+                progress.personalBests.filterKeys(::knownLevel).mapValues { (_, best) ->
                     mapOf(TIME to best.timeMillis, ACHIEVED_AT to best.achievedAtMillis)
                 },
             LAST_MODIFIED to progress.lastModifiedMillis,
@@ -26,13 +29,15 @@ internal object ProgressFields {
 
     /** Reads defensively: missing or wrong-typed values fall back to defaults instead of throwing. */
     fun read(field: (String) -> Any?): PlayerProgress {
-        val completed = (field(COMPLETED) as? List<*>).orEmpty().filterIsInstance<String>().filter { it.isNotBlank() }
+        val completed =
+            (field(COMPLETED) as? List<*>).orEmpty().filterIsInstance<String>().filter(::knownLevel)
         val week =
             (field(WEEK) as? Long)?.toInt()?.coerceIn(SemesterDifficulty.FIRST_WEEK, SemesterDifficulty.SEMESTER_WEEKS)
                 ?: SemesterDifficulty.FIRST_WEEK
         val bests =
             (field(BESTS) as? Map<*, *>).orEmpty().mapNotNull { (key, value) ->
-                val levelId = (key as? String)?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val levelId =
+                    (key as? String)?.takeIf(::knownLevel) ?: return@mapNotNull null
                 val fields = value as? Map<*, *> ?: return@mapNotNull null
                 val time = (fields[TIME] as? Long)?.takeIf { it > 0 } ?: return@mapNotNull null
                 val achievedAt = fields[ACHIEVED_AT] as? Long ?: return@mapNotNull null

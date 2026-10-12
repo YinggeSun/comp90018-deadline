@@ -12,6 +12,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.comp90018.deadline.app.DeadlineApp
 import com.comp90018.deadline.domain.level.generator.LevelSource
+import com.comp90018.deadline.feature.account.AccountPage
+import com.comp90018.deadline.feature.account.AccountScreen
 import com.comp90018.deadline.feature.game.GameRoute
 import com.comp90018.deadline.feature.home.HomeScreen
 import com.comp90018.deadline.feature.leaderboard.LeaderboardScreen
@@ -111,8 +113,31 @@ fun AppNavHost(
             LeaderboardScreen(onBack = actions::navigateUp)
         }
 
+        listOf(
+            Routes.ACCOUNT to AccountPage.PROFILE,
+            Routes.LOGIN to AccountPage.LOGIN,
+            Routes.REGISTER to AccountPage.REGISTER,
+        ).forEach { (route, page) ->
+            composable(route) {
+                AccountScreen(
+                    page = page,
+                    onHome = actions::backToHome,
+                    onProfile = {
+                        navController.navigate(Routes.ACCOUNT) {
+                            popUpTo(Routes.HOME)
+                            launchSingleTop = true
+                        }
+                    },
+                    onLogin = { navController.navigate(Routes.LOGIN) { popUpTo(Routes.HOME) } },
+                    onRegister = { navController.navigate(Routes.REGISTER) { popUpTo(Routes.HOME) } },
+                )
+            }
+        }
+
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = actions::navigateUp)
+            SettingsScreen(onBack = actions::navigateUp, onAccount = {
+                navController.navigate(Routes.ACCOUNT) { popUpTo(Routes.HOME) }
+            })
         }
     }
 }

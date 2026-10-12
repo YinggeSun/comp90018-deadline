@@ -15,7 +15,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +22,7 @@ import org.junit.runner.RunWith
 /**
  * Checks `firestore.rules` directly against the Firebase Emulator Suite (see [FirebaseEmulator]),
  * writing raw documents rather than going through the app, because a modified client could send
- * anything. Each forbidden case changes exactly one thing from a valid entry. Skipped when the
+ * anything. Each forbidden case changes exactly one thing from a valid entry. Fails when the
  * emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
@@ -82,7 +81,7 @@ class FirestoreRulesTest {
 
     @Before
     fun requireEmulators() {
-        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        assertTrue("Required Firebase emulators are unavailable", FirebaseEmulator.isRunning())
         FirebaseEmulator.clearFirestore()
     }
 
@@ -334,6 +333,7 @@ class FirestoreRulesTest {
         assertFalse(allowed { player.progressDoc().set(validProgress(completed = listOf("level_9"))).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_9" to 40_000L))).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_1" to 4_499L))).await() })
+        assertFalse(allowed { player.progressDoc().set(validProgress(bests = mapOf("level_1" to 86_400_001L))).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress() + ("highestUnlockedWeek" to "3")).await() })
         assertFalse(allowed { player.progressDoc().set(validProgress() + ("updatedAt" to backdated())).await() })
     }

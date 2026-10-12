@@ -63,8 +63,37 @@ object FirebaseEmulator {
         }
     }
 
+    /** Expires an existing transfer fixture without waiting for wall time or changing its cached copy. */
+    fun expireTransferAsAdmin(code: String) {
+        require(code.matches(Regex("^[2-9A-HJ-NP-Z]{8}$")))
+        val documents = "projects/$PROJECT_ID/databases/(default)/documents"
+        val url = URL("http://$HOST:$FIRESTORE_PORT/v1/$documents:commit")
+        val json =
+            """
+            {"writes":[{"update":{"name":"$documents/transfers/$code",
+            "fields":{"expiresAt":{"timestampValue":"1970-01-01T00:00:00Z"}}},
+            "updateMask":{"fieldPaths":["expiresAt"]},"currentDocument":{"exists":true}}]}
+            """.trimIndent()
+        val connection = url.openConnection() as HttpURLConnection
+        try {
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = 5_000
+            connection.readTimeout = 5_000
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Authorization", "Bearer owner")
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.outputStream.use { it.write(json.toByteArray()) }
+            check(connection.responseCode == HttpURLConnection.HTTP_OK) { "Expiring transfer failed: ${connection.responseCode}" }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     /** A separate Firebase app, i.e. a separate player, connected to the emulators. */
     fun newApp(context: Context): FirebaseApp {
+        check(context is com.comp90018.deadline.testing.EmulatorApplication) { "Emulator application required" }
+        check(isRunning()) { "Required Firebase emulators unavailable; refusing to create a client" }
         val app =
             FirebaseApp.initializeApp(
                 context,
@@ -77,6 +106,9 @@ object FirebaseEmulator {
             )
         FirebaseAuth.getInstance(app).useEmulator(HOST, AUTH_PORT)
         FirebaseFirestore.getInstance(app).useEmulator(HOST, FIRESTORE_PORT)
+        check(app.options.projectId == PROJECT_ID && app.options.apiKey == "emulator-only")
+        check(FirebaseFirestore.getInstance(app).firestoreSettings.host == "$HOST:$FIRESTORE_PORT")
+        check(!FirebaseFirestore.getInstance(app).firestoreSettings.isSslEnabled)
         return app
     }
 

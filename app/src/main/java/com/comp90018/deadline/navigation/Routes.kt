@@ -16,6 +16,9 @@ object Routes {
     const val HOME = "home"
     const val LEVEL_SELECT = "level-select"
     const val LEADERBOARD = "leaderboard"
+    const val ACCOUNT = "account"
+    const val LOGIN = "login"
+    const val REGISTER = "register"
     const val SETTINGS = "settings"
 
     const val ARG_LEVEL_ID = "levelId"

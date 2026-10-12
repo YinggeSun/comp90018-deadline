@@ -4,18 +4,22 @@ import android.content.Context
 import android.util.Log
 import com.comp90018.deadline.core.audio.AndroidAudioPlayer
 import com.comp90018.deadline.core.audio.GameAudioManager
+import com.comp90018.deadline.data.local.datastore.AccountDataStore
 import com.comp90018.deadline.data.local.datastore.DeadlineDataStore
 import com.comp90018.deadline.data.local.datastore.ProgressDataSource
 import com.comp90018.deadline.data.local.datastore.SettingsDataSource
 import com.comp90018.deadline.data.remote.firebase.FirebaseAuthDataSource
 import com.comp90018.deadline.data.remote.firebase.FirebaseRemoteConfigDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreLeaderboardDataSource
+import com.comp90018.deadline.data.remote.firebase.FirestoreProfileDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreProgressDataSource
 import com.comp90018.deadline.data.remote.firebase.FirestoreTransferDataSource
+import com.comp90018.deadline.data.remote.firebase.RemoteConfigSource
 import com.comp90018.deadline.data.repository.AuthRepositoryImpl
 import com.comp90018.deadline.data.repository.ConfigRepositoryImpl
 import com.comp90018.deadline.data.repository.LeaderboardRepositoryImpl
 import com.comp90018.deadline.data.repository.ProgressRepositoryImpl
+import com.comp90018.deadline.data.repository.SessionGate
 import com.comp90018.deadline.data.repository.SettingsRepositoryImpl
 import com.comp90018.deadline.data.sync.NetworkWatcher
 import com.comp90018.deadline.data.sync.ProgressSyncManager
@@ -23,9 +27,11 @@ import com.comp90018.deadline.data.sync.ProgressTransferService
 import com.comp90018.deadline.domain.level.generator.GeneratedLevelSource
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.progress.CompletionRecorder
+import com.comp90018.deadline.domain.progress.CreateCodeResult
 import com.comp90018.deadline.domain.progress.PlayerProgress
 import com.comp90018.deadline.domain.progress.ProgressTransfer
-import com.comp90018.deadline.domain.repository.AuthRepository
+import com.comp90018.deadline.domain.progress.RedeemResult
+import com.comp90018.deadline.domain.repository.AccountRepository
 import com.comp90018.deadline.domain.repository.ConfigRepository
 import com.comp90018.deadline.domain.repository.LeaderboardRepository
 import com.comp90018.deadline.domain.repository.ProgressRepository
@@ -43,12 +49,31 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Application-level dependency container; one instance lives in [DeadlineApp]. */
-class AppContainer(context: Context) {
-    private val dataStore = DeadlineDataStore.create(context)
+class AppContainer(
+    context: Context,
+    remoteConfigSource: RemoteConfigSource? = null,
+) {
+    private val sessionGate = SessionGate()
+    private val firebaseAuth = FirebaseAuthDataSource(FirebaseAuth.getInstance())
+    private val dataStore = AccountDataStore(DeadlineDataStore.create(context)) { firebaseAuth.currentUserId }
 
     val progressRepository: ProgressRepository = ProgressRepositoryImpl(ProgressDataSource(dataStore))
 
-    val settingsRepository: SettingsRepository = SettingsRepositoryImpl(SettingsDataSource(dataStore))
+    private val localSettings = SettingsRepositoryImpl(SettingsDataSource(dataStore))
+    val settingsRepository: SettingsRepository =
+        object : SettingsRepository {
+            override val settings = localSettings.settings
+
+            override suspend fun update(
+                transform: (com.comp90018.deadline.domain.settings.PlayerSettings) -> com.comp90018.deadline.domain.settings.PlayerSettings,
+            ) {
+                val owner = firebaseAuth.currentUserId
+                sessionGate.run {
+                    check(owner == firebaseAuth.currentUserId) { "Account changed; retry your settings change." }
+                    localSettings.update(transform)
+                }
+            }
+        }
 
     /** Generates a new board each time a level starts. */
     val levelSource: LevelSource = GeneratedLevelSource()
@@ -73,13 +98,21 @@ class AppContainer(context: Context) {
      */
     val completionRecorder =
         CompletionRecorder { result ->
+            val version = dataStore.sessionVersion
             applicationScope.launch {
-                runCatching { progressRepository.recordCompletion(result) }
-                    .onFailure { Log.w(TAG, "Could not save completion of ${result.levelId}", it) }
-                val nickname = settingsRepository.settings.first().nickname ?: DEFAULT_NICKNAME
-                val submitted = leaderboardRepository.submit(result, nickname)
-                Log.d(TAG, "Leaderboard submission for ${result.levelId}: $submitted")
-                syncProgress("win")
+                sessionGate.run {
+                    // Acquiring the first guest UID is the same player; login/logout starts a new session.
+                    if (version != dataStore.sessionVersion) return@run
+                    runCatching { progressRepository.recordCompletion(result) }
+                        .onFailure {
+                            Log.w(TAG, "Could not save completion of ${result.levelId}", it)
+                            return@run
+                        }
+                    val nickname = settingsRepository.settings.first().nickname ?: DEFAULT_NICKNAME
+                    val submitted = leaderboardRepository.submit(result, nickname)
+                    Log.d(TAG, "Leaderboard submission for ${result.levelId}: $submitted")
+                    syncProgress("win")
+                }
             }
         }
 
@@ -87,8 +120,17 @@ class AppContainer(context: Context) {
     val currentProgress: StateFlow<PlayerProgress> =
         progressRepository.progress.stateIn(applicationScope, SharingStarted.Eagerly, PlayerProgress())
 
-    val authRepository: AuthRepository =
-        AuthRepositoryImpl(FirebaseAuthDataSource(FirebaseAuth.getInstance()), applicationScope)
+    val authRepository: AccountRepository =
+        AuthRepositoryImpl(
+            firebaseAuth,
+            applicationScope,
+            gate = sessionGate,
+            guestMigration = dataStore,
+            activate = { uid, migrate -> dataStore.activate(uid, migrate) },
+            profiles = FirestoreProfileDataSource(FirebaseFirestore.getInstance()),
+            saveNickname = { nickname -> settingsRepository.update { it.copy(nickname = nickname) } },
+            readNickname = { settingsRepository.settings.first().nickname },
+        )
 
     val leaderboardRepository: LeaderboardRepository =
         LeaderboardRepositoryImpl(FirestoreLeaderboardDataSource(FirebaseFirestore.getInstance()), authRepository)
@@ -97,13 +139,30 @@ class AppContainer(context: Context) {
         ProgressSyncManager(progressRepository, FirestoreProgressDataSource(FirebaseFirestore.getInstance()), authRepository)
 
     /** Moves progress to another phone with a transfer code (Settings). */
-    val progressTransfer: ProgressTransfer =
+    private val transferService =
         ProgressTransferService(
             progressRepository,
             FirestoreTransferDataSource(FirebaseFirestore.getInstance()),
             authRepository,
             progressSync::sync,
         )
+
+    val progressTransfer: ProgressTransfer =
+        object : ProgressTransfer {
+            override suspend fun createCode(): CreateCodeResult {
+                val uid = authRepository.ensureSignedIn().getOrElse { return CreateCodeResult.Offline }
+                return sessionGate.forUser(uid, { firebaseAuth.currentUserId }, { CreateCodeResult.Failed }) {
+                    transferService.createCode()
+                }
+            }
+
+            override suspend fun redeem(input: String): RedeemResult {
+                val uid = authRepository.ensureSignedIn().getOrElse { return RedeemResult.Offline }
+                return sessionGate.forUser(uid, { firebaseAuth.currentUserId }, { RedeemResult.Failed }) {
+                    transferService.redeem(input)
+                }
+            }
+        }
 
     private val networkWatcher = NetworkWatcher(context)
 
@@ -112,13 +171,18 @@ class AppContainer(context: Context) {
 
     /** Merges local progress with its cloud copy in the background; failures only wait for the next sync. */
     private fun syncProgress(reason: String) {
-        applicationScope.launch { Log.d(TAG, "Progress sync ($reason): ${progressSync.sync()}") }
+        applicationScope.launch {
+            authRepository.ensureSignedIn()
+            sessionGate.run { Log.d(TAG, "Progress sync ($reason): ${progressSync.sync()}") }
+        }
     }
+
+    suspend fun syncAccountProgress() = sessionGate.run { progressSync.sync() }
 
     /** Gameplay balance from Remote Config, or the compiled-in defaults (#40, #52). */
     val configRepository: ConfigRepository =
         ConfigRepositoryImpl(
-            FirebaseRemoteConfigDataSource(FirebaseRemoteConfig.getInstance()),
+            remoteConfigSource ?: FirebaseRemoteConfigDataSource(FirebaseRemoteConfig.getInstance()),
             onRejected = { Log.w(TAG, "Remote Config values refused, using defaults for: $it") },
         )
 
@@ -131,7 +195,7 @@ class AppContainer(context: Context) {
     fun signInInBackground() {
         applicationScope.launch {
             authRepository.ensureSignedIn()
-                .onSuccess { Log.d(TAG, "Signed in anonymously") }
+                .onSuccess { authRepository.refreshProfile() }
                 .onFailure { Log.w(TAG, "Anonymous sign-in failed; will retry when needed", it) }
         }
     }

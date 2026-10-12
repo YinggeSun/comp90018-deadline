@@ -48,8 +48,12 @@ const val NICKNAME_FIELD_TAG = "settings_nickname"
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onAccount: () -> Unit = {},
+    accountViewModel: com.comp90018.deadline.feature.account.AccountViewModel =
+        viewModel(factory = com.comp90018.deadline.feature.account.AccountViewModel.Factory),
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
+    val account by accountViewModel.account.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     SettingsContent(
         uiState = uiState,
@@ -64,6 +68,19 @@ fun SettingsScreen(
         onSaveNickname = viewModel::saveNickname,
         onRetrySave = viewModel::retrySave,
         transferSection = { TransferProgressSection() },
+        showNickname = !account.registered,
+        accountSection = {
+            Text(
+                if (account.registered) {
+                    "Registered account"
+                } else if (account.uid != null) {
+                    "Playing as Guest"
+                } else {
+                    "Playing as Guest (offline)"
+                },
+            )
+            TertiaryButton("Account", onAccount)
+        },
     )
 }
 
@@ -83,6 +100,8 @@ fun SettingsContent(
     onSoundEffectsChange: (Boolean) -> Unit = {},
     onAutoLightChange: (Boolean) -> Unit = {},
     transferSection: (@Composable () -> Unit)? = null,
+    accountSection: (@Composable () -> Unit)? = null,
+    showNickname: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -114,6 +133,7 @@ fun SettingsContent(
                     .padding(horizontal = Spacing.large, vertical = Spacing.small),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
+            accountSection?.invoke()
             if (uiState.saveFailed) SaveFailedBanner(onRetry = onRetrySave)
             SectionHeader(stringResource(R.string.settings_section_feedback))
             SettingSwitch(
@@ -161,11 +181,13 @@ fun SettingsContent(
 
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_leaderboard))
-            NicknameField(
-                uiState = uiState,
-                onNicknameChange = onNicknameChange,
-                onSaveNickname = onSaveNickname,
-            )
+            if (showNickname) {
+                NicknameField(
+                    uiState = uiState,
+                    onNicknameChange = onNicknameChange,
+                    onSaveNickname = onSaveNickname,
+                )
+            }
 
             if (transferSection != null) {
                 HorizontalDivider()

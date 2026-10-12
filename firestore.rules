@@ -64,6 +64,7 @@ service cloud.firestore {
           && bests[level].keys().hasOnly(['timeMillis', 'achievedAtMillis'])
           && bests[level].timeMillis is int
           && bests[level].timeMillis >= minTimeMillis(level)
+          && bests[level].timeMillis <= maxTimeMillis()
           && bests[level].achievedAtMillis is int);
     }
 
@@ -142,6 +143,33 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidProgress();
       allow update: if isOwner(userId) && isValidProgress() && neverWorse();
       allow delete: if false;
+    }
+
+    // Private registered profile. Public leaderboard documents never contain email.
+    match /users/{userId} {
+      function validProfile() {
+        let p = request.resource.data;
+        return p.keys().hasAll(['nickname', 'email', 'accountType', 'createdAt', 'lastLoginAt', 'updatedAt'])
+          && p.keys().hasOnly(['nickname', 'email', 'accountType', 'createdAt', 'lastLoginAt', 'updatedAt'])
+          && p.nickname is string && p.nickname.trim().size() > 0 && p.nickname.size() <= 20
+          && p.email is string
+          && p.email == request.auth.token.email
+          // Linked identities describe registration; sign_in_provider describes token sign-in, not all linked providers.
+          && 'email' in request.auth.token.firebase.identities
+          && p.email in request.auth.token.firebase.identities.email
+          && p.accountType == 'registered'
+          && p.createdAt is timestamp && p.lastLoginAt is timestamp
+          && p.updatedAt == request.time;
+      }
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && validProfile()
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.lastLoginAt == request.time;
+      allow update: if isOwner(userId) && validProfile()
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (request.resource.data.lastLoginAt == resource.data.lastLoginAt
+          || request.resource.data.lastLoginAt == request.time);
+      allow list, delete: if false;
     }
 
     match /leaderboard/{levelId}/entries/{userId} {

@@ -7,6 +7,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConflictResolverTest {
+    @Test
+    fun mergePreservesArbitraryLocalIdsInEitherOrder() {
+        val local =
+            PlayerProgress(
+                completedLevelIds = setOf("local_1"),
+                personalBests = mapOf("local_1" to PersonalBest("local_1", 1_000, 1)),
+            )
+        val other =
+            PlayerProgress(
+                completedLevelIds = setOf("cloud_1"),
+                highestUnlockedWeek = 12,
+                personalBests = mapOf("cloud_1" to PersonalBest("cloud_1", 2_000, 2)),
+            )
+        val merged = ConflictResolver.merge(local, other)
+        assertEquals(local.completedLevelIds + other.completedLevelIds, merged.completedLevelIds)
+        assertEquals(local.personalBests + other.personalBests, merged.personalBests)
+        assertEquals(12, merged.highestUnlockedWeek)
+        assertEquals(merged, ConflictResolver.merge(other, local))
+        assertEquals(merged, ConflictResolver.merge(merged, other))
+    }
+
     private fun best(
         level: String,
         time: Long,

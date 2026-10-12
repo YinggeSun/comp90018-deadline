@@ -23,6 +23,10 @@ Players select available tiles from a layered board and move them into a seven-s
 
 ## Core Features
 
+Optional email/password accounts are available from **Settings → Account**. Guest and offline
+play remain available. See [account lifecycle and Firebase setup](docs/user-accounts.md) for
+registration, account isolation, progress sync, manual Console setup and test instructions.
+
 Planned features include:
 
 - Layered tile availability and overlap detection

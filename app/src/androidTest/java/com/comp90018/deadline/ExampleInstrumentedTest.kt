@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.comp90018.deadline", appContext.packageName)
+        assertEquals("com.comp90018.deadline.emulator", appContext.packageName)
     }
 }

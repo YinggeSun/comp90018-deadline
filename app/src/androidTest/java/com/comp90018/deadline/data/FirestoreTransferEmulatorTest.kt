@@ -17,6 +17,7 @@ import com.comp90018.deadline.domain.progress.RedeemResult
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,14 +28,14 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 /**
  * Moves progress between two devices (two separate anonymous accounts) with a transfer code,
- * against the Firebase Emulator Suite (see [FirebaseEmulator]) and the real rules. Skipped when
+ * against the Firebase Emulator Suite (see [FirebaseEmulator]) and the real rules. Fails when
  * the emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
@@ -69,7 +70,7 @@ class FirestoreTransferEmulatorTest {
 
     @Before
     fun requireEmulators() {
-        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        assertTrue("Required Firebase emulators are unavailable", FirebaseEmulator.isRunning())
         FirebaseEmulator.clearFirestore()
     }
 
@@ -119,12 +120,27 @@ class FirestoreTransferEmulatorTest {
                 val newPhone = Device(PlayerProgress())
                 val ownerId = oldPhone.auth.ensureSignedIn().getOrThrow()
                 newPhone.auth.ensureSignedIn().getOrThrow()
-                oldPhone.transferStore.create("K7QM3XPD", ownerId, progress(3, "level_1" to 40_000), System.currentTimeMillis() + 3_000)
+                oldPhone.transferStore.create(
+                    "K7QM3XPD",
+                    ownerId,
+                    progress(3, "level_1" to 40_000),
+                    System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1),
+                )
 
                 // Read while valid, so the new phone's Firestore cache holds the code.
                 assertEquals(progress(3, "level_1" to 40_000), newPhone.transferStore.read("K7QM3XPD"))
+                val document = newPhone.db.collection(FirestoreTransferDataSource.COLLECTION).document("K7QM3XPD")
+                val cached = document.get(Source.CACHE).await()
+                assertTrue("the valid code must be in the reader's cache", cached.exists() && cached.metadata.isFromCache)
                 newPhone.db.disableNetwork().await()
-                Thread.sleep(4_000)
+                // Control server-side expiry rather than racing emulator latency against a three-second TTL.
+                // Only the local emulator fixture changes; production reads still enforce the real rules.
+                FirebaseEmulator.expireTransferAsAdmin("K7QM3XPD")
+                assertEquals(
+                    "expiry must not erase the cache used by this regression",
+                    cached.data,
+                    document.get(Source.CACHE).await().data,
+                )
 
                 val offline = runCatching { newPhone.transferStore.read("K7QM3XPD") }
                 assertTrue("an expired code must not be served from the cache", offline.getOrNull() == null)
