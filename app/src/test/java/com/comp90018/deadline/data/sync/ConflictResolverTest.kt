@@ -8,18 +8,24 @@ import org.junit.Test
 
 class ConflictResolverTest {
     @Test
-    fun obsoleteLevelIdsAreNotRestoredButSemesterWeeksRemainValid() {
-        val obsolete =
+    fun mergePreservesArbitraryLocalIdsInEitherOrder() {
+        val local =
             PlayerProgress(
-                completedLevelIds = setOf("level_6", "level_7", "level_12"),
-                highestUnlockedWeek = 12,
-                personalBests = mapOf("level_7" to PersonalBest("level_7", 30_000, 1)),
+                completedLevelIds = setOf("local_1"),
+                personalBests = mapOf("local_1" to PersonalBest("local_1", 1_000, 1)),
             )
-        val merged = ConflictResolver.merge(PlayerProgress(), obsolete)
-        assertEquals(setOf("level_6"), merged.completedLevelIds)
-        assertTrue(merged.personalBests.isEmpty())
+        val other =
+            PlayerProgress(
+                completedLevelIds = setOf("cloud_1"),
+                highestUnlockedWeek = 12,
+                personalBests = mapOf("cloud_1" to PersonalBest("cloud_1", 2_000, 2)),
+            )
+        val merged = ConflictResolver.merge(local, other)
+        assertEquals(local.completedLevelIds + other.completedLevelIds, merged.completedLevelIds)
+        assertEquals(local.personalBests + other.personalBests, merged.personalBests)
         assertEquals(12, merged.highestUnlockedWeek)
-        assertEquals(merged, ConflictResolver.merge(merged, obsolete))
+        assertEquals(merged, ConflictResolver.merge(other, local))
+        assertEquals(merged, ConflictResolver.merge(merged, other))
     }
 
     private fun best(
