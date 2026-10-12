@@ -125,6 +125,7 @@ class AppContainer(
             firebaseAuth,
             applicationScope,
             gate = sessionGate,
+            guestMigration = dataStore,
             activate = { uid, migrate -> dataStore.activate(uid, migrate) },
             profiles = FirestoreProfileDataSource(FirebaseFirestore.getInstance()),
             saveNickname = { nickname -> settingsRepository.update { it.copy(nickname = nickname) } },
@@ -193,7 +194,6 @@ class AppContainer(
     /** Obtains the anonymous identity without blocking anything; offline just means "not yet". */
     fun signInInBackground() {
         applicationScope.launch {
-            runCatching { sessionGate.run { dataStore.activate(firebaseAuth.currentUserId) } }
             authRepository.ensureSignedIn()
                 .onSuccess { authRepository.refreshProfile() }
                 .onFailure { Log.w(TAG, "Anonymous sign-in failed; will retry when needed", it) }

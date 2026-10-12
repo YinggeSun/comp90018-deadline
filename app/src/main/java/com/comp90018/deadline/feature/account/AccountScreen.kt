@@ -61,6 +61,7 @@ fun AccountScreen(
         viewModel::nickname,
         viewModel::logout,
         viewModel::refresh,
+        viewModel::recoverLocalGuest,
     )
 }
 
@@ -77,6 +78,7 @@ fun AccountContent(
     saveNickname: (String) -> Unit,
     logout: () -> Unit,
     refresh: () -> Unit,
+    recoverLocalGuest: () -> Unit = {},
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -105,6 +107,13 @@ fun AccountContent(
         if (action.busy || action.syncing) CircularProgressIndicator()
         if (action.localPending || !account.storageReady) {
             Text("Account storage needs recovery. Retry account setup before saving progress.")
+        }
+        if (account.guestRecoveryRequired) {
+            Text(
+                "Saved offline Guest progress is safe. Return to it by signing out of the current identity; " +
+                    "no account progress will be imported.",
+            )
+            TertiaryButton("Sign out and recover saved Guest", recoverLocalGuest, enabled = !action.busy && !action.syncing)
         }
         if (action.profilePending) Text("Signed in. Profile sync is pending; retry when online.")
         if (action.progressPending && !action.syncing) {

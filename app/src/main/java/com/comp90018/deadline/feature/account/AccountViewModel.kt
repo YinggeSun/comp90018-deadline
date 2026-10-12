@@ -56,6 +56,8 @@ class AccountViewModel(
 
     fun refresh() = submit { repository.refreshProfile() }
 
+    fun recoverLocalGuest() = submit { repository.recoverLocalGuest() }
+
     fun logout() =
         submit {
             repository.logout().also { if (it.isSuccess) repository.ensureSignedIn() }

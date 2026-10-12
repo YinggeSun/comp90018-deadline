@@ -1,5 +1,7 @@
 package com.comp90018.deadline.data.repository
 
+import com.comp90018.deadline.data.local.datastore.GuestMigrationJournal
+import com.comp90018.deadline.data.local.datastore.GuestRecoveryRequiredException
 import com.comp90018.deadline.data.remote.firebase.AccountAuthClient
 import com.comp90018.deadline.data.remote.firebase.AnonymousAuthClient
 import com.comp90018.deadline.data.remote.firebase.ProfileStore
@@ -37,6 +39,7 @@ class AuthRepositoryImpl(
     private val profiles: ProfileStore? = null,
     private val saveNickname: suspend (String) -> Unit = {},
     private val readNickname: suspend () -> String? = { null },
+    private val guestMigration: GuestMigrationJournal? = null,
 ) : AccountRepository {
     private val operationLock = Mutex()
     private var currentOperation: Deferred<Result<String>>? = null
@@ -44,7 +47,7 @@ class AuthRepositoryImpl(
     // Only a newly created identity may adopt offline guest data. Retained across local-write retries.
     private var pendingGuestUid: String? = null
 
-    private val mutableAccount = MutableStateFlow(snapshot())
+    private val mutableAccount = MutableStateFlow(snapshot().copy(storageReady = false))
     override val account: StateFlow<Account> = mutableAccount
     override val userId: Flow<String?> = account.map { it.uid }
 
@@ -55,6 +58,7 @@ class AuthRepositoryImpl(
         val previous = account.value
         mutableAccount.value = next.copy(nickname = previous.nickname.takeIf { next.uid == previous.uid }, storageReady = false)
         localWork {
+            if (next.uid != null && next.uid == pendingGuestUid) guestMigration?.confirm(next.uid)
             activate(next.uid, next.uid != null && next.uid == pendingGuestUid)
             pendingGuestUid = null
             mutableAccount.value =
@@ -93,7 +97,15 @@ class AuthRepositoryImpl(
     private suspend fun signInOnce(): Result<String> =
         gate.run {
             attempt {
-                val uid = client.currentUserId ?: client.signInAnonymously().also { pendingGuestUid = it }
+                val uid =
+                    client.currentUserId ?: run {
+                        localWork { guestMigration?.prepare() }
+                        if (guestMigration != null) publish() // Offline Guest remains playable if Firebase is unavailable.
+                        client.signInAnonymously().also {
+                            pendingGuestUid = it
+                            localWork { guestMigration?.confirm(it) }
+                        }
+                    }
                 publish()
                 uid
             }
@@ -118,7 +130,12 @@ class AuthRepositoryImpl(
                     val linked = accounts.link(email.trim(), password)
                     check(linked.uid == before.uid) { "Account identity changed unexpectedly." }
                 } else {
-                    pendingGuestUid = accounts.create(email.trim(), password).uid
+                    localWork { guestMigration?.prepare() }
+                    val created = accounts.create(email.trim(), password)
+                    pendingGuestUid = created.uid
+                    completeAuthentication {
+                        localWork { guestMigration?.confirm(checkNotNull(created.uid)) }
+                    }
                 }
                 completeAuthentication {
                     publish()
@@ -139,6 +156,7 @@ class AuthRepositoryImpl(
         return gate.run {
             attempt {
                 publish()
+                localWork { guestMigration?.cancelForLogin() }
                 checkNotNull(client as? AccountAuthClient).login(email.trim(), password)
                 completeAuthentication {
                     publish() // Never migrate another UID's progress on login.
@@ -160,6 +178,18 @@ class AuthRepositoryImpl(
                     mutableAccount.value = snapshot().copy(storageReady = false)
                     throw error
                 }
+            }
+        }
+
+    override suspend fun recoverLocalGuest(): Result<Unit> =
+        gate.run {
+            attempt {
+                val journal = checkNotNull(guestMigration)
+                localWork { journal.checkRecovery() }
+                checkNotNull(client as? AccountAuthClient).signOut()
+                pendingGuestUid = null
+                localWork { journal.restore() }
+                publish()
             }
         }
 
@@ -207,7 +237,8 @@ class AuthRepositoryImpl(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            mutableAccount.value = snapshot().copy(storageReady = false)
+            mutableAccount.value =
+                snapshot().copy(storageReady = false, guestRecoveryRequired = error is GuestRecoveryRequiredException)
             throw AccountStorageUnavailableException()
         }
 

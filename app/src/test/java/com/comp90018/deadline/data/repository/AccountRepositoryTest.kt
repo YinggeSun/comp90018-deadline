@@ -95,6 +95,33 @@ class AccountRepositoryTest {
         }
     }
 
+    @Test fun anonymousUidPersistedBeforeMigrationRecoversAfterRealFileRestart() =
+        runBlocking {
+            val client = Client(Account())
+            val store = AccountDataStore(disk.dataStore) { client.currentUserId }
+            store.activate(null)
+            ProgressDataSource(store).mergeIn(PlayerProgress(setOf("offline_level"), 5))
+            val firstProcess =
+                AuthRepositoryImpl(client, this, guestMigration = store, activate = { uid, migrate ->
+                    if (uid != null) throw IOException("process stopped before migration commit")
+                    store.activate(uid, migrate)
+                })
+            assertTrue(firstProcess.ensureSignedIn().isFailure)
+            assertEquals("new-guest", client.currentUserId)
+            val restarted = AccountDataStore(disk.reopen()) { client.currentUserId }
+            val secondProcess =
+                AuthRepositoryImpl(
+                    client,
+                    this,
+                    guestMigration = restarted,
+                    activate = { uid, migrate -> restarted.activate(uid, migrate) },
+                )
+            assertTrue(secondProcess.refreshProfile().isSuccess) // Retry Account Setup.
+            assertEquals(setOf("offline_level"), ProgressDataSource(restarted).progress.first().completedLevelIds)
+            assertTrue(secondProcess.account.value.storageReady)
+            assertEquals(1, client.anonymous)
+        }
+
     @Test fun validatesRegistrationBeforeCallingFirebase() =
         runBlocking {
             val client = Client()

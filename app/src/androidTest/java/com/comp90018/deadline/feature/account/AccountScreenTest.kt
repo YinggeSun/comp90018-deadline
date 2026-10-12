@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.domain.repository.Account
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -25,12 +26,26 @@ class AccountScreenTest {
         action: AccountActionState = AccountActionState(),
         home: () -> Unit = {
         },
+        recover: () -> Unit = {},
     ) {
         compose.setContent {
             DeadlineTheme {
-                AccountContent(page, account, action, home, {}, {}, { _, _ -> }, { _, _, _, _ -> }, {}, {}, {})
+                AccountContent(page, account, action, home, {}, {}, { _, _ -> }, { _, _, _, _ -> }, {}, {}, {}, recover)
             }
         }
+    }
+
+    @Test fun ambiguousGuestRecoveryRequiresAnExplicitSignOutAction() {
+        var recovered = false
+        show(
+            AccountPage.PROFILE,
+            Account("unconfirmed", storageReady = false, guestRecoveryRequired = true),
+            recover = { recovered = true },
+        )
+        compose.onNodeWithText("Retry Account Setup").performScrollTo().assertIsEnabled()
+        assertFalse(recovered)
+        compose.onNodeWithText("Sign out and recover saved Guest").performScrollTo().performClick()
+        assertTrue(recovered)
     }
 
     @Test fun guestCanContinueWithoutCredentials() {

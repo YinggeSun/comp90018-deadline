@@ -7,6 +7,7 @@ data class Account(
     val email: String? = null,
     val nickname: String? = null,
     val storageReady: Boolean = true,
+    val guestRecoveryRequired: Boolean = false,
 ) {
     val registered: Boolean get() = email != null
 }
@@ -31,6 +32,8 @@ interface AccountRepository : AuthRepository {
     suspend fun updateNickname(nickname: String): Result<Unit>
 
     suspend fun refreshProfile(): Result<Unit>
+
+    suspend fun recoverLocalGuest(): Result<Unit> = Result.failure(IllegalStateException("No pending Guest recovery."))
 }
 
 object AccountValidation {

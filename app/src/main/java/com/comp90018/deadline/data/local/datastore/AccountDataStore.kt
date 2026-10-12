@@ -9,13 +9,14 @@ import com.comp90018.deadline.data.sync.ConflictResolver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicLong
 
 /** One file, with separate progress/nickname namespaces. Device settings remain shared. */
 class AccountDataStore(
     private val backing: DataStore<Preferences>,
     private val expectedUid: (() -> String?)? = null,
-) : DataStore<Preferences> {
+) : DataStore<Preferences>, GuestMigrationJournal {
     private val selectedOwner = MutableStateFlow<String?>(null)
     private val version = AtomicLong()
     val sessionVersion: Long get() = version.get()
@@ -45,6 +46,54 @@ class AccountDataStore(
         return view(saved)
     }
 
+    override suspend fun prepare() {
+        check(expectedUid != null && expectedUid.invoke() == null)
+        activate(null)
+        backing.edit { stored ->
+            check(expectedUid.invoke() == null && stored[OWNER] == LOCAL_GUEST)
+            check(stored[MIGRATION_SOURCE] == null || stored[MIGRATION_SOURCE] == LOCAL_GUEST)
+            stored[MIGRATION_SOURCE] = LOCAL_GUEST
+            stored.remove(MIGRATION_DESTINATION)
+        }
+    }
+
+    override suspend fun confirm(uid: String) {
+        backing.edit { stored ->
+            check(expectedUid != null && expectedUid.invoke() == uid)
+            if (stored[MIGRATION_SOURCE] == null && stored[OWNER] == uid) return@edit
+            check(stored[MIGRATION_SOURCE] == LOCAL_GUEST && stored[OWNER] == LOCAL_GUEST)
+            check(stored[MIGRATION_DESTINATION] == null || stored[MIGRATION_DESTINATION] == uid)
+            stored[MIGRATION_DESTINATION] = uid
+        }
+    }
+
+    override suspend fun cancelForLogin() {
+        backing.edit { stored ->
+            if (stored[MIGRATION_SOURCE] != null) {
+                check(expectedUid != null && expectedUid.invoke() == null)
+                check(stored[MIGRATION_SOURCE] == LOCAL_GUEST && stored[OWNER] == LOCAL_GUEST)
+                stored.remove(MIGRATION_SOURCE)
+                stored.remove(MIGRATION_DESTINATION)
+            }
+        }
+    }
+
+    override suspend fun checkRecovery() {
+        val stored = backing.data.first()
+        check(stored[MIGRATION_SOURCE] == LOCAL_GUEST && stored[OWNER] == LOCAL_GUEST)
+    }
+
+    override suspend fun restore() {
+        backing.edit { stored ->
+            check(expectedUid != null && expectedUid.invoke() == null)
+            check(stored[MIGRATION_SOURCE] == LOCAL_GUEST && stored[OWNER] == LOCAL_GUEST)
+            stored.remove(MIGRATION_SOURCE)
+            stored.remove(MIGRATION_DESTINATION)
+        }
+        version.incrementAndGet()
+        selectedOwner.value = LOCAL_GUEST
+    }
+
     /** First launch adopts legacy data; subsequent UID changes select isolated saved data. */
     suspend fun activate(
         uid: String?,
@@ -60,7 +109,17 @@ class AccountDataStore(
         backing.edit { stored ->
             val next = uid ?: LOCAL_GUEST
             val previous = stored[OWNER]
-            if (previous == null || (previous == LOCAL_GUEST && next != LOCAL_GUEST && migrateLocalGuest)) {
+            val pending = stored[MIGRATION_SOURCE]
+            val recovering = pending != null && uid != null
+            if (recovering &&
+                (
+                    pending != LOCAL_GUEST || previous != LOCAL_GUEST ||
+                        stored[MIGRATION_DESTINATION] != uid || expectedUid == null || expectedUid.invoke() != uid
+                )
+            ) {
+                throw GuestRecoveryRequiredException()
+            }
+            if (previous == null || (previous == LOCAL_GUEST && next != LOCAL_GUEST && (migrateLocalGuest || recovering))) {
                 val source = namespace(stored, previous)
                 val target = namespace(stored, next)
                 val codec = ProgressDataSource(backing)
@@ -74,6 +133,11 @@ class AccountDataStore(
                     merged.asMap()[key(name)]?.let { stored[key("$next/$name")] = it }
                     stored.remove(key(if (previous == null) name else "$previous/$name"))
                 }
+            }
+            // Destination, source removal, ownership and acknowledgement commit atomically.
+            if (recovering) {
+                stored.remove(MIGRATION_SOURCE)
+                stored.remove(MIGRATION_DESTINATION)
             }
             stored[OWNER] = next
         }
@@ -118,6 +182,8 @@ class AccountDataStore(
     private companion object {
         const val LOCAL_GUEST = "local-guest"
         val OWNER = stringPreferencesKey("account_owner")
+        val MIGRATION_SOURCE = stringPreferencesKey("guest_migration/source")
+        val MIGRATION_DESTINATION = stringPreferencesKey("guest_migration/destination")
         val privateNames =
             setOf(
                 "progress_completed_level_ids",
