@@ -93,11 +93,12 @@ fun GameScreen(
     // Save through the same repository as the Settings page.
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     // Attach to the visible game only; restore the former brightness on pause/exit.
-    val activity = remember(context) {
-        var current: android.content.Context = context
-        while (current is ContextWrapper && current !is Activity) current = current.baseContext
-        current as? Activity
-    }
+    val activity =
+        remember(context) {
+            var current: android.content.Context = context
+            while (current is ContextWrapper && current !is Activity) current = current.baseContext
+            current as? Activity
+        }
     DisposableEffect(owner, activity, settings?.autoLightEnabled) {
         val controller =
             if (settings?.autoLightEnabled == true && activity != null) {
@@ -105,13 +106,14 @@ fun GameScreen(
             } else {
                 null
             }
-        val observer = LifecycleEventObserver { _, _ ->
-            if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-                controller?.start()
-            } else {
-                controller?.stop()
+        val observer =
+            LifecycleEventObserver { _, _ ->
+                if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                    controller?.start()
+                } else {
+                    controller?.stop()
+                }
             }
-        }
         owner.lifecycle.addObserver(observer)
         if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller?.start()
         onDispose {
