@@ -1,0 +1,17 @@
+<resources>
+    <!-- Leaderboard screen -->
+    <string name="leaderboard_title">Leaderboard</string>
+    <string name="leaderboard_loading">Loading the leaderboard…</string>
+    <string name="leaderboard_empty_title">No times yet</string>
+    <string name="leaderboard_empty_message">Clear %1$s to set the first time on this leaderboard.</string>
+    <string name="leaderboard_offline_banner">You are offline. Showing the last ranking saved on this phone.</string>
+    <string name="leaderboard_offline_title">You are offline</string>
+    <string name="leaderboard_offline_message">Connect to the internet to see the leaderboard. You can keep playing offline.</string>
+    <string name="leaderboard_error_not_signed_in">Could not connect your player profile to the leaderboard.</string>
+    <string name="leaderboard_error_rejected">The leaderboard server refused the request.</string>
+    <string name="leaderboard_error_unknown">Could not load the leaderboard.</string>
+    <string name="leaderboard_you">You</string>
+    <!-- Read by screen readers for one row, e.g. "Rank 2, Alex, 01:05.37, you". -->
+    <string name="leaderboard_row_description">Rank %1$d, %2$s, %3$s</string>
+    <string name="leaderboard_row_description_you">Rank %1$d, %2$s, %3$s, you</string>
+</resources>
