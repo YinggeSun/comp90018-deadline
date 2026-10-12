@@ -15,13 +15,18 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.comp90018.deadline.testing.EmulatorTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
 
     buildTypes {
+        create("emulator") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".emulator"
+            matchingFallbacks += "debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -30,6 +35,7 @@ android {
             )
         }
     }
+    testBuildType = "emulator"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -77,4 +83,5 @@ dependencies {
     androidTestImplementation(libs.androidx.navigation.testing)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    "emulatorImplementation"(libs.androidx.ui.test.manifest)
 }

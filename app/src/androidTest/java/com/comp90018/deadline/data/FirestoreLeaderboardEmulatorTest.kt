@@ -29,7 +29,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,7 +36,7 @@ import org.junit.runner.RunWith
 /**
  * Runs the real Firestore leaderboard code and `firestore.rules` against the local Firebase
  * Emulator Suite (see [FirebaseEmulator]); each player is a separate FirebaseApp. The database
- * is cleared before each test. Skipped when the emulators are not running.
+ * is cleared before each test. Fails when the emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
 class FirestoreLeaderboardEmulatorTest {
@@ -63,7 +62,7 @@ class FirestoreLeaderboardEmulatorTest {
 
     @Before
     fun requireEmulators() {
-        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        assertTrue("Required Firebase emulators are unavailable", FirebaseEmulator.isRunning())
         FirebaseEmulator.clearFirestore()
     }
 

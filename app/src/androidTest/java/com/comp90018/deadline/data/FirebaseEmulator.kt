@@ -65,6 +65,8 @@ object FirebaseEmulator {
 
     /** A separate Firebase app, i.e. a separate player, connected to the emulators. */
     fun newApp(context: Context): FirebaseApp {
+        check(context is com.comp90018.deadline.testing.EmulatorApplication) { "Emulator application required" }
+        check(isRunning()) { "Required Firebase emulators unavailable; refusing to create a client" }
         val app =
             FirebaseApp.initializeApp(
                 context,
@@ -77,6 +79,9 @@ object FirebaseEmulator {
             )
         FirebaseAuth.getInstance(app).useEmulator(HOST, AUTH_PORT)
         FirebaseFirestore.getInstance(app).useEmulator(HOST, FIRESTORE_PORT)
+        check(app.options.projectId == PROJECT_ID && app.options.apiKey == "emulator-only")
+        check(FirebaseFirestore.getInstance(app).firestoreSettings.host == "$HOST:$FIRESTORE_PORT")
+        check(!FirebaseFirestore.getInstance(app).firestoreSettings.isSslEnabled)
         return app
     }
 

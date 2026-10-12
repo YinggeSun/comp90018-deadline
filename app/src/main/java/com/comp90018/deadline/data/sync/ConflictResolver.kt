@@ -16,14 +16,16 @@ object ConflictResolver {
         b: PlayerProgress,
     ): PlayerProgress =
         PlayerProgress(
-            completedLevelIds = a.completedLevelIds + b.completedLevelIds,
+            completedLevelIds = (a.completedLevelIds + b.completedLevelIds).filterTo(mutableSetOf(), ::knownLevel),
             highestUnlockedWeek = maxOf(a.highestUnlockedWeek, b.highestUnlockedWeek),
             personalBests =
-                (a.personalBests.keys + b.personalBests.keys).associateWith { levelId ->
+                (a.personalBests.keys + b.personalBests.keys).filter(::knownLevel).associateWith { levelId ->
                     better(a.personalBests[levelId], b.personalBests[levelId])
                 },
             lastModifiedMillis = maxOf(a.lastModifiedMillis, b.lastModifiedMillis),
         )
+
+    fun knownLevel(id: String): Boolean = id in (1..6).map { "level_$it" }
 
     private fun better(
         a: PersonalBest?,

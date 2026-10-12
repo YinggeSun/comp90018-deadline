@@ -48,7 +48,7 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
         return merged
     }
 
-    private fun read(preferences: Preferences) =
+    internal fun read(preferences: Preferences) =
         PlayerProgress(
             completedLevelIds = preferences.typed(COMPLETED).orEmpty().filterTo(mutableSetOf()) { it.isNotBlank() },
             highestUnlockedWeek =
@@ -62,7 +62,7 @@ class ProgressDataSource(private val dataStore: DataStore<Preferences>) {
             lastModifiedMillis = (preferences.typed(LAST_MODIFIED) ?: 0L).coerceAtLeast(0L),
         )
 
-    private fun write(
+    internal fun write(
         preferences: MutablePreferences,
         progress: PlayerProgress,
     ) {

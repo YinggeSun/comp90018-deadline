@@ -7,6 +7,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConflictResolverTest {
+    @Test
+    fun obsoleteLevelIdsAreNotRestoredButSemesterWeeksRemainValid() {
+        val obsolete =
+            PlayerProgress(
+                completedLevelIds = setOf("level_6", "level_7", "level_12"),
+                highestUnlockedWeek = 12,
+                personalBests = mapOf("level_7" to PersonalBest("level_7", 30_000, 1)),
+            )
+        val merged = ConflictResolver.merge(PlayerProgress(), obsolete)
+        assertEquals(setOf("level_6"), merged.completedLevelIds)
+        assertTrue(merged.personalBests.isEmpty())
+        assertEquals(12, merged.highestUnlockedWeek)
+        assertEquals(merged, ConflictResolver.merge(merged, obsolete))
+    }
+
     private fun best(
         level: String,
         time: Long,

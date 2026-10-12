@@ -1,8 +1,9 @@
 # Firestore security and validation
 
-The app stores three things in Cloud Firestore: the online leaderboard (#38), each player's
-cloud copy of their progress (#39), and short-lived transfer codes for moving progress to
-another phone (#39). `firestore.rules` protects both (#51). The rules run on Google's servers in front of the
+The app stores the online leaderboard (#38), each player's cloud progress (#39), short-lived
+transfer codes (#39), and optional private registered profiles (#65). `firestore.rules` protects
+these collections. See [account lifecycle and setup](user-accounts.md) for the owner-only
+`users/{uid}` profile schema and its access tests. The rules run on Google's servers in front of the
 database, so they hold even against a modified app or a client that skips the app
 entirely: anything they do not allow is refused.
 
@@ -12,15 +13,16 @@ One document per player per level holds that player's best time:
 
 ```text
 leaderboard/{levelId}/entries/{userId}
-  uid          string     the player's anonymous Firebase Auth ID (same as {userId})
+  uid          string     the player's Firebase Auth ID (same as {userId})
   nickname     string     1–20 characters, from Settings or "Anonymous"
   timeMillis   integer    completion time in milliseconds
   week         integer    the level's last semester week (2, 4, …, 12)
   submittedAt  timestamp  set by the server
 ```
 
-Players are identified by Firebase Anonymous Authentication (#37), so no personal data is
-collected. The app reads a level's ranking with a live query ordered by `timeMillis`.
+Players can use Firebase Anonymous Authentication (#37) or an optional registered account (#65).
+Private profile email stays in `users/{uid}` and is never copied into leaderboard entries.
+The app reads a level's ranking with a live query ordered by `timeMillis`.
 
 Each player also has one progress document, the cloud copy of what is stored on the device:
 
@@ -160,8 +162,9 @@ Tests that forge a timestamp use one an hour in the past. A client timestamp of 
 the emulator's server time to the millisecond, because the Android emulator shares the host's
 clock, which would make those tests flaky.
 
-Both test classes clear the emulator database before each test, and skip themselves when the
-emulators are not running, so normal instrumented test runs are unaffected.
+The rules, leaderboard, progress and transfer suites clear the local emulator database before
+each test. Required emulators being unavailable now fails closed instead of skipping tests.
+All instrumentation targets the isolated `emulator` build; normal app builds remain unchanged.
 
 To run them:
 
@@ -176,13 +179,13 @@ To run them:
    The emulator reloads `firestore.rules` whenever the file changes.
 3. With an Android emulator running, run the tests:
 
-   ```bash
-   bash ./gradlew :app:connectedDebugAndroidTest \
-     -Pandroid.testInstrumentationRunnerArguments.package=com.comp90018.deadline.data
+   ```powershell
+   .\scripts\run_firebase_android_tests.ps1 -Serial emulator-5554
    ```
 
-Debug builds allow plain HTTP to `10.0.2.2` (the host as seen from the Android emulator),
-which the Auth emulator needs; release builds stay HTTPS-only.
+The isolated build allows local HTTP to `10.0.2.2`, disables automatic Firebase initialization
+and Remote Config, and uses only demo credentials. See [Android isolation and execution
+results](issue-65-android-isolation.md) for startup guards, exact commands and remaining blockers.
 
 ## Deploying
 

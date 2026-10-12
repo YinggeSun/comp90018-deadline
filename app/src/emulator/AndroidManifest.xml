@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:name="com.comp90018.deadline.testing.EmulatorApplication"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/emulator_network_security"
+        tools:replace="android:name,android:allowBackup">
+        <provider android:name="com.google.firebase.provider.FirebaseInitProvider" tools:node="remove" />
+        <service android:name="com.google.firebase.components.ComponentDiscoveryService">
+            <!-- There is no Remote Config emulator. Fail instead of permitting an SDK fetch. -->
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.remoteconfig.RemoteConfigRegistrar" tools:node="remove" />
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar" tools:node="remove" />
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.remoteconfig.FirebaseRemoteConfigKtxRegistrar" tools:node="remove" />
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar" tools:node="remove" />
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.abt.component.AbtRegistrar" tools:node="remove" />
+        </service>
+    </application>
+</manifest>

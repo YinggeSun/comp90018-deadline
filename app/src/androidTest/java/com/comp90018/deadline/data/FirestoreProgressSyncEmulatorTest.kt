@@ -22,7 +22,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assume.assumeTrue
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 /**
  * Runs progress sync against the Firebase Emulator Suite (see [FirebaseEmulator]) with the real
  * `firestore.rules`. Two local copies on one signed-in account stand in for two devices.
- * Skipped when the emulators are not running.
+ * Fails when the emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
 class FirestoreProgressSyncEmulatorTest {
@@ -51,7 +51,7 @@ class FirestoreProgressSyncEmulatorTest {
 
     @Before
     fun setUp() {
-        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        assertTrue("Required Firebase emulators are unavailable", FirebaseEmulator.isRunning())
         FirebaseEmulator.clearFirestore()
         app = FirebaseEmulator.newApp(context)
         auth = AuthRepositoryImpl(FirebaseAuthDataSource(FirebaseAuth.getInstance(app)), scope)

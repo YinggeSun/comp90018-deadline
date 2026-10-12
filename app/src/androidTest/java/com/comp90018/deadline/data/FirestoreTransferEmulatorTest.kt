@@ -27,14 +27,13 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Moves progress between two devices (two separate anonymous accounts) with a transfer code,
- * against the Firebase Emulator Suite (see [FirebaseEmulator]) and the real rules. Skipped when
+ * against the Firebase Emulator Suite (see [FirebaseEmulator]) and the real rules. Fails when
  * the emulators are not running.
  */
 @RunWith(AndroidJUnit4::class)
@@ -69,7 +68,7 @@ class FirestoreTransferEmulatorTest {
 
     @Before
     fun requireEmulators() {
-        assumeTrue("Firebase emulators are not running on the host", FirebaseEmulator.isRunning())
+        assertTrue("Required Firebase emulators are unavailable", FirebaseEmulator.isRunning())
         FirebaseEmulator.clearFirestore()
     }
 

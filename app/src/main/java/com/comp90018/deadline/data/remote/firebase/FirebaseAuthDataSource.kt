@@ -1,5 +1,7 @@
 package com.comp90018.deadline.data.remote.firebase
 
+import com.comp90018.deadline.domain.repository.Account
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +21,61 @@ interface AnonymousAuthClient {
     suspend fun signInAnonymously(): String
 }
 
-class FirebaseAuthDataSource(private val auth: FirebaseAuth) : AnonymousAuthClient {
+interface AccountAuthClient : AnonymousAuthClient {
+    val currentAccount: Account
+
+    suspend fun link(
+        email: String,
+        password: String,
+    ): Account
+
+    suspend fun create(
+        email: String,
+        password: String,
+    ): Account
+
+    suspend fun login(
+        email: String,
+        password: String,
+    ): Account
+
+    fun signOut()
+}
+
+class FirebaseAuthDataSource(private val auth: FirebaseAuth) : AccountAuthClient {
+    override val currentAccount: Account
+        get() = auth.currentUser?.let { Account(it.uid, if (it.isAnonymous) null else it.email) } ?: Account()
+
+    override suspend fun link(
+        email: String,
+        password: String,
+    ): Account {
+        val existing = checkNotNull(auth.currentUser)
+        check(existing.isAnonymous) { "Already registered." }
+        val linked = existing.linkWithCredential(EmailAuthProvider.getCredential(email, password)).await()
+        check(linked.user?.uid == existing.uid) { "Account identity changed unexpectedly." }
+        return currentAccount
+    }
+
+    override suspend fun create(
+        email: String,
+        password: String,
+    ): Account {
+        check(auth.currentUser == null) { "An account already exists." }
+        auth.createUserWithEmailAndPassword(email, password).await()
+        return currentAccount
+    }
+
+    override suspend fun login(
+        email: String,
+        password: String,
+    ): Account {
+        auth.signInWithEmailAndPassword(email, password).await()
+        return currentAccount
+    }
+
+    override fun signOut() = auth.signOut()
+
     override val currentUserId: String?
         get() = auth.currentUser?.uid
 
