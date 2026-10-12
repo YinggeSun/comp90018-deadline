@@ -16,7 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+<<<<<<< Updated upstream
 import androidx.compose.material3.Switch
+=======
+import androidx.compose.material3.TextButton
+>>>>>>> Stashed changes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,10 +31,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+<<<<<<< Updated upstream
 import androidx.compose.runtime.setValue
+=======
+import androidx.lifecycle.viewmodel.compose.viewModel
+>>>>>>> Stashed changes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import android.app.Activity
+import android.content.ContextWrapper
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -43,12 +53,14 @@ import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.domain.game.model.GameStatus
+import com.comp90018.deadline.feature.settings.SettingsViewModel
 import com.comp90018.deadline.feature.game.components.GameActions
 import com.comp90018.deadline.feature.game.components.GameBoard
 import com.comp90018.deadline.feature.game.components.GameHud
 import com.comp90018.deadline.feature.game.components.TaskTray
 import com.comp90018.deadline.feature.game.components.minimumBoardSize
 import com.comp90018.deadline.sensor.AndroidSensorGateway
+import com.comp90018.deadline.sensor.light.AutoLightController
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
 
 @Composable
@@ -79,6 +91,26 @@ fun GameScreen(
     // Null until stored settings are read, so sensors never start with the defaults first.
     val settings by viewModel.settings.collectAsState(initial = null)
     val settingsLoaded = settings != null
+    // Save through the same repository as the Settings page.
+    val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
+    // Attach to the visible game only; restore the former brightness on pause/exit.
+    val activity = remember(context) {
+        var current: android.content.Context = context
+        while (current is ContextWrapper && current !is Activity) current = current.baseContext
+        current as? Activity
+    }
+    DisposableEffect(owner, activity, settings?.autoLightEnabled) {
+        val controller = if (settings?.autoLightEnabled == true && activity != null) AutoLightController(activity) else null
+        val observer = LifecycleEventObserver { _, _ ->
+            if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller?.start() else controller?.stop()
+        }
+        owner.lifecycle.addObserver(observer)
+        if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller?.start()
+        onDispose {
+            owner.lifecycle.removeObserver(observer)
+            controller?.stop()
+        }
+    }
     SideEffect {
         settings?.let {
             haptics.enabled = it.hapticsEnabled
@@ -111,11 +143,16 @@ fun GameScreen(
         elapsedSeconds = elapsedSeconds,
         onEvent = { viewModel.onEvent(it, haptics) },
         onBack = onBack,
+<<<<<<< Updated upstream
         autoBrightnessEnabled = autoBrightnessEnabled,
         onAutoBrightnessChanged = { enabled ->
             autoBrightnessEnabled = enabled
             brightnessPreferences.edit().putBoolean("auto_brightness", enabled).apply()
         },
+=======
+        autoLightEnabled = settings?.autoLightEnabled,
+        onAutoLightChange = settingsViewModel::setAutoLightEnabled,
+>>>>>>> Stashed changes
     )
     AmbientBrightnessEffect(enabled = autoBrightnessEnabled)
 }
@@ -134,8 +171,13 @@ fun GameContent(
     onEvent: (GameUiEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+<<<<<<< Updated upstream
     autoBrightnessEnabled: Boolean = true,
     onAutoBrightnessChanged: (Boolean) -> Unit = {},
+=======
+    autoLightEnabled: Boolean? = null,
+    onAutoLightChange: (Boolean) -> Unit = {},
+>>>>>>> Stashed changes
 ) {
     val topBar = @Composable {
         Row(
@@ -153,6 +195,7 @@ fun GameContent(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.weight(1f))
+<<<<<<< Updated upstream
             Text(
                 text = "Auto Light",
                 style = MaterialTheme.typography.labelSmall,
@@ -162,6 +205,20 @@ fun GameContent(
                 checked = autoBrightnessEnabled,
                 onCheckedChange = onAutoBrightnessChanged,
             )
+=======
+            // Available on the game screen; persists via SettingsRepository.
+            TextButton(
+                onClick = { autoLightEnabled?.let { onAutoLightChange(!it) } },
+                enabled = autoLightEnabled != null,
+                modifier = Modifier.testTag(AUTO_LIGHT_GAME_TOGGLE_TAG),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_auto_light) +
+                        if (autoLightEnabled == true) " ON" else " OFF",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+>>>>>>> Stashed changes
         }
     }
 
@@ -229,6 +286,28 @@ fun GameContent(
 
 private val BoardPadding = Spacing.large
 
+<<<<<<< Updated upstream
+=======
+const val MAX_STRESS_WARNING_TAG = "max_stress_warning"
+const val AUTO_LIGHT_GAME_TOGGLE_TAG = "auto_light_game_toggle"
+
+/**
+ * Pulsing red frame drawn over the whole screen while [active], for the Maximum Stress
+ * warning. It only draws, so taps still reach the board underneath.
+ */
+@Composable
+private fun Modifier.maxStressFlash(active: Boolean): Modifier {
+    if (!active) return this
+    val alpha by rememberInfiniteTransition(label = "maxStress").animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 500, easing = LinearEasing), RepeatMode.Reverse),
+        label = "maxStressAlpha",
+    )
+    return border(6.dp, MaterialTheme.colorScheme.error.copy(alpha = alpha))
+}
+
+>>>>>>> Stashed changes
 /**
  * Stacks [header], [board] and [footer]. The board fills the height left in
  * the viewport, but at least [minimumBoardHeight]; if the total no longer
