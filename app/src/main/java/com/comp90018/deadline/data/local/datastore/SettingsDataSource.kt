@@ -28,6 +28,7 @@ class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
             preferences[HAPTICS] = updated.hapticsEnabled
             preferences[SHAKE] = updated.shakeToShuffleEnabled
             preferences[TILT] = updated.tiltToPeekEnabled
+            preferences[AUTO_LIGHT] = updated.autoLightEnabled
         }
     }
 
@@ -43,6 +44,7 @@ class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
             hapticsEnabled = preferences.typed(HAPTICS) ?: defaults.hapticsEnabled,
             shakeToShuffleEnabled = preferences.typed(SHAKE) ?: defaults.shakeToShuffleEnabled,
             tiltToPeekEnabled = preferences.typed(TILT) ?: defaults.tiltToPeekEnabled,
+            autoLightEnabled = preferences.typed(AUTO_LIGHT) ?: defaults.autoLightEnabled,
         )
     }
 
@@ -53,5 +55,6 @@ class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
         val HAPTICS = booleanPreferencesKey("settings_haptics_enabled")
         val SHAKE = booleanPreferencesKey("settings_shake_enabled")
         val TILT = booleanPreferencesKey("settings_tilt_enabled")
+        val AUTO_LIGHT = booleanPreferencesKey("settings_auto_light_enabled")
     }
 }

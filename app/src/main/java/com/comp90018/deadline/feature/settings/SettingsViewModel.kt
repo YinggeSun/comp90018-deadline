@@ -47,6 +47,7 @@ class SettingsViewModel(
                 hapticsEnabled = settings.hapticsEnabled,
                 shakeToShuffleEnabled = settings.shakeToShuffleEnabled,
                 tiltToPeekEnabled = settings.tiltToPeekEnabled,
+                autoLightEnabled = settings.autoLightEnabled,
                 savedNickname = settings.nickname,
                 nicknameDraft = draft ?: settings.nickname.orEmpty(),
                 saveFailed = failed != null,
@@ -62,6 +63,8 @@ class SettingsViewModel(
     fun setShakeToShuffleEnabled(enabled: Boolean) = update { it.copy(shakeToShuffleEnabled = enabled) }
 
     fun setTiltToPeekEnabled(enabled: Boolean) = update { it.copy(tiltToPeekEnabled = enabled) }
+
+    fun setAutoLightEnabled(enabled: Boolean) = update { it.copy(autoLightEnabled = enabled) }
 
     /**
      * Keeps the field within [PlayerSettings.MAX_NICKNAME_LENGTH], cutting only between whole

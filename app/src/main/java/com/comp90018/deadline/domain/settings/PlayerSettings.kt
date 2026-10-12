@@ -12,6 +12,7 @@ data class PlayerSettings(
     val hapticsEnabled: Boolean = true,
     val shakeToShuffleEnabled: Boolean = true,
     val tiltToPeekEnabled: Boolean = true,
+    val autoLightEnabled: Boolean = false,
 ) {
     init {
         require(nickname == null || nickname.isNotBlank()) { "Nickname must not be blank." }
