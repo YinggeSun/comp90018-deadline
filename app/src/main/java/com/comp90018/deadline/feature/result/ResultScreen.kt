@@ -29,6 +29,7 @@ import com.comp90018.deadline.core.ui.components.PhotoBackground
 import com.comp90018.deadline.core.ui.components.PrimaryButton
 import com.comp90018.deadline.core.ui.components.SecondaryButton
 import com.comp90018.deadline.core.ui.components.TertiaryButton
+import com.comp90018.deadline.core.ui.components.popIn
 import com.comp90018.deadline.core.util.TimeFormatter
 
 @Composable
@@ -75,7 +76,7 @@ fun ResultContent(
             style = MaterialTheme.typography.displaySmall,
             color = if (uiState.won) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { heading() },
+            modifier = Modifier.popIn().semantics { heading() },
         )
         if (uiState.levelName.isNotEmpty()) {
             Text(

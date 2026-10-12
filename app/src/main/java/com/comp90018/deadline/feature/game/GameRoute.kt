@@ -1,29 +1,20 @@
 package com.comp90018.deadline.feature.game
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
-import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.CampusBackgrounds
 import com.comp90018.deadline.core.ui.components.BackdropStrength
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.LoadingContent
 import com.comp90018.deadline.core.ui.components.PhotoBackground
-import com.comp90018.deadline.core.ui.components.TertiaryButton
+import com.comp90018.deadline.core.ui.components.ScreenTopBar
 import com.comp90018.deadline.domain.level.generator.LevelSource
 import com.comp90018.deadline.domain.level.model.SemesterLevel
 
@@ -86,21 +77,7 @@ private fun GameLoadFrame(
     content: @Composable () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = SemesterLevel.fromId(levelId)?.name.orEmpty(),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+        ScreenTopBar(title = SemesterLevel.fromId(levelId)?.name.orEmpty(), onBack = onBack)
         content()
     }
 }

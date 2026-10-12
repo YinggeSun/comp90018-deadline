@@ -69,7 +69,8 @@ fun HomeContent(
         Text(
             text = stringResource(R.string.home_tagline),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Full-strength text colour: the muted one is hard to read over the photo.
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(Spacing.extraLarge))
