@@ -15,6 +15,7 @@ data class SettingsUiState(
     val hapticsEnabled: Boolean = true,
     val shakeToShuffleEnabled: Boolean = true,
     val tiltToPeekEnabled: Boolean = true,
+    val autoLightEnabled: Boolean = false,
     val savedNickname: String? = null,
     val nicknameDraft: String = "",
     /** The last change could not be saved; the screen offers to retry it. */

@@ -59,6 +59,7 @@ fun SettingsScreen(
         onHapticsChange = viewModel::setHapticsEnabled,
         onShakeChange = viewModel::setShakeToShuffleEnabled,
         onTiltChange = viewModel::setTiltToPeekEnabled,
+        onAutoLightChange = viewModel::setAutoLightEnabled,
         onNicknameChange = viewModel::onNicknameChange,
         onSaveNickname = viewModel::saveNickname,
         onRetrySave = viewModel::retrySave,
@@ -80,6 +81,7 @@ fun SettingsContent(
     modifier: Modifier = Modifier,
     onBackgroundMusicChange: (Boolean) -> Unit = {},
     onSoundEffectsChange: (Boolean) -> Unit = {},
+    onAutoLightChange: (Boolean) -> Unit = {},
     transferSection: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -146,6 +148,15 @@ fun SettingsContent(
                 summary = stringResource(R.string.settings_tilt_summary),
                 checked = uiState.tiltToPeekEnabled,
                 onCheckedChange = onTiltChange,
+            )
+
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_display))
+            SettingSwitch(
+                title = stringResource(R.string.settings_auto_light),
+                summary = stringResource(R.string.settings_auto_light_summary),
+                checked = uiState.autoLightEnabled,
+                onCheckedChange = onAutoLightChange,
             )
 
             HorizontalDivider()
