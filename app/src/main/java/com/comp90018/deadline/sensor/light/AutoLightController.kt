@@ -6,7 +6,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.view.WindowManager
 import kotlin.math.ln
 
 /** Changes only this Activity window, never system-wide brightness. */
@@ -49,7 +48,10 @@ class AutoLightController(private val activity: Activity) : SensorEventListener 
         activity.window.attributes = attributes
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    override fun onAccuracyChanged(
+        sensor: Sensor?,
+        accuracy: Int,
+    ) = Unit
 }
 
 /** Smooth, bounded mapping: 0 lux -> 15%, 1000+ lux -> 100%. */

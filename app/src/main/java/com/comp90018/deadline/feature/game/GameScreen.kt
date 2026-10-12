@@ -99,9 +99,18 @@ fun GameScreen(
         current as? Activity
     }
     DisposableEffect(owner, activity, settings?.autoLightEnabled) {
-        val controller = if (settings?.autoLightEnabled == true && activity != null) AutoLightController(activity) else null
+        val controller =
+            if (settings?.autoLightEnabled == true && activity != null) {
+                AutoLightController(activity)
+            } else {
+                null
+            }
         val observer = LifecycleEventObserver { _, _ ->
-            if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller?.start() else controller?.stop()
+            if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                controller?.start()
+            } else {
+                controller?.stop()
+            }
         }
         owner.lifecycle.addObserver(observer)
         if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller?.start()
@@ -207,8 +216,9 @@ fun GameContent(
                 modifier = Modifier.testTag(AUTO_LIGHT_GAME_TOGGLE_TAG),
             ) {
                 Text(
-                    text = stringResource(R.string.settings_auto_light) +
-                        if (autoLightEnabled == true) " ON" else " OFF",
+                    text =
+                        stringResource(R.string.settings_auto_light) +
+                            if (autoLightEnabled == true) " ON" else " OFF",
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
