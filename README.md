@@ -76,9 +76,9 @@ Players select available tiles from a layered board and move them into a seven-s
 
 The application follows an MVVM-based architecture with clear separation between presentation, domain logic, sensors, persistence, and cloud services.
 
-The full system architecture diagram, with a description of every module, is in
+The system architecture diagram is in
 [docs/architecture/system-architecture.png](docs/architecture/system-architecture.png)
-(source: [system-architecture.html](docs/architecture/system-architecture.html)).
+(source: [system-architecture.svg](docs/architecture/system-architecture.svg)).
 
 ![Deadline! system architecture](docs/architecture/system-architecture.png)
 
