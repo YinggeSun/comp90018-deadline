@@ -1,0 +1,4 @@
+sensor,registered,samples,observed_hz
+ACCELEROMETER,true,149,50.0
+GYROSCOPE,true,149,50.0
+ROTATION_VECTOR,true,148,50.0

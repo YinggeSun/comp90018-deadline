@@ -226,6 +226,31 @@ fun GameContent(
     }
 
     val minimumBoard = minimumBoardSize(uiState.boardRows, uiState.boardColumns)
+    // Keep unchanged board content stable during HUD ticks; input always uses the latest handler.
+    val currentBoardEvent by rememberUpdatedState(onEvent)
+    val boardContent: @Composable () -> Unit =
+        remember(uiState.boardTiles, uiState.boardRows, uiState.boardColumns, uiState.peekAmount) {
+            {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    // Very wide boards scroll sideways rather than drop below the minimum tile size.
+                    val boardWidth = max(maxWidth, minimumBoard.width + BoardPadding * 2)
+                    Box(modifier = Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
+                        GameBoard(
+                            tiles = uiState.boardTiles,
+                            rows = uiState.boardRows,
+                            columns = uiState.boardColumns,
+                            onTileClick = { currentBoardEvent(GameUiEvent.TileTapped(it)) },
+                            peekAmount = uiState.peekAmount,
+                            modifier =
+                                Modifier
+                                    .width(boardWidth)
+                                    .fillMaxHeight()
+                                    .padding(BoardPadding),
+                        )
+                    }
+                }
+            }
+        }
     GameLayout(
         minimumBoardHeight = minimumBoard.height + BoardPadding * 2,
         modifier = modifier.maxStressFlash(uiState.isMaxStress),
@@ -257,26 +282,7 @@ fun GameContent(
                 }
             }
         },
-        board = {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                // Very wide boards scroll sideways rather than drop below the minimum tile size.
-                val boardWidth = max(maxWidth, minimumBoard.width + BoardPadding * 2)
-                Box(modifier = Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
-                    GameBoard(
-                        tiles = uiState.boardTiles,
-                        rows = uiState.boardRows,
-                        columns = uiState.boardColumns,
-                        onTileClick = { onEvent(GameUiEvent.TileTapped(it)) },
-                        peekAmount = uiState.peekAmount,
-                        modifier =
-                            Modifier
-                                .width(boardWidth)
-                                .fillMaxHeight()
-                                .padding(BoardPadding),
-                    )
-                }
-            }
-        },
+        board = boardContent,
         footer = {
             Column {
                 TaskTray(

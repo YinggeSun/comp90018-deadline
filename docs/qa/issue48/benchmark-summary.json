@@ -1,0 +1,384 @@
+[
+  {
+    "phase": "before",
+    "name": "generatedLevel6Interactions",
+    "totalRunTimeNs": 59737184800,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 12.0,
+        "maximum": 41.0,
+        "median": 31.0,
+        "runs": [
+          12.0,
+          31.0,
+          41.0,
+          34.0,
+          30.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 728.0,
+        "maximum": 2271.0,
+        "median": 1847.0,
+        "runs": [
+          728.0,
+          1732.0,
+          2271.0,
+          2074.0,
+          1847.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 87.0,
+        "maximum": 253.0,
+        "median": 184.0,
+        "runs": [
+          87.0,
+          178.0,
+          253.0,
+          208.0,
+          184.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 21.280594999999998,
+        "P90": 104.16409039999999,
+        "P99": 123.12566849999999,
+        "P95": 110.0258134
+      },
+      "frameDurationCpuMs": {
+        "P50": 28.888800000000003,
+        "P90": 97.45441999999998,
+        "P99": 131.295164,
+        "P95": 113.49500499999999
+      }
+    }
+  },
+  {
+    "phase": "before",
+    "name": "generatedLevel1Interactions",
+    "totalRunTimeNs": 35337311300,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 21.0,
+        "maximum": 26.0,
+        "median": 22.0,
+        "runs": [
+          21.0,
+          23.0,
+          21.0,
+          26.0,
+          22.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 316.0,
+        "maximum": 374.0,
+        "median": 362.0,
+        "runs": [
+          362.0,
+          362.0,
+          341.0,
+          374.0,
+          316.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 134.0,
+        "maximum": 192.0,
+        "median": 148.0,
+        "runs": [
+          155.0,
+          192.0,
+          148.0,
+          142.0,
+          134.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 20.973266,
+        "P90": 37.58049,
+        "P99": 55.6437968,
+        "P95": 39.220343
+      },
+      "frameDurationCpuMs": {
+        "P50": 28.6347,
+        "P90": 35.3363,
+        "P99": 62.17414999999991,
+        "P95": 49.107699999999994
+      }
+    }
+  },
+  {
+    "phase": "before",
+    "name": "generatedLevel6HudTicks",
+    "totalRunTimeNs": 33006246800,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 9.0,
+        "maximum": 11.0,
+        "median": 11.0,
+        "runs": [
+          9.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 561.0,
+        "maximum": 693.0,
+        "median": 693.0,
+        "runs": [
+          561.0,
+          693.0,
+          693.0,
+          693.0,
+          675.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 74.0,
+        "maximum": 94.0,
+        "median": 82.0,
+        "runs": [
+          94.0,
+          79.0,
+          88.0,
+          74.0,
+          82.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 21.329792,
+        "P90": 85.0470024,
+        "P99": 104.93554143999998,
+        "P95": 89.6920708
+      },
+      "frameDurationCpuMs": {
+        "P50": 30.8546,
+        "P90": 86.80144000000001,
+        "P99": 106.76231999999999,
+        "P95": 94.70269999999998
+      }
+    }
+  },
+  {
+    "phase": "before",
+    "name": "coldStartup",
+    "totalRunTimeNs": 30294180500,
+    "metrics": {
+      "timeToInitialDisplayMs": {
+        "minimum": 2075.225,
+        "maximum": 2156.9885,
+        "median": 2148.5809,
+        "runs": [
+          2148.5809,
+          2075.225,
+          2142.388,
+          2156.9885,
+          2154.194
+        ]
+      }
+    },
+    "sampledPercentiles": {}
+  },
+  {
+    "phase": "after",
+    "name": "generatedLevel6Interactions",
+    "totalRunTimeNs": 45899483000,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 3.0,
+        "maximum": 11.0,
+        "median": 11.0,
+        "runs": [
+          3.0,
+          11.0,
+          5.0,
+          11.0,
+          11.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 182.0,
+        "maximum": 656.0,
+        "median": 633.0,
+        "runs": [
+          182.0,
+          656.0,
+          309.0,
+          646.0,
+          633.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 57.0,
+        "maximum": 213.0,
+        "median": 198.0,
+        "runs": [
+          57.0,
+          206.0,
+          180.0,
+          213.0,
+          198.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 20.111365,
+        "P90": 27.87340600000002,
+        "P99": 121.17599116000001,
+        "P95": 103.52242819999998
+      },
+      "frameDurationCpuMs": {
+        "P50": 25.41455,
+        "P90": 33.68688,
+        "P99": 117.85496,
+        "P95": 38.497824999999914
+      }
+    }
+  },
+  {
+    "phase": "after",
+    "name": "generatedLevel6HudTicks",
+    "totalRunTimeNs": 31281866100,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 0.0,
+        "maximum": 0.0,
+        "median": 0.0,
+        "runs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 0.0,
+        "maximum": 0.0,
+        "median": 0.0,
+        "runs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 119.0,
+        "maximum": 127.0,
+        "median": 121.0,
+        "runs": [
+          119.0,
+          121.0,
+          121.0,
+          127.0,
+          124.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 5.74266,
+        "P90": 22.092328800000004,
+        "P99": 32.81133085999997,
+        "P95": 22.576501999999998
+      },
+      "frameDurationCpuMs": {
+        "P50": 20.85235,
+        "P90": 33.56712,
+        "P99": 36.15020499999999,
+        "P95": 34.224325
+      }
+    }
+  },
+  {
+    "phase": "after",
+    "name": "generatedLevel1Interactions",
+    "totalRunTimeNs": 32631499800,
+    "metrics": {
+      "GameBoardCompositionCount": {
+        "minimum": 10.0,
+        "maximum": 11.0,
+        "median": 11.0,
+        "runs": [
+          11.0,
+          11.0,
+          11.0,
+          10.0,
+          11.0
+        ]
+      },
+      "TileCompositionCount": {
+        "minimum": 175.0,
+        "maximum": 193.0,
+        "median": 186.0,
+        "runs": [
+          193.0,
+          186.0,
+          193.0,
+          175.0,
+          179.0
+        ]
+      },
+      "frameCount": {
+        "minimum": 131.0,
+        "maximum": 141.0,
+        "median": 138.0,
+        "runs": [
+          131.0,
+          138.0,
+          140.0,
+          141.0,
+          133.0
+        ]
+      }
+    },
+    "sampledPercentiles": {
+      "frameOverrunMs": {
+        "P50": 11.400022,
+        "P90": 30.104446800000005,
+        "P99": 54.09250023999999,
+        "P95": 37.626788
+      },
+      "frameDurationCpuMs": {
+        "P50": 20.5625,
+        "P90": 33.31918,
+        "P99": 53.46353399999998,
+        "P95": 38.75977999999993
+      }
+    }
+  },
+  {
+    "phase": "after",
+    "name": "coldStartup",
+    "totalRunTimeNs": 30122037100,
+    "metrics": {
+      "timeToInitialDisplayMs": {
+        "minimum": 1644.6966,
+        "maximum": 2541.5734,
+        "median": 2180.0824,
+        "runs": [
+          2541.5734,
+          1644.6966,
+          2201.5093,
+          2180.0824,
+          2148.2442
+        ]
+      }
+    },
+    "sampledPercentiles": {}
+  }
+]

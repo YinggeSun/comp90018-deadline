@@ -45,6 +45,9 @@ jobs:
       - name: Debug build
         if: ${{ !cancelled() }}
         run: bash ./gradlew :app:assembleDebug --console=plain
+      - name: Benchmark target and driver build
+        if: ${{ !cancelled() }}
+        run: bash ./gradlew :app:assembleBenchmark :macrobenchmark:assembleBenchmark --console=plain
       - name: Android lint
         if: ${{ !cancelled() }}
         run: bash ./gradlew :app:lintDebug --console=plain
