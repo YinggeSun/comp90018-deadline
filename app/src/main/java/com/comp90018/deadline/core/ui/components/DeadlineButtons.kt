@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Dimens
@@ -29,7 +30,7 @@ fun PrimaryButton(
         modifier = modifier.defaultMinSize(Dimens.buttonMinWidth, Dimens.buttonMinHeight),
         enabled = enabled,
     ) {
-        Text(text = text)
+        Text(text = text, textAlign = TextAlign.Center)
     }
 }
 
@@ -46,7 +47,7 @@ fun SecondaryButton(
         modifier = modifier.defaultMinSize(Dimens.buttonMinWidth, Dimens.buttonMinHeight),
         enabled = enabled,
     ) {
-        Text(text = text)
+        Text(text = text, textAlign = TextAlign.Center)
     }
 }
 
@@ -63,7 +64,7 @@ fun TertiaryButton(
         modifier = modifier.defaultMinSize(minHeight = Dimens.buttonMinHeight),
         enabled = enabled,
     ) {
-        Text(text = text)
+        Text(text = text, textAlign = TextAlign.Center)
     }
 }
 

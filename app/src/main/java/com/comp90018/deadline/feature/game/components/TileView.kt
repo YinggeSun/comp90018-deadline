@@ -1,5 +1,9 @@
 package com.comp90018.deadline.feature.game.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -9,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,6 +41,11 @@ fun tileTestTag(tileId: String) = "tile_$tileId"
  */
 private const val BLOCKED_TILE_ALPHA = 0.7f
 
+/** How long a tile takes to change between covered and available. */
+private const val TILE_STATE_MILLIS = 200
+
+private fun <T> tileStateSpec() = tween<T>(durationMillis = TILE_STATE_MILLIS)
+
 /** Icon height as a share of the drawn tile. */
 private const val ICON_SIZE_FRACTION = 0.5f
 
@@ -60,26 +70,31 @@ fun TileView(
             if (tile.isSelectable) R.string.game_tile_selectable else R.string.game_tile_blocked,
         )
     val colors = MaterialTheme.colorScheme
+    // Eased, so a tile that has just been uncovered visibly "lifts" instead of snapping.
+    val alpha by animateFloatAsState(if (tile.isSelectable) 1f else BLOCKED_TILE_ALPHA, tileStateSpec(), label = "tileAlpha")
+    val container by animateColorAsState(
+        if (tile.isSelectable) colors.surface else colors.surfaceVariant,
+        tileStateSpec(),
+        label = "tileColor",
+    )
+    val outline by animateColorAsState(if (tile.isSelectable) colors.primary else colors.outline, tileStateSpec(), label = "tileBorder")
+    val elevation by animateDpAsState(if (tile.isSelectable) 4.dp else 0.dp, tileStateSpec(), label = "tileElevation")
     Surface(
         onClick = onClick,
         enabled = tile.isSelectable,
         modifier =
             modifier
                 .size(size)
-                .alpha(if (tile.isSelectable) 1f else BLOCKED_TILE_ALPHA)
+                .alpha(alpha)
                 .testTag(tileTestTag(tile.id))
                 .semantics {
                     contentDescription = label
                     stateDescription = state
                 },
         shape = MaterialTheme.shapes.medium,
-        color = if (tile.isSelectable) colors.surface else colors.surfaceVariant,
-        border =
-            BorderStroke(
-                width = 1.dp,
-                color = if (tile.isSelectable) colors.primary else colors.outline,
-            ),
-        shadowElevation = if (tile.isSelectable) 4.dp else 0.dp,
+        color = container,
+        border = BorderStroke(width = 1.dp, color = outline),
+        shadowElevation = elevation,
     ) {
         Box(contentAlignment = Alignment.Center) {
             // Sized from the tile in dp, so the icon always fits the tile whatever the

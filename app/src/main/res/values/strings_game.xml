@@ -34,4 +34,7 @@
     <string name="game_tray_empty_slot">Empty slot</string>
     <string name="game_action_undo">Undo</string>
     <string name="game_action_restart">Restart</string>
+    <!-- Toggle in the game top bar; the name matches the AutoLight setting. -->
+    <string name="game_auto_light_on">AutoLight on</string>
+    <string name="game_auto_light_off">AutoLight off</string>
 </resources>

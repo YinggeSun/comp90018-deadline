@@ -1,8 +1,10 @@
 package com.comp90018.deadline.feature.settings
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -130,5 +132,41 @@ class SettingsScreenTest {
         setContent(loaded)
 
         composeRule.onNodeWithText("Your last change could not be saved.").assertDoesNotExist()
+    }
+
+    private fun setContentWithAccount(showNickname: Boolean) {
+        composeRule.setContent {
+            DeadlineTheme {
+                SettingsContent(
+                    uiState = loaded,
+                    onBack = {},
+                    onHapticsChange = {},
+                    onShakeChange = {},
+                    onTiltChange = {},
+                    onNicknameChange = {},
+                    onSaveNickname = {},
+                    onRetrySave = {},
+                    accountSection = { Text("Playing as Guest") },
+                    showNickname = showNickname,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun accountStatusSitsUnderItsOwnHeading() {
+        setContentWithAccount(showNickname = true)
+
+        composeRule.onNodeWithText("Account").assertIsDisplayed()
+        composeRule.onNodeWithText("Playing as Guest").assertIsDisplayed()
+        composeRule.onNodeWithText("Leaderboard").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun leaderboardHeadingIsHiddenWhenThereIsNoNicknameToEdit() {
+        setContentWithAccount(showNickname = false)
+
+        composeRule.onNodeWithText("Leaderboard").assertDoesNotExist()
+        composeRule.onNodeWithTag(NICKNAME_FIELD_TAG).assertDoesNotExist()
     }
 }

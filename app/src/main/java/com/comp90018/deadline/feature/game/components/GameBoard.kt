@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -80,23 +81,26 @@ fun GameBoard(
         val topLayer = tiles.maxOfOrNull { it.layer } ?: 0
         Box(modifier = Modifier.size(unit * columns, unit * rows).testTag(GAME_BOARD_TAG)) {
             tiles.forEach { tile ->
-                TileView(
-                    tile = tile,
-                    size = slot - gap,
-                    onClick = { onTileClick(tile.id) },
-                    modifier =
-                        Modifier.offset(
-                            x = unit * tile.column + gap / 2,
-                            y = unit * tile.row + gap / 2,
-                        ).tiltPeek(
-                            // Peeking reveals covered tiles. A selectable tile is treated as
-                            // top layer, so it is never dimmed or moved even when it sits on
-                            // a lower layer, and stays easy to tell apart from covered ones.
-                            layerIndex = if (tile.isSelectable) topLayer else tile.layer,
-                            topLayerIndex = topLayer,
-                            peekAmount = peekAmount,
-                        ),
-                )
+                // Keyed by tile, so removing one does not hand its animation state to the next.
+                key(tile.id) {
+                    TileView(
+                        tile = tile,
+                        size = slot - gap,
+                        onClick = { onTileClick(tile.id) },
+                        modifier =
+                            Modifier.offset(
+                                x = unit * tile.column + gap / 2,
+                                y = unit * tile.row + gap / 2,
+                            ).tiltPeek(
+                                // Peeking reveals covered tiles. A selectable tile is treated as
+                                // top layer, so it is never dimmed or moved even when it sits on
+                                // a lower layer, and stays easy to tell apart from covered ones.
+                                layerIndex = if (tile.isSelectable) topLayer else tile.layer,
+                                topLayerIndex = topLayer,
+                                peekAmount = peekAmount,
+                            ),
+                    )
+                }
             }
         }
     }
