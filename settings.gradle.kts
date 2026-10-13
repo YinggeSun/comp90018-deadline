@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Deadline!"
 include(":app")
- 
+include(":macrobenchmark")

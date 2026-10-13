@@ -70,6 +70,10 @@ class GameViewModel(
     private val level = findLevel(levelId)
     private val engine = level?.let(createEngine)
 
+    // Engine snapshots and board/tray lists are immutable. Keep tile projections when only
+    // stress/music time changes, instead of sorting and mapping the board every 100ms.
+    private var renderedEngineState: GameState? = null
+
     init {
         if (engine != null) timer.start()
     }
@@ -269,21 +273,31 @@ class GameViewModel(
     private fun GameUiState.withEngineState(engine: GameEngine): GameUiState {
         val state: GameState = engine.state
         val stressManager = StressManager(engine.stressConfig)
-        return copy(
-            boardTiles =
-                state.board.tiles
-                    .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
-                    .map { it.toUiModel(isSelectable = engine.isTileSelectable(it.id)) },
-            trayTiles = state.taskTray.tiles.map { it.toUiModel(isSelectable = false) },
-            trayCapacity = state.taskTray.capacity,
-            status = state.status,
-            stress = stressManager.clamp(state.stress),
-            stressMaximum = engine.stressConfig.maximum,
-            isHighStress = stressManager.isHighStress(state.stress),
-            isMaxStress = state.status == GameStatus.RUNNING && stressManager.isMaxStress(state.stress),
-            isStressSlowed = state.status == GameStatus.RUNNING && state.musicSlowdownRemainingMillis > 0L,
-            canUndo = engine.canUndo,
-        )
+        val previous = renderedEngineState
+        val boardUnchanged = previous != null && previous.board === state.board && previous.status == state.status
+        val trayUnchanged = previous?.taskTray === state.taskTray
+        val updated =
+            copy(
+                boardTiles =
+                    if (boardUnchanged) {
+                        boardTiles
+                    } else {
+                        state.board.tiles
+                            .sortedWith(compareBy({ it.position.layer }, { it.position.row }, { it.position.column }))
+                            .map { it.toUiModel(isSelectable = engine.isTileSelectable(it.id)) }
+                    },
+                trayTiles = if (trayUnchanged) trayTiles else state.taskTray.tiles.map { it.toUiModel(isSelectable = false) },
+                trayCapacity = state.taskTray.capacity,
+                status = state.status,
+                stress = stressManager.clamp(state.stress),
+                stressMaximum = engine.stressConfig.maximum,
+                isHighStress = stressManager.isHighStress(state.stress),
+                isMaxStress = state.status == GameStatus.RUNNING && stressManager.isMaxStress(state.stress),
+                isStressSlowed = state.status == GameStatus.RUNNING && state.musicSlowdownRemainingMillis > 0L,
+                canUndo = engine.canUndo,
+            )
+        renderedEngineState = state
+        return updated
     }
 
     private fun Tile.toUiModel(isSelectable: Boolean) =
