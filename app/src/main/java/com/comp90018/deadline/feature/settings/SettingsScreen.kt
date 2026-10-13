@@ -39,6 +39,7 @@ import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.LoadingContent
+import com.comp90018.deadline.core.ui.components.ScreenTopBar
 import com.comp90018.deadline.core.ui.components.SecondaryButton
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.domain.settings.PlayerSettings
@@ -70,16 +71,17 @@ fun SettingsScreen(
         transferSection = { TransferProgressSection() },
         showNickname = !account.registered,
         accountSection = {
-            Text(
-                if (account.registered) {
-                    "Registered account"
-                } else if (account.uid != null) {
-                    "Playing as Guest"
-                } else {
-                    "Playing as Guest (offline)"
-                },
+            AccountSummary(
+                status =
+                    stringResource(
+                        when {
+                            account.registered -> R.string.settings_account_registered
+                            account.uid != null -> R.string.settings_account_guest
+                            else -> R.string.settings_account_guest_offline
+                        },
+                    ),
+                onAccount = onAccount,
             )
-            TertiaryButton("Account", onAccount)
         },
     )
 }
@@ -104,21 +106,7 @@ fun SettingsContent(
     showNickname: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+        ScreenTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
 
         if (uiState.isLoading) {
             LoadingContent()
@@ -133,8 +121,12 @@ fun SettingsContent(
                     .padding(horizontal = Spacing.large, vertical = Spacing.small),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
-            accountSection?.invoke()
             if (uiState.saveFailed) SaveFailedBanner(onRetry = onRetrySave)
+            if (accountSection != null) {
+                SectionHeader(stringResource(R.string.settings_section_account))
+                accountSection()
+                HorizontalDivider()
+            }
             SectionHeader(stringResource(R.string.settings_section_feedback))
             SettingSwitch(
                 title = stringResource(R.string.settings_background_music),
@@ -179,9 +171,10 @@ fun SettingsContent(
                 onCheckedChange = onAutoLightChange,
             )
 
-            HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_section_leaderboard))
+            // A registered player's nickname is edited on the Account screen instead.
             if (showNickname) {
+                HorizontalDivider()
+                SectionHeader(stringResource(R.string.settings_section_leaderboard))
                 NicknameField(
                     uiState = uiState,
                     onNicknameChange = onNicknameChange,
@@ -195,6 +188,24 @@ fun SettingsContent(
                 transferSection()
             }
         }
+    }
+}
+
+/** Who the player is signed in as, with the way to the Account screen. */
+@Composable
+private fun AccountSummary(
+    status: String,
+    onAccount: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(modifier = Modifier.width(Spacing.large))
+        TertiaryButton(text = stringResource(R.string.settings_account_manage), onClick = onAccount)
     }
 }
 

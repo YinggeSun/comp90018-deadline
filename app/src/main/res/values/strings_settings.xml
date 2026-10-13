@@ -1,6 +1,11 @@
 <resources>
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_account_registered">Registered account</string>
+    <string name="settings_account_guest">Playing as Guest</string>
+    <string name="settings_account_guest_offline">Playing as Guest (offline)</string>
+    <string name="settings_account_manage">Manage</string>
     <string name="settings_section_feedback">Feedback</string>
     <string name="settings_haptics">Vibration</string>
     <string name="settings_haptics_summary">Vibrate when you select or match tiles and when a game ends.</string>
@@ -23,5 +28,5 @@
     <string name="settings_sound_effects_summary">Play sounds for tile selections, matches, and maximum Stress.</string>
     <string name="settings_section_display">Display</string>
     <string name="settings_auto_light">AutoLight</string>
-    <string name="settings_auto_light_summary">Automatically adjust game brightness using ambient light (requires a light sensor)</string>
+    <string name="settings_auto_light_summary">Automatically adjust game brightness using ambient light (requires a light sensor).</string>
 </resources>

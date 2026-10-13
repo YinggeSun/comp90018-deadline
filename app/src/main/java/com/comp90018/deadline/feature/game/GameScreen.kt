@@ -1,5 +1,7 @@
 package com.comp90018.deadline.feature.game
 
+import android.app.Activity
+import android.content.ContextWrapper
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -12,18 +14,17 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,16 +33,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
-import android.app.Activity
-import android.content.ContextWrapper
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,20 +48,21 @@ import androidx.compose.ui.unit.max
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.components.ErrorContent
-import com.comp90018.deadline.core.ui.components.TertiaryButton
+import com.comp90018.deadline.core.ui.components.ScreenTopBar
 import com.comp90018.deadline.domain.game.model.GameStatus
-import com.comp90018.deadline.feature.settings.SettingsViewModel
 import com.comp90018.deadline.feature.game.components.GameActions
 import com.comp90018.deadline.feature.game.components.GameBoard
 import com.comp90018.deadline.feature.game.components.GameHud
 import com.comp90018.deadline.feature.game.components.TaskTray
 import com.comp90018.deadline.feature.game.components.minimumBoardSize
+import com.comp90018.deadline.feature.settings.SettingsViewModel
 import com.comp90018.deadline.sensor.AndroidSensorGateway
-import com.comp90018.deadline.sensor.light.AutoLightController
 import com.comp90018.deadline.sensor.haptic.HapticFeedbackManager
+import com.comp90018.deadline.sensor.light.AutoLightController
 
 @Composable
 fun GameScreen(
@@ -196,32 +196,22 @@ fun GameContent(
     onAutoLightChange: (Boolean) -> Unit = {},
 ) {
     val topBar = @Composable {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = uiState.levelName,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.weight(1f))
+        ScreenTopBar(title = uiState.levelName, onBack = onBack) {
             // Available on the game screen; persists via SettingsRepository.
             TextButton(
                 onClick = { autoLightEnabled?.let { onAutoLightChange(!it) } },
                 enabled = autoLightEnabled != null,
-                modifier = Modifier.testTag(AUTO_LIGHT_GAME_TOGGLE_TAG),
+                // Width-limited, so with large fonts this label wraps and the level name stays whole.
+                modifier = Modifier.widthIn(max = AutoLightToggleMaxWidth).testTag(AUTO_LIGHT_GAME_TOGGLE_TAG),
             ) {
                 Text(
                     text =
-                        stringResource(R.string.settings_auto_light) +
-                            if (autoLightEnabled == true) " ON" else " OFF",
+                        stringResource(
+                            if (autoLightEnabled == true) R.string.game_auto_light_on else R.string.game_auto_light_off,
+                        ),
                     style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.End,
+                    maxLines = 2,
                 )
             }
         }
@@ -298,7 +288,7 @@ fun GameContent(
                     canUndo = uiState.canUndo,
                     onUndo = { onEvent(GameUiEvent.UndoClicked) },
                     onRestart = { onEvent(GameUiEvent.RestartClicked) },
-                    modifier = Modifier.padding(Spacing.medium),
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(Spacing.medium),
                 )
             }
         },
@@ -306,6 +296,7 @@ fun GameContent(
 }
 
 private val BoardPadding = Spacing.large
+private val AutoLightToggleMaxWidth = 112.dp
 
 const val MAX_STRESS_WARNING_TAG = "max_stress_warning"
 const val AUTO_LIGHT_GAME_TOGGLE_TAG = "auto_light_game_toggle"

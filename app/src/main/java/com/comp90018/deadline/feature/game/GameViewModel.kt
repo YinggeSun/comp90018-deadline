@@ -135,6 +135,8 @@ class GameViewModel(
         }
         playMaximumStressWarning(before, after, engine.stressConfig.maximum)
         setAudioForeground(audioForeground)
+        // Undo and Restart confirm with a light tap, but only when they changed the game.
+        if (event !is GameUiEvent.TileTapped && after != before) haptics?.perform(GameHaptic.TILE_SELECT)
         if (after.board.tiles.size == before.board.tiles.size - 1) {
             haptics?.perform(
                 when {

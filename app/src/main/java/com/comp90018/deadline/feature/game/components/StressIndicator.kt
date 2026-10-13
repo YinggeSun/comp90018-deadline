@@ -2,6 +2,7 @@ package com.comp90018.deadline.feature.game.components
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -47,7 +48,12 @@ fun StressIndicator(
     isMaxStress: Boolean = false,
     isStressSlowed: Boolean = false,
 ) {
-    val progress = if (stressMaximum > 0) stress.toFloat() / stressMaximum else 0f
+    // Eased between updates, so the bar grows steadily and drains smoothly after a match.
+    val progress by animateFloatAsState(
+        targetValue = if (stressMaximum > 0) (stress.toFloat() / stressMaximum).coerceIn(0f, 1f) else 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "stressProgress",
+    )
     val baseColor =
         if (isHighStress || isMaxStress) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
     // The pulse only runs at Maximum Stress, so a calm gauge does not animate every frame.
@@ -94,7 +100,7 @@ fun StressIndicator(
             )
         }
         LinearProgressIndicator(
-            progress = { progress.coerceIn(0f, 1f) },
+            progress = { progress },
             modifier =
                 Modifier
                     .fillMaxWidth()
