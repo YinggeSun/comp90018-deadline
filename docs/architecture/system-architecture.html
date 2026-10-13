@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deadline! System Architecture</title>
+<!--
+  Source of docs/architecture/system-architecture.png.
+  Re-render after editing (Chrome or Edge, from the repository root):
+    chrome --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
+      --window-size=2400,4200 --screenshot=docs/architecture/system-architecture.png \
+      docs/architecture/system-architecture.html
+  then crop the empty space at the bottom if the window was taller than the page.
+-->
+<style>
+  :root {
+    --ink: #1d2433;
+    --muted: #4f5a6e;
+    --line: #c9d0dc;
+    --bg: #f6f7fb;
+    --device: #6b7280;   --device-bg: #f1f2f5;
+    --shell: #7c3aed;    --shell-bg: #f3edff;
+    --ui: #2563eb;       --ui-bg: #eaf1ff;
+    --sensor: #db2777;   --sensor-bg: #fdebf4;
+    --core: #0d9488;     --core-bg: #e4f6f3;
+    --domain: #d97706;   --domain-bg: #fff4e2;
+    --data: #16a34a;     --data-bg: #e8f7ec;
+    --cloud: #ea580c;    --cloud-bg: #fff0e6;
+    --store: #475569;    --store-bg: #eef1f5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 44px 44px; width: 2400px;
+    background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 15px; line-height: 1.38;
+  }
+  code, .cls { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 13.5px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 22px; }
+  header h1 { margin: 0; font-size: 40px; letter-spacing: -0.5px; }
+  header h1 span { color: var(--ui); }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 17px; max-width: 1500px; }
+  .meta { text-align: right; color: var(--muted); font-size: 14px; }
+  .meta b { color: var(--ink); }
+
+  .layer {
+    position: relative; border-radius: 14px; padding: 16px 18px 18px;
+    border: 2px solid var(--c); background: var(--bg-c);
+  }
+  .layer > h2 {
+    margin: 0 0 4px; font-size: 21px; color: var(--c); display: flex; gap: 12px; align-items: baseline;
+  }
+  .layer > h2 .pkg { font-size: 14px; font-weight: 600; color: var(--muted); font-family: Consolas, monospace; }
+  .layer > .lead { margin: 0 0 12px; color: var(--muted); font-size: 14.5px; }
+
+  .grid { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g5 { grid-template-columns: repeat(5, 1fr); }
+  .g6 { grid-template-columns: repeat(6, 1fr); }
+  .g7 { grid-template-columns: repeat(7, 1fr); }
+  .span2 { grid-column: span 2; }
+  .span3 { grid-column: span 3; }
+
+  .mod {
+    background: #fff; border: 1px solid var(--line); border-top: 4px solid var(--c);
+    border-radius: 9px; padding: 10px 12px 11px;
+  }
+  .mod h3 { margin: 0 0 2px; font-size: 16px; }
+  .mod .path { color: var(--c); font-family: Consolas, monospace; font-size: 12.5px; margin-bottom: 6px; }
+  .mod p { margin: 0 0 6px; font-size: 13.8px; color: #2c3445; }
+  .mod p:last-child { margin-bottom: 0; }
+  .mod ul { margin: 2px 0 0; padding-left: 17px; font-size: 13.5px; color: #2c3445; }
+  .mod li { margin: 1px 0; }
+  .mod .cls { color: var(--ink); font-weight: 600; }
+
+  .sub { /* group of modules inside a layer */
+    border: 1.5px dashed var(--c); border-radius: 11px; padding: 10px 12px 12px; background: rgba(255,255,255,.45);
+  }
+  .sub > h4 { margin: 0 0 8px; font-size: 15px; color: var(--c); font-family: Consolas, monospace; }
+
+  .row { display: grid; gap: 16px; }
+  .main-side { grid-template-columns: 1fr 520px; }
+
+  /* Connectors between layers */
+  .conn { display: flex; justify-content: center; gap: 26px; margin: 8px 0; align-items: center; }
+  .conn .chip {
+    display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #9aa3b5;
+    border-radius: 999px; padding: 4px 14px 4px 10px; font-size: 13.5px; color: var(--ink);
+  }
+  .conn .arrow { font-size: 20px; font-weight: 700; line-height: 1; }
+  .down { color: #1e40af; } .up { color: #15803d; } .both { color: #7c3aed; }
+
+  .fl { counter-reset: step; }
+  .flow { background: #fff; border: 1px solid var(--line); border-left: 5px solid var(--c); border-radius: 9px; padding: 10px 14px; }
+  .flow h3 { margin: 0 0 6px; font-size: 16px; }
+  .flow ol { margin: 0; padding-left: 20px; font-size: 13.6px; }
+  .flow li { margin: 2px 0; }
+  .pipe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; margin-top: 4px; }
+  .pipe span { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-family: Consolas, monospace; font-size: 12.5px; }
+  .pipe b { color: var(--c); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13.5px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; border: 2px solid var(--c); background: var(--bg-c); }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; padding: 1px 6px; border-radius: 5px; background: var(--bg-c); color: var(--c); border: 1px solid var(--c); margin-left: 6px; vertical-align: 2px; }
+  footer { margin-top: 18px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; }
+
+  .device { --c: var(--device); --bg-c: var(--device-bg); }
+  .shell  { --c: var(--shell);  --bg-c: var(--shell-bg); }
+  .ui     { --c: var(--ui);     --bg-c: var(--ui-bg); }
+  .sensor { --c: var(--sensor); --bg-c: var(--sensor-bg); }
+  .core   { --c: var(--core);   --bg-c: var(--core-bg); }
+  .domain { --c: var(--domain); --bg-c: var(--domain-bg); }
+  .data   { --c: var(--data);   --bg-c: var(--data-bg); }
+  .cloud  { --c: var(--cloud);  --bg-c: var(--cloud-bg); }
+  .store  { --c: var(--store);  --bg-c: var(--store-bg); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>Deadline!</span> — System Architecture</h1>
+    <p>Campus-themed, offline-first tile-matching Android game. Kotlin · Jetpack Compose · Material 3 · MVVM with
+      unidirectional data flow (StateFlow) · pure-Kotlin domain layer · DataStore · Firebase Auth, Cloud Firestore and Remote Config ·
+      Android SensorManager (accelerometer, rotation vector, ambient light).</p>
+  </div>
+  <div class="meta">COMP90018 Mobile Computing Systems Programming<br><b>Group T01/05 - 03</b><br>
+    Package root <code>com.comp90018.deadline</code></div>
+</header>
+
+<!-- ============ 1. DEVICE / EXTERNAL ============ -->
+<section class="layer device">
+  <h2>① Player &amp; Android Platform <span class="pkg">outside the app's code</span></h2>
+  <div class="grid g6">
+    <div class="mod"><h3>Player</h3><p>Taps tiles, Undo / Restart, navigates screens, edits Settings, registers or logs in, creates / redeems transfer codes.</p></div>
+    <div class="mod"><h3>Motion &amp; light sensors</h3><p><b>Accelerometer</b> → Shake-to-Shuffle · <b>Rotation Vector</b> → Tilt-to-Peek (pitch) · <b>Ambient Light</b> → Auto brightness. Missing sensors are reported as unsupported, never a crash.</p></div>
+    <div class="mod"><h3>Android lifecycle</h3><p><code>Application</code> / <code>ComponentActivity</code> start-stop, configuration changes, <code>LifecycleOwner</code> used to register and release sensors and audio.</p></div>
+    <div class="mod"><h3>Connectivity</h3><p><code>ConnectivityManager</code> network callbacks: a usable network triggers a background progress sync.</p></div>
+    <div class="mod"><h3>Output devices</h3><p><code>Vibrator</code> haptics, <code>SoundPool</code> sound effects, <code>MediaPlayer</code> background music, Activity window brightness.</p></div>
+    <div class="mod"><h3>Device storage</h3><p>App-private Preferences DataStore file; Firestore's offline cache and queued writes; Remote Config's activated values on disk.</p></div>
+  </div>
+</section>
+
+<div class="conn">
+  <div class="chip"><span class="arrow down">▼</span>touch input · sensor samples · lifecycle callbacks</div>
+  <div class="chip"><span class="arrow up">▲</span>rendered UI · vibration · audio · window brightness</div>
+</div>
+
+<!-- ============ 2. APP SHELL ============ -->
+<section class="layer shell">
+  <h2>② Application Shell, Dependency Wiring &amp; Navigation <span class="pkg">app/ · MainActivity.kt · navigation/</span></h2>
+  <p class="lead">Manual dependency injection: one <code>AppContainer</code> per process builds every repository and service once; ViewModel factories read it from <code>DeadlineApp</code>. No DI framework.</p>
+  <div class="grid g5">
+    <div class="mod"><h3>DeadlineApp</h3><div class="path">app/DeadlineApp.kt · Application</div>
+      <p>Owns the lazy <code>AppContainer</code>. In <code>onCreate</code> it starts three non-blocking jobs: anonymous sign-in, network-triggered progress sync and Remote Config refresh. The <code>emulator</code> build type overrides it with <code>EmulatorApplication</code> for tests.</p></div>
+    <div class="mod span2"><h3>AppContainer</h3><div class="path">app/AppContainer.kt · composition root</div>
+      <ul>
+        <li>Creates data sources and repositories: Progress, Settings, Account/Auth, Leaderboard, Config, plus <code>LevelSource</code> (<code>GeneratedLevelSource</code>).</li>
+        <li><code>applicationScope</code> (SupervisorJob): work that must outlive the screen that started it (saving a win, settings writes, account switches).</li>
+        <li><code>SessionGate</code> serialises account changes with sync, transfers and completion recording, so work queued for one user never runs for the next.</li>
+        <li><code>CompletionRecorder</code>: save win locally → submit to leaderboard with nickname → sync progress.</li>
+        <li>Exposes <code>currentProgress</code>, <code>progressTransfer</code>, <code>gameAudioManager</code>, <code>syncAccountProgress()</code>.</li>
+      </ul></div>
+    <div class="mod"><h3>MainActivity</h3><div class="path">MainActivity.kt · single Activity</div>
+      <p>Edge-to-edge window, wraps everything in <code>DeadlineTheme</code> + <code>Scaffold</code> and hosts <code>AppNavHost</code>. Tells <code>GameAudioManager</code> when the app goes to the foreground / background.</p></div>
+    <div class="mod"><h3>Navigation</h3><div class="path">navigation/ · Navigation-Compose</div>
+      <p><b>AppNavHost</b> wires routes to screens only. <b>Routes</b>: <code>home</code>, <code>level-select</code>, <code>game/{levelId}</code>, <code>result/{levelId}?won&amp;elapsedMillis&amp;previousBestMillis</code>, <code>leaderboard</code>, <code>settings</code>, <code>account</code>, <code>login</code>, <code>register</code>. <b>NavigationActions</b> gives screens plain callbacks and manages back stack (Result replaces Game; Retry / Next Level drop Result).</p></div>
+  </div>
+</section>
+
+<div class="conn">
+  <div class="chip"><span class="arrow down">▼</span>ViewModel factories receive repositories &amp; services from AppContainer</div>
+  <div class="chip"><span class="arrow both">⇄</span>route arguments (levelId, GameOutcome summary)</div>
+</div>
+
+<!-- ============ 3. PRESENTATION + SENSOR ============ -->
+<div class="row main-side">
+  <section class="layer ui">
+    <h2>③ Presentation Layer — Jetpack Compose + MVVM <span class="pkg">feature/*</span></h2>
+    <p class="lead">Each feature = <b>Screen</b> (stateful wrapper) + stateless <b>Content</b> composable + <b>ViewModel</b> exposing <code>StateFlow&lt;UiState&gt;</code>. Events flow down into ViewModels; immutable UI state flows back up. No game rules live in the UI.</p>
+    <div class="grid g4">
+      <div class="mod"><h3>Home</h3><div class="path">feature/home</div>
+        <p><code>HomeViewModel</code> computes <i>Continue</i>: the first unlocked but uncleared level. Play / Continue, Leaderboard, Settings entry points over the campus photo background.</p></div>
+      <div class="mod"><h3>Level Select</h3><div class="path">feature/levelselect</div>
+        <p><code>LevelSelectViewModel</code> lists the 6 levels (2 Semester Weeks each) with lock state and Personal Best from <code>ProgressRepository</code>; shows loading until progress is read so locks are never guessed.</p></div>
+      <div class="mod"><h3>Result</h3><div class="path">feature/result</div>
+        <p><code>ResultViewModel</code> builds win / loss, completion time, Personal Best and "new best" from the route's <code>GameOutcome</code> — never waits for the background save. Next Level / Retry / Level Select.</p></div>
+      <div class="mod"><h3>Leaderboard</h3><div class="path">feature/leaderboard</div>
+        <p><code>LeaderboardViewModel</code> observes the live per-level ranking only while visible; tabs per level, ties share rank (1, 2, 2, 4), own row marked "You", offline shows last cached ranking + Retry.</p></div>
+
+      <div class="sub span3" style="--c: var(--ui)">
+        <h4>feature/game — the gameplay screen</h4>
+        <div class="grid g3">
+          <div class="mod"><h3>GameRoute + GameLoadViewModel</h3>
+            <p>Asks <code>LevelSource</code> for a fresh board off the main thread; <code>GameLoadState</code> = Loading / Ready / Failed (Retry). One new board per visit, kept across rotation.</p></div>
+          <div class="mod"><h3>GameViewModel</h3>
+            <p>Owns one session: forwards <code>GameUiEvent</code> (TileTapped, Undo, Restart) and shake requests to <code>GameEngine</code>, maps <code>GameState</code> → <code>GameUiState</code>. Runs the stress clock only while resumed, owns <code>CompletionTimer</code>, emits audio / haptic events and reports wins to <code>CompletionRecorder</code>. Uses <code>GameBalance</code> from Remote Config.</p></div>
+          <div class="mod"><h3>GameScreen / GameContent</h3>
+            <p>Reads settings first so sensors never start with defaults; attaches <code>GameSensorBinder</code> and <code>AutoLightController</code> to the visible game only. Adapts board size; scrolls when the window is too short.</p></div>
+          <div class="mod span2"><h3>UI components <span style="font-weight:400;color:var(--muted)">feature/game/components</span></h3>
+            <p><b>GameBoard</b> lays out layered tiles from logical coordinates (bottom layer first) · <b>TileView</b> raised when selectable, dimmed when covered, 48dp touch target · <b>TaskTray</b> 7 slots, warns at one free slot · <b>GameHud</b> timer + <b>StressIndicator</b> (warning band, pulse at Maximum Stress, "Music" slowdown label) · <b>GameActions</b> Undo / Restart · <b>TiltPeekUi</b> <code>Modifier.tiltPeek</code> alpha/offset per layer (render-only).</p></div>
+          <div class="mod"><h3>Sensor seam</h3>
+            <p><code>GameSensorActions</code>: sensors report <i>intent</i> only (onShake → shuffle request, onTilt → 0..1 peek). <code>GameSensorBinder</code> is the lifecycle-aware bridge; it never mutates <code>GameState</code>.</p></div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-rows: auto auto;">
+        <div class="mod"><h3>Settings</h3><div class="path">feature/settings</div>
+          <p><code>SettingsViewModel</code>: music, sound effects, haptics, Shake, Tilt, Auto-light switches save immediately; nickname saved explicitly. Writes on the app scope with retry on failure. <b>TransferProgressSection</b> + <code>TransferProgressViewModel</code>: create / redeem an <code>XXXX-XXXX</code> code to move progress to another phone.</p></div>
+        <div class="mod"><h3>Account</h3><div class="path">feature/account</div>
+          <p><code>AccountViewModel</code>: Profile / Login / Register pages over <code>AccountRepository</code> (email + password, optional). Guests keep playing offline; credentials never persist outside the call.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="layer sensor">
+    <h2>④ Sensor &amp; Feedback Layer <span class="pkg">sensor/*</span></h2>
+    <p class="lead">Pure, unit-testable signal processing behind a thin Android adapter. Tuning comes from <code>GameBalance</code> (Remote Config).</p>
+    <div class="grid" style="gap:10px">
+      <div class="mod"><h3>Sensor infrastructure</h3><div class="path">sensor/SensorInfrastructure.kt</div>
+        <p><code>SensorGateway</code> / <code>AndroidSensorGateway</code> wrap <code>SensorManager</code>; one Android listener fans samples out to consumers. Lifecycle helper registers in <code>onStart</code>, unregisters in <code>onStop</code>.</p></div>
+      <div class="mod"><h3>Shake-to-Shuffle</h3><div class="path">sensor/shake</div>
+        <p><code>ShakeDetector</code>: gravity removed, exponential smoothing, threshold in g, N consecutive hits, cooldown. <code>ShakeSensorController</code> turns accelerometer samples into one accepted-shake callback. <code>ShakeConfig</code> = tuning.</p></div>
+      <div class="mod"><h3>Tilt-to-Peek</h3><div class="path">sensor/tilt</div>
+        <p><code>TiltSensorController</code> reads pitch from the rotation vector; <code>TiltProcessor</code> maps it to a 0..1 peek with deadzone, smoothing and release hysteresis (<code>TiltConfig</code>). Drives rendering only.</p></div>
+      <div class="mod"><h3>Auto light</h3><div class="path">sensor/light/AutoLightController.kt</div>
+        <p>Ambient lux → this Activity's window brightness (0 lux → 15 %, 1000+ lux → 100 %), ignores small changes, restores brightness on exit. Never changes system brightness.</p></div>
+      <div class="mod"><h3>Haptics</h3><div class="path">sensor/haptic/HapticFeedbackManager.kt</div>
+        <p><code>GameHaptic</code>: TILE_SELECT, MATCH, SHUFFLE, SUCCESS, FAILURE, MAX_STRESS. Shuffle haptic fires only when the game accepted the shake.</p></div>
+    </div>
+  </section>
+</div>
+
+<div class="conn">
+  <div class="chip"><span class="arrow down">▼</span>selectTile · undo · shuffle · restart · advanceTime(ms)</div>
+  <div class="chip"><span class="arrow up">▲</span>immutable GameState snapshots (board, tray, status, stress)</div>
+  <div class="chip"><span class="arrow down">▼</span>repository calls (suspend)</div>
+  <div class="chip"><span class="arrow up">▲</span>Flow&lt;PlayerProgress / PlayerSettings / LeaderboardState / Account&gt;</div>
+</div>
+
+<!-- ============ 5. DOMAIN + CORE ============ -->
+<div class="row main-side">
+  <section class="layer domain">
+    <h2>⑤ Domain Layer — pure Kotlin, no Android APIs <span class="pkg">domain/*</span></h2>
+    <p class="lead">All gameplay rules, level generation and data contracts. Deterministic and clock-free (time and randomness are injected), so it is fully covered by JVM unit tests.</p>
+    <div class="grid g3">
+      <div class="sub" style="--c: var(--domain)">
+        <h4>game/engine + game/model</h4>
+        <div class="grid" style="gap:8px">
+          <div class="mod"><h3>GameEngine → DefaultGameEngine</h3>
+            <p>Session API: <code>selectTile</code>, <code>undo</code>, <code>shuffle</code>, <code>restart</code>, <code>advanceTime</code>. Selection → tray → triple removal → Coffee/Music effects → win/loss. Multi-step undo (cleared after a committed match). Exposes read-only <code>state</code>.</p></div>
+          <div class="mod"><h3>OverlapGraph</h3>
+            <p>Precomputed "covers" edges between 2×2 footprints on higher layers; a tile is selectable when its blocker count is zero. Incremental update on removal / undo.</p></div>
+          <div class="mod"><h3>CompletionTimer</h3>
+            <p>Monotonic, injectable time source; start / stop / restart owned by the engine session.</p></div>
+          <div class="mod"><h3>Models</h3>
+            <p><code>GameState</code> (board, tray, status, stress, music slowdown) · <code>Board</code> · <code>Tile</code> · <code>TilePosition</code> (row, column, layer) · <code>TrayState</code> (7 slots) · <code>GameStatus</code> · <code>TileType</code> (11 campus types: Book, Coffee, Laptop, Assignment, Quiz, Reading, Music, Exam, Presentation, Lecture Slide…).</p></div>
+        </div>
+      </div>
+      <div class="sub" style="--c: var(--domain)">
+        <h4>game/stress + game/shuffle</h4>
+        <div class="grid" style="gap:8px">
+          <div class="mod"><h3>StressManager + StressConfig</h3>
+            <p>Stress grows with active play time (% of maximum per second), never from taps; values clamped to 0..max; High Stress warning threshold.</p></div>
+          <div class="mod"><h3>CoffeeRecovery</h3>
+            <p>A completed Coffee triple removes stress at a Semester-Week-dependent rate.</p></div>
+          <div class="mod"><h3>MusicRecovery</h3>
+            <p>A Music triple removes a little stress and slows accumulation for a period (refreshes, never stacks).</p></div>
+          <div class="mod"><h3>InputDegradation</h3>
+            <p>At Maximum Stress a tap may slip onto a neighbouring <i>selectable</i> tile (seeded random).</p></div>
+          <div class="mod"><h3>BoardShuffler</h3>
+            <p>Redistributes tile types across existing board slots; ids, positions and tray untouched, so overlap data stays valid.</p></div>
+        </div>
+      </div>
+      <div class="sub" style="--c: var(--domain)">
+        <h4>level/generator · level/model · level/solver</h4>
+        <div class="grid" style="gap:8px">
+          <div class="mod"><h3>LevelSource → GeneratedLevelSource</h3>
+            <p>New random seed per start so replays differ; runs on a background dispatcher.</p></div>
+          <div class="mod"><h3>ValidatedLevelGenerator · LevelGenerator · SeededGenerator</h3>
+            <p>Builds layered boards from <code>LevelConfig</code>, retries until solvable, falls back to a verified <code>FixedLevels</code> board.</p></div>
+          <div class="mod"><h3>SolvabilityValidator + BacktrackingSolver</h3>
+            <p>Bounded DFS using the engine's real overlap and tray rules; a hit limit is "inconclusive", never "unsolvable".</p></div>
+          <div class="mod"><h3>SemesterDifficulty</h3>
+            <p>12 Semester Weeks → 6 levels × 2 weeks; <code>SemesterLevel</code>, <code>WeekConfig</code>, <code>LayoutTemplate</code> scale tile count, types and layers.</p></div>
+        </div>
+      </div>
+      <div class="mod"><h3>progress/</h3>
+        <p><code>PlayerProgress</code> (completed levels, highest unlocked week, Personal Bests) — every field only improves. <code>CompletionResult</code> / <code>CompletionOutcome</code>, <code>PersonalBest</code>, <code>CompletionRecorder</code> (fire-and-forget), <code>ProgressTransfer</code> + <code>TransferCode</code> (8 chars, 32-letter alphabet, shown <code>XXXX-XXXX</code>).</p></div>
+      <div class="mod"><h3>leaderboard/ · config/ · settings/</h3>
+        <p><code>LeaderboardEntry</code>, <code>LeaderboardState</code> (Loading / Ranked / Offline / Error), <code>SubmitResult</code> (Submitted / Queued / NotFaster / Failed), <code>LeaderboardFailure</code>. <code>GameBalance</code> = Stress + Shake + Tilt tuning with compiled defaults. <code>PlayerSettings</code> (nickname ≤ 20, audio, haptics, motion, auto-light).</p></div>
+      <div class="mod"><h3>repository/ — contracts</h3>
+        <p><code>ProgressRepository</code> · <code>SettingsRepository</code> · <code>AuthRepository</code> / <code>AccountRepository</code> (+ <code>AccountValidation</code>) · <code>LeaderboardRepository</code> · <code>ConfigRepository</code>. Interfaces only: the data layer implements them, tests swap in fakes.</p></div>
+    </div>
+  </section>
+
+  <section class="layer core">
+    <h2>⑥ Core (shared) <span class="pkg">core/*</span></h2>
+    <p class="lead">Cross-cutting building blocks used by every feature.</p>
+    <div class="grid" style="gap:10px">
+      <div class="mod"><h3>theme/</h3>
+        <p><code>DeadlineTheme</code> (Material 3, light + dark, dynamic colour off), brand palette (ink blue, highlighter amber, sticky-note green), <code>Type</code>, <code>Shape</code>, <code>Spacing</code> / <code>Dimens</code> scale (48dp touch targets).</p></div>
+      <div class="mod"><h3>ui/ + ui/components</h3>
+        <p><code>PrimaryButton</code> / <code>SecondaryButton</code> / <code>TertiaryButton</code>, <code>PhotoBackground</code> (blur + overlay strength), <code>CampusBackgrounds</code> (University of Melbourne photo per level), <code>LoadingContent</code>, <code>ErrorContent</code>, <code>CenteredScrollableColumn</code>.</p></div>
+      <div class="mod"><h3>audio/</h3>
+        <p><code>GameAudioManager</code> (app-owned; gameplay owns BGM, effects survive navigation, released in background, follows settings) → <code>AudioPlayer</code> / <code>AndroidAudioPlayer</code> (MediaPlayer + SoundPool) with <code>SoundEffectQueue</code>. Events: TILE_CLICK, MATCH, STRESS_MAX.</p></div>
+      <div class="mod"><h3>util/ · dispatcher/</h3>
+        <p><code>TimeFormatter</code> (mm:ss.hh), <code>takeWholeCharacters</code> (emoji-safe nickname cut), <code>DispatcherProvider</code>.</p></div>
+    </div>
+  </section>
+</div>
+
+<div class="conn">
+  <div class="chip"><span class="arrow down">▲▼</span>data layer implements domain repository interfaces (dependency inversion: domain knows no Firebase / DataStore)</div>
+</div>
+
+<!-- ============ 7. DATA ============ -->
+<section class="layer data">
+  <h2>⑦ Data Layer — offline-first repositories, sync &amp; data sources <span class="pkg">data/*</span></h2>
+  <p class="lead">Local DataStore is the source of truth for gameplay; the cloud is a mirror. Network failures become typed states (Offline, Queued, NotSignedIn) — they can cost a leaderboard placing, never a level. Every Firebase client hides behind a small interface (seam) for JVM tests.</p>
+  <div class="grid g4">
+    <div class="sub span2" style="--c: var(--data)">
+      <h4>repository/ — implementations of the domain contracts</h4>
+      <div class="grid g3" style="gap:8px">
+        <div class="mod"><h3>ProgressRepositoryImpl</h3><p>Local-first progress: atomic <code>recordCompletion</code> and <code>merge</code> transactions on DataStore.</p></div>
+        <div class="mod"><h3>SettingsRepositoryImpl</h3><p>Reads / atomically updates <code>PlayerSettings</code>; guarded by <code>SessionGate</code> against account switches.</p></div>
+        <div class="mod"><h3>AuthRepositoryImpl</h3><p>Anonymous identity by default, one shared sign-in at a time with per-caller timeout; email register (links the guest), login, logout, nickname profile, Guest data migration / recovery.</p></div>
+        <div class="mod"><h3>LeaderboardRepositoryImpl</h3><p>Live ranking flow; submits only faster times, waits for server ack, otherwise <code>Queued</code> for upload on reconnect.</p></div>
+        <div class="mod"><h3>ConfigRepositoryImpl</h3><p>Applies previously fetched values, then fetches new ones within a timeout; any failure keeps the current <code>GameBalance</code>.</p></div>
+        <div class="mod"><h3>SessionGate</h3><p>Mutex-like gate that serialises login/logout with sync, transfers and win recording, scoped to one user id.</p></div>
+      </div>
+    </div>
+    <div class="sub" style="--c: var(--data)">
+      <h4>sync/ · config/</h4>
+      <div class="grid" style="gap:8px">
+        <div class="mod"><h3>ProgressSyncManager</h3><p>Merges local → cloud in one Firestore transaction, then cloud → local; one sync at a time. Runs at startup, after a win, on reconnect. <code>SyncResult</code>: Synced / Offline / NotSignedIn / Refused.</p></div>
+        <div class="mod"><h3>ConflictResolver</h3><p>Merge without UI: union of completed levels, max unlocked week, faster Personal Best per level. Commutative and idempotent.</p></div>
+        <div class="mod"><h3>NetworkWatcher · ProgressTransferService</h3><p>Reconnect trigger · create code (sync first, expires within a day, retry on collision) / redeem (merge then sync).</p></div>
+        <div class="mod"><h3>RemoteBalance</h3><p>Parses and range-checks every Remote Config string into <code>GameBalance</code>; invalid key or inconsistent group → defaults. Never throws.</p></div>
+      </div>
+    </div>
+    <div class="grid" style="gap:12px">
+      <div class="sub" style="--c: var(--data)">
+        <h4>local/datastore</h4>
+        <div class="grid" style="gap:8px">
+          <div class="mod"><h3>DeadlineDataStore · AccountDataStore</h3><p>Single Preferences file (corruption → defaults). Per-account namespaces for progress and nickname; device settings shared; atomic guest → account migration.</p></div>
+          <div class="mod"><h3>ProgressDataSource · SettingsDataSource · GuestMigrationJournal</h3><p>Type-safe key mapping; malformed values dropped or clamped; durable guest hand-off journal.</p></div>
+        </div>
+      </div>
+      <div class="sub" style="--c: var(--data)">
+        <h4>remote/firebase</h4>
+        <div class="mod"><p><code>FirebaseAuthDataSource</code> · <code>FirestoreProgressDataSource</code> · <code>FirestoreLeaderboardDataSource</code> · <code>FirestoreProfileDataSource</code> · <code>FirestoreTransferDataSource</code> (server-only reads) · <code>FirebaseRemoteConfigDataSource</code> (1 h min fetch) · <code>ProgressFields</code> schema · <code>NetworkErrors</code> classification.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="conn">
+  <div class="chip"><span class="arrow both">⇄</span>Preferences read / edit transactions</div>
+  <div class="chip"><span class="arrow both">⇄</span>Firebase SDKs (Auth, Firestore with offline persistence, Remote Config) over HTTPS</div>
+</div>
+
+<!-- ============ 8. STORAGE / CLOUD ============ -->
+<div class="row" style="grid-template-columns: 520px 1fr;">
+  <section class="layer store">
+    <h2>⑧ On-device Storage</h2>
+    <div class="grid" style="gap:10px">
+      <div class="mod"><h3>Preferences DataStore file</h3>
+        <p>Player progress (completed levels, unlocked week, Personal Bests as <code>time:achievedAt:levelId</code>), nickname per account namespace, device-wide settings, guest-migration journal.</p></div>
+      <div class="mod"><h3>Firebase local caches</h3>
+        <p>Firestore offline cache + pending-write queue (leaderboard submissions made offline); Remote Config last-activated values; Firebase Auth persisted user.</p></div>
+    </div>
+  </section>
+  <section class="layer cloud">
+    <h2>⑨ Firebase Backend <span class="pkg">firebase.json · firestore.rules · remoteconfig.template.json</span></h2>
+    <div class="grid g5">
+      <div class="mod"><h3>Firebase Authentication</h3><p>Anonymous accounts for every install (no sign-up needed); optional email + password that links / switches identity. UID keys every cloud document.</p></div>
+      <div class="mod span2"><h3>Cloud Firestore</h3>
+        <ul>
+          <li><code>users/{uid}</code> — profile, nickname</li>
+          <li><code>progress/{uid}</code> — cloud copy of <code>PlayerProgress</code>, updated by transaction</li>
+          <li><code>leaderboard/{levelId}/entries/{uid}</code> — one best time per player per level</li>
+          <li><code>transfers/{code}</code> — progress snapshot, readable by any signed-in user until expiry</li>
+        </ul></div>
+      <div class="mod"><h3>Security Rules</h3><p>Owner-only writes, schema / range validation, leaderboard accepts only faster and plausible times, transfers cannot be listed, changed, deleted or read after expiry.</p></div>
+      <div class="mod"><h3>Remote Config</h3><p>Live balance tuning without a release: stress rates, recovery, thresholds, shake and tilt parameters (validated client-side, defaults compiled in).</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ RUNTIME FLOWS ============ -->
+<section class="layer device" style="margin-top:18px; background:#fff;">
+  <h2>Key Runtime Flows</h2>
+  <div class="grid g5 fl">
+    <div class="flow ui"><h3>1 · Startup</h3><ol>
+      <li><code>DeadlineApp.onCreate</code> builds <code>AppContainer</code>.</li>
+      <li>Background: anonymous sign-in + profile refresh.</li>
+      <li><code>NetworkWatcher</code> → sync progress when online.</li>
+      <li>Remote Config: apply cached values, fetch new.</li>
+      <li><code>MainActivity</code> → <code>AppNavHost</code> → Home. Nothing blocks the first frame.</li></ol></div>
+    <div class="flow domain"><h3>2 · Play a tile</h3><ol>
+      <li>Tap → <code>GameUiEvent.TileTapped</code> → <code>GameViewModel</code>.</li>
+      <li><code>engine.selectTile</code>: InputDegradation (max stress) → tray → triple match → Coffee / Music effects → win / loss.</li>
+      <li>New <code>GameState</code> → <code>GameUiState</code> StateFlow → Compose recomposes board, tray, HUD.</li>
+      <li>Audio + haptic events fire; stress clock ticks <code>advanceTime</code> while resumed.</li></ol></div>
+    <div class="flow data"><h3>3 · Win &amp; persist</h3><ol>
+      <li>Timer stops; navigate to Result with <code>GameOutcome</code>.</li>
+      <li><code>CompletionRecorder</code> (app scope, <code>SessionGate</code>): save locally → unlock next week, Personal Best.</li>
+      <li>Submit to leaderboard (Submitted, NotFaster, or Queued while offline).</li>
+      <li><code>ProgressSyncManager</code> merges with <code>progress/{uid}</code>.</li></ol></div>
+    <div class="flow sensor"><h3>4 · Sensors</h3>
+      <div class="pipe"><span>Accelerometer</span><b>→</b><span>ShakeDetector</span><b>→</b><span>onShake</span><b>→</b><span>GameViewModel</span><b>→</b><span>engine.shuffle()</span><b>→</b><span>SHUFFLE haptic</span></div>
+      <div class="pipe"><span>Rotation vector</span><b>→</b><span>TiltProcessor</span><b>→</b><span>peek 0..1</span><b>→</b><span>Modifier.tiltPeek</span></div>
+      <div class="pipe"><span>Light</span><b>→</b><span>AutoLightController</span><b>→</b><span>window brightness</span></div>
+      <p style="font-size:13px;margin:6px 0 0">Each can be switched off in Settings; tapping still covers every essential action.</p></div>
+    <div class="flow cloud"><h3>5 · Accounts &amp; devices</h3><ol>
+      <li>Register: links the anonymous guest to email; guest data migrates atomically.</li>
+      <li>Login / logout switches the local DataStore namespace under <code>SessionGate</code>.</li>
+      <li>Transfer code: sync → snapshot to <code>transfers/{code}</code> → other phone redeems → <code>ConflictResolver</code> merge → sync.</li></ol></div>
+  </div>
+</section>
+
+<!-- ============ PRINCIPLES / QUALITY / LEGEND ============ -->
+<div class="row" style="grid-template-columns: 1.25fr 1fr 0.9fr; margin-top:16px;">
+  <section class="layer shell" style="background:#fff">
+    <h2>Architecture Principles</h2>
+    <div class="mod" style="border-top-width:1px"><ul>
+      <li><b>Unidirectional data flow:</b> UI events down, immutable <code>StateFlow</code> UI state up; stateless Content composables are previewable and testable.</li>
+      <li><b>Pure domain:</b> engine, stress, generator and solver have no Android imports; clock, randomness and dispatchers are injected.</li>
+      <li><b>Dependency inversion:</b> ViewModels depend on domain repository interfaces; Firebase and DataStore sit behind seams.</li>
+      <li><b>Offline-first &amp; monotonic progress:</b> local writes first; cloud merges can only improve progress, so conflicts resolve without UI.</li>
+      <li><b>Sensors as intent:</b> sensors never touch game state directly; the engine applies the same rules as taps.</li>
+      <li><b>Fail soft:</b> Remote Config, leaderboard and sync failures fall back to defaults or queued states.</li>
+    </ul></div>
+  </section>
+  <section class="layer data" style="background:#fff">
+    <h2>Build, Test &amp; CI</h2>
+    <div class="mod" style="border-top-width:1px"><ul>
+      <li>Gradle Kotlin DSL, single <code>:app</code> module; <code>debug</code> / <code>emulator</code> / <code>release</code> build types (<code>emulator</code> targets the Firebase Emulator).</li>
+      <li><b>JVM unit tests</b> (<code>app/src/test</code>): engine, stress, shuffle, generator / solver, repositories, sync, ViewModels, sensors' pure processors.</li>
+      <li><b>Instrumented tests</b> (<code>app/src/androidTest</code>): Compose UI screens, navigation, acceptance flows, Firestore rules &amp; data sources against the Firebase Emulator.</li>
+      <li><b>GitHub Actions</b> "Android quality": ktlint → <code>testDebugUnitTest</code> → <code>assembleDebug</code> → <code>lintDebug</code> on every PR to <code>main</code>.</li>
+    </ul></div>
+  </section>
+  <section class="layer device" style="background:#fff">
+    <h2>Legend</h2>
+    <div class="legend">
+      <span class="device"><i></i>Platform / external</span>
+      <span class="shell"><i></i>App shell &amp; navigation</span>
+      <span class="ui"><i></i>Presentation (Compose)</span>
+      <span class="sensor"><i></i>Sensors &amp; feedback</span>
+      <span class="domain"><i></i>Domain (pure Kotlin)</span>
+      <span class="core"><i></i>Core shared</span>
+      <span class="data"><i></i>Data layer</span>
+      <span class="store"><i></i>On-device storage</span>
+      <span class="cloud"><i></i>Firebase cloud</span>
+    </div>
+    <div style="margin-top:12px;font-size:13.5px;line-height:1.7">
+      <span class="arrow down" style="font-weight:700">▼</span> calls / events going down<br>
+      <span class="arrow up" style="font-weight:700">▲</span> state / data flowing up<br>
+      <span class="arrow both" style="font-weight:700">⇄</span> two-way exchange<br>
+      Dashed box = package group · coloured top bar = module
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>Deadline! · COMP90018 Group T01/05 - 03 · System architecture overview</span>
+  <span>Source: <code>docs/architecture/system-architecture.html</code></span>
+</footer>
+
+</body>
+</html>
