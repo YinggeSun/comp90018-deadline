@@ -8,7 +8,7 @@ Base: main `df22fd9d52f2400617922915cb02d4468d9e7a8f`, including PR #129. Review
 | --- | --- |
 | Online → Offline → Play → Complete → Reconnect | `OfflineGameAcceptanceTest`: authenticates and syncs online, enables airplane mode/disables Wi-Fi, verifies the device has no active network, plays and wins through the production navigation/engine/completion recorder, then reconnects |
 | Local completion is retained while offline | UI test verifies completion, unlocked week, local modification and stable UID; `OfflineFirebaseIntegrationTest` closes/reopens a disk-backed DataStore and checks the saved progress is unchanged |
-| Automatic reconnect progress sync | UI test reads `progress/{uid}` with `Source.SERVER` until it matches local progress; it does not invoke manual sync after reconnect, exercising `NetworkWatcher` → `AppContainer` |
+| Automatic reconnect progress sync | UI test independently observes the production `NetworkWatcher`, requiring a new callback after reconnection, and reads `progress/{uid}` with `Source.SERVER` until it matches local progress. It does not invoke manual sync after reconnect. Source review confirms `DeadlineApp` starts `AppContainer.startProgressSync` |
 | Queued leaderboard score | SDK test requires `SubmitResult.Queued`, reenables Firestore networking, awaits acknowledged pending writes, verifies the uploaded time and duplicate submission behavior; UI test independently verifies the queued score on the server and rendered ranking after real network loss |
 | Offline leaderboard/cache recovery | The same SDK-backed repository listener must emit Ranked → Offline with cached entries → Ranked containing the improved time |
 | Server refusal and retry | Blank nickname is rejected by real emulator rules; a valid nickname succeeds using the same repository |
@@ -44,6 +44,8 @@ Optional screenshots use `-Pandroid.testInstrumentationRunnerArguments.qaScreens
 
 Run all validation:
 
+If the Auth emulator was restarted/reset while the isolated app retained its credentials, clear **only** the QA package first (`adb shell pm clear com.comp90018.deadline.emulator`). Old emulator refresh tokens are no longer valid after that server reset. Do not clear the production application package.
+
 ```powershell
 .\gradlew.bat testDebugUnitTest testReleaseUnitTest assembleDebug assembleRelease assembleEmulator assembleEmulatorAndroidTest ktlintCheck lintDebug lintRelease --console=plain --max-workers=2
 .\gradlew.bat connectedEmulatorAndroidTest --console=plain --max-workers=2
@@ -57,6 +59,14 @@ On emulators where background network restrictions interfere with the test packa
 - Debug and Release JVM suites: 641 passed each, zero failures/errors/skips.
 - Debug/Release/Emulator builds, test APK, ktlint and Lint: passed. Lint: 0 errors and 28 warnings for each Debug/Release variant.
 - Full Android regression: 158 passed, zero failures/errors/skips, on Android API 35 with the local Firebase Auth/Firestore emulators. The full suite includes the five new tests and ran after the final test-isolation change.
+
+## Independent review and negative control
+
+Review found that an eventual cloud upload alone does not isolate the network callback: the background win task can also participate in recovery. The UI test now additionally requires the real production watcher to report a new connection event, independently of the upload assertion. Application startup wiring was checked in `DeadlineApp` and `AppContainer`.
+
+As a local-only negative control, `NetworkWatcher` was temporarily changed to deliver its initial connection notification but suppress subsequent notifications. The strengthened test failed specifically at the reconnect event assertion (15-second timeout). Production source was then restored; the mutation is not part of this PR. This demonstrates detection of a broken reconnect callback rather than just successful score upload.
+
+After restoring production source, the strengthened focused suite passed all five tests. The complete 158-test Android suite was then repeated successfully from a clean QA-package state with zero failures/errors/skips. Builds, formatting, Lint and both 641-test JVM suites were also validated. An interrupted run and a run with stale credentials after an Auth emulator restart were excluded from these passing results; the latter prompted the explicit QA-package cleanup instruction above.
 
 ## Manual cross-check
 

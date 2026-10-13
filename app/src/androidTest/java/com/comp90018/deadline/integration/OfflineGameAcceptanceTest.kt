@@ -19,6 +19,7 @@ import com.comp90018.deadline.app.DeadlineApp
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.data.FirebaseEmulator
 import com.comp90018.deadline.data.remote.firebase.ProgressFields
+import com.comp90018.deadline.data.sync.NetworkWatcher
 import com.comp90018.deadline.data.sync.SyncResult
 import com.comp90018.deadline.domain.level.model.FixedLevels
 import com.comp90018.deadline.feature.game.components.tileTestTag
@@ -37,6 +38,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Device network loss, real navigation/engine/completion recorder and automatic reconnect sync. */
 class OfflineGameAcceptanceTest {
@@ -77,6 +79,12 @@ class OfflineGameAcceptanceTest {
             }
         }
         val before = runBlocking { container.progressRepository.progress.first() }
+        // Observe the actual production watcher as well as cloud state: a delayed win task
+        // could otherwise upload successfully even if reconnect notifications were broken.
+        val networkEvents = AtomicInteger()
+        NetworkWatcher(app).start { networkEvents.incrementAndGet() }
+        rule.waitUntil(15_000) { networkEvents.get() >= 1 }
+        val initialNetworkEvents = networkEvents.get()
         rule.setContent {
             DeadlineTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
@@ -111,6 +119,7 @@ class OfflineGameAcceptanceTest {
             shell("cmd connectivity airplane-mode disable")
             shell("svc wifi enable")
             rule.waitUntil(15_000) { connectivity.activeNetwork != null }
+            rule.waitUntil(15_000) { networkEvents.get() > initialNetworkEvents }
             // No manual sync invocation here: exercise NetworkWatcher -> AppContainer wiring.
             runBlocking {
                 withTimeout(60_000) {
