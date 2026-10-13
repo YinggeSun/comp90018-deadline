@@ -292,3 +292,104 @@ build/
 ```
 
 Firebase or other credentials must also be handled carefully and should not be committed unless the team has explicitly confirmed that the file is intended and safe to store in the repository.
+
+## Team Contributions
+
+Summary of each member's contributions, compiled from the repository's pull requests, issues and
+reviews as of 13 October 2026. Pull requests still in review are marked *(in review)*.
+
+### Summary
+
+| Member | GitHub | Main area | Merged PRs |
+|---|---|---|---|
+| Yingge Sun (Jacob Sun) | YinggeSun | Core game engine, audio, user accounts, project coordination, demo video | 9 |
+| Hao Xu | Hao6657 | UI, screens and navigation | 14 |
+| CheukChun Choi | Helzy087 | Level model and procedural generation | 11 |
+| Yukun Li | YUKUN-LI1234 | Stress System, timer, final documentation | 6 |
+| Zechen Yang | Young501 | Integration, CI, testing and code review | 10 |
+| lbhadauria | lbhadauria | Data layer, persistence and Firebase | 9 |
+| Qirui Zhang | zqrs23333 | Sensors and haptics | 2 |
+
+The final report was written by the whole team.
+
+### Yingge Sun (Jacob Sun) — core game engine and coordination
+
+- Core game data models (#54) and the game engine base structure (#56)
+- Overlap graph and tile availability (#57)
+- Seven-slot Task Tray (#58) and automatic three-tile matching (#59)
+- Win and loss conditions with restart (#60) and configurable undo (#61)
+- Background music and sound effects with persistent audio settings (#109)
+- Optional email / password accounts with Firestore user profiles and isolated Firebase tests (#126)
+- Coordination:
+  - hosted the team meetings
+  - created the project's task list as GitHub issues (62 issues)
+  - led task allocation
+- Demo video
+
+### Hao Xu — UI, screens and navigation
+
+- App navigation (#63) and the shared Material 3 theme and UI components (#70)
+- Game board rendering (#71), Task Tray and game HUD (#76)
+- Home (#78), Level Select (#77), Result (#83), Settings (#90) and Leaderboard (#124) screens
+- New Music, Exam, Presentation and Lecture Slide tiles (#102)
+- Smaller tiles with readable layers (#106, #108)
+- The six generated levels connected to Level Select and gameplay (#111)
+- Campus background photos and app icon (#113)
+- Final UI / UX and accessibility polish (#129, in review)
+
+### CheukChun Choi — levels and procedural generation
+
+- Level data model and configuration format (#55) and the initial fixed playable levels (#64)
+- Semester Week difficulty progression (#67) and procedural tile generation (#68)
+- Layered board generation (#72) and progressive multi-layer layouts (#99)
+- Level solvability validator (#73), integrated with generation (#74)
+- Tile variety and difficulty progression (#88, #105)
+- Six two-week level configurations and a generation metadata fix (#98)
+
+### Yukun Li — Stress System and final documentation
+
+- Stress System rules (#65), reworked into time-based stress with Maximum Stress effects (#104),
+  and a stress configuration fix (#121)
+- Completion timer (#66)
+- Coffee Recovery (#79) and Music Recovery with a temporary stress slowdown (#107)
+- Final documentation:
+  - system architecture diagram (#130, in review)
+  - meeting minutes (#131, in review)
+  - README update (#132, in review)
+  - this contribution summary
+
+### Zechen Yang — integration, CI, testing and code review
+
+- Android CI quality checks: ktlint, unit tests, build and lint (#80)
+- Test suites for the game engine (#81) and for level generation and the solver (#82)
+- Repository and persistence acceptance tests (#122)
+- Compose UI and navigation acceptance tests (#123)
+- Integration into `main`:
+  - restored the generation and solvability pipeline (#69, #75)
+  - integrated DataStore persistence (#89)
+  - brought in the Firestore security rules (#120)
+  - removed an obsolete integration note (#114)
+- Code review and merging: reviewed 64 and merged 54 of the team's pull requests
+- Assigned the remaining testing work: physical-device sensor testing (#45), offline and Firebase
+  testing (#46), and the performance and stability pass (#48)
+
+### lbhadauria — data layer, persistence and Firebase
+
+- Repository interfaces and progress domain models (#84)
+- DataStore persistence of settings, nickname and progress (#85)
+- Recording wins, Personal Bests and Semester Week unlocks (#86)
+- Firebase project connection (#87) and anonymous Firebase sign-in (#115)
+- Firestore leaderboard (#116)
+- Hardened Firestore Security Rules with leaderboard result validation (#117)
+- Cross-device progress sync with transfer codes (#118)
+- Gameplay balance tuning through Firebase Remote Config (#119)
+
+### Qirui Zhang — sensors and haptics
+
+- Sensor integration (#62):
+  - sensor infrastructure
+  - Shake-to-Shuffle (accelerometer)
+  - Tilt-to-Peek (rotation vector sensor)
+  - haptic feedback
+  - the lifecycle-aware sensor binder for the game screen
+- Ambient light display adaptation (#128, after earlier attempts in #97, #103 and #127)
