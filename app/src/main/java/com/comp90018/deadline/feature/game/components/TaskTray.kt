@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.min
 import com.comp90018.deadline.R
 import com.comp90018.deadline.core.theme.DeadlineTheme
 import com.comp90018.deadline.core.theme.Spacing
+import com.comp90018.deadline.core.ui.components.popIn
 import com.comp90018.deadline.domain.game.model.TileType
 import com.comp90018.deadline.feature.game.TileUiModel
 
@@ -80,7 +82,12 @@ fun TaskTray(
                 horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
             ) {
                 repeat(capacity) { index ->
-                    TraySlot(tile = tiles.getOrNull(index), size = slotSize)
+                    val tile = tiles.getOrNull(index)
+                    // Keyed by tile, so a tile pops in once when it lands and not again
+                    // when a match shifts it to another slot.
+                    key(tile?.id ?: index) {
+                        TraySlot(tile = tile, size = slotSize)
+                    }
                 }
             }
         }
@@ -106,7 +113,7 @@ private fun TraySlot(
         border = BorderStroke(1.dp, if (tile != null) colors.primary else colors.outline),
     ) {
         if (tile != null) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.popIn()) {
                 // Sized from the slot in dp, like the board tiles, so it ignores the font scale.
                 val iconSize = with(LocalDensity.current) { (size * 0.5f).toSp() }
                 Text(text = tile.type.symbol, fontSize = iconSize)

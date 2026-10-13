@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,8 +28,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +43,7 @@ import com.comp90018.deadline.core.ui.components.CenteredScrollableColumn
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.LoadingContent
 import com.comp90018.deadline.core.ui.components.PhotoBackground
+import com.comp90018.deadline.core.ui.components.ScreenTopBar
 import com.comp90018.deadline.core.ui.components.TertiaryButton
 import com.comp90018.deadline.core.util.TimeFormatter
 import com.comp90018.deadline.domain.leaderboard.LeaderboardFailure
@@ -81,22 +79,7 @@ fun LeaderboardContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = stringResource(R.string.leaderboard_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.semantics { heading() },
-            )
-        }
+        ScreenTopBar(title = stringResource(R.string.leaderboard_title), onBack = onBack)
 
         val selectedIndex = uiState.levels.indexOfFirst { it.id == uiState.selectedLevelId }.coerceAtLeast(0)
         if (uiState.levels.isNotEmpty()) {

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,7 +41,7 @@ import com.comp90018.deadline.core.theme.Spacing
 import com.comp90018.deadline.core.ui.CampusBackgrounds
 import com.comp90018.deadline.core.ui.components.ErrorContent
 import com.comp90018.deadline.core.ui.components.LoadingContent
-import com.comp90018.deadline.core.ui.components.TertiaryButton
+import com.comp90018.deadline.core.ui.components.ScreenTopBar
 import com.comp90018.deadline.core.util.TimeFormatter
 
 /** How much of the campus photo shows through a level card. */
@@ -71,21 +70,7 @@ fun LevelSelectContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TertiaryButton(text = stringResource(R.string.action_back), onClick = onBack)
-            Spacer(modifier = Modifier.width(Spacing.small))
-            Text(
-                text = stringResource(R.string.level_select_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+        ScreenTopBar(title = stringResource(R.string.level_select_title), onBack = onBack)
 
         if (uiState.isLoading) {
             LoadingContent()
