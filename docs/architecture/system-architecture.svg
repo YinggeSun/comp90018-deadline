@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1010" viewBox="0 0 1600 1010" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+<!--
+  Source of docs/architecture/system-architecture.png.
+  After editing, re-render it with headless Chrome or Edge: 1600 x 1010 window,
+  device scale factor 2, screenshot saved over system-architecture.png.
+-->
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .band { stroke-width: 2; rx: 16; }
+      .box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 10; }
+      .title { font-size: 19px; font-weight: 700; }
+      .name { font-size: 18px; font-weight: 600; fill: #1e293b; }
+      .small { font-size: 14px; fill: #475569; }
+      .pill { font-size: 15px; font-weight: 600; fill: #1e3a8a; }
+      .lbl { font-size: 14px; fill: #334155; font-weight: 600; }
+      .lblbg { fill: #f8fafc; }
+      .line { stroke: #475569; stroke-width: 2.2; fill: none; marker-end: url(#arr); }
+      .dline { stroke: #475569; stroke-width: 2.2; fill: none; marker-start: url(#arr); marker-end: url(#arr); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1010" fill="#f8fafc"/>
+  <text x="60" y="52" font-size="32" font-weight="700" fill="#0f172a">Deadline! — System Architecture</text>
+  <text x="60" y="80" font-size="16" fill="#475569">Android · Kotlin · Jetpack Compose · MVVM · offline-first with Firebase</text>
+
+  <!-- Top row: external inputs -->
+  <rect x="60" y="105" width="270" height="56" rx="28" fill="#fdf2f8" stroke="#db2777" stroke-width="2"/>
+  <text x="195" y="139" text-anchor="middle" class="name">Phone Sensors</text>
+  <rect x="680" y="105" width="200" height="56" rx="28" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <text x="780" y="139" text-anchor="middle" class="name">Player</text>
+  <rect x="1180" y="105" width="340" height="56" rx="12" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="1350" y="130" text-anchor="middle" class="name">AppContainer</text>
+  <text x="1350" y="151" text-anchor="middle" class="small">wires all dependencies at startup</text>
+
+  <!-- Sensor layer -->
+  <rect x="60" y="195" width="270" height="215" fill="#fdf2f8" stroke="#db2777" class="band"/>
+  <text x="80" y="223" class="title" fill="#be185d">Sensor Layer</text>
+  <rect x="80" y="238" width="230" height="36" class="box"/><text x="195" y="262" text-anchor="middle" class="name" font-size="16">Shake → Shuffle</text>
+  <rect x="80" y="281" width="230" height="36" class="box"/><text x="195" y="305" text-anchor="middle" class="name" font-size="16">Tilt → Peek</text>
+  <rect x="80" y="324" width="230" height="36" class="box"/><text x="195" y="348" text-anchor="middle" class="name" font-size="16">Light → Brightness</text>
+  <rect x="80" y="367" width="230" height="36" class="box"/><text x="195" y="391" text-anchor="middle" class="name" font-size="16">Haptics</text>
+
+  <!-- Presentation -->
+  <rect x="380" y="195" width="1140" height="105" fill="#eff6ff" stroke="#2563eb" class="band"/>
+  <text x="400" y="223" class="title" fill="#1d4ed8">UI Layer — Jetpack Compose Screens</text>
+  <g>
+    <rect x="400" y="240" width="140" height="42" rx="21" fill="#dbeafe"/><text x="470" y="266" text-anchor="middle" class="pill">Home</text>
+    <rect x="555" y="240" width="140" height="42" rx="21" fill="#dbeafe"/><text x="625" y="266" text-anchor="middle" class="pill">Level Select</text>
+    <rect x="710" y="240" width="140" height="42" rx="21" fill="#bfdbfe"/><text x="780" y="266" text-anchor="middle" class="pill">Game</text>
+    <rect x="865" y="240" width="140" height="42" rx="21" fill="#dbeafe"/><text x="935" y="266" text-anchor="middle" class="pill">Result</text>
+    <rect x="1020" y="240" width="150" height="42" rx="21" fill="#dbeafe"/><text x="1095" y="266" text-anchor="middle" class="pill">Leaderboard</text>
+    <rect x="1185" y="240" width="140" height="42" rx="21" fill="#dbeafe"/><text x="1255" y="266" text-anchor="middle" class="pill">Settings</text>
+    <rect x="1340" y="240" width="160" height="42" rx="21" fill="#dbeafe"/><text x="1420" y="266" text-anchor="middle" class="pill">Account</text>
+  </g>
+
+  <!-- ViewModels -->
+  <rect x="380" y="345" width="1140" height="65" fill="#eff6ff" stroke="#2563eb" class="band"/>
+  <text x="950" y="384" text-anchor="middle" class="title" fill="#1d4ed8">ViewModels  ·  StateFlow&lt;UiState&gt;</text>
+
+  <!-- Domain -->
+  <rect x="60" y="460" width="1460" height="150" fill="#fffbeb" stroke="#d97706" class="band"/>
+  <text x="80" y="488" class="title" fill="#b45309">Domain Layer — pure Kotlin game rules</text>
+  <rect x="80" y="505" width="320" height="72" class="box"/>
+  <text x="240" y="537" text-anchor="middle" class="name">Level Generator</text>
+  <text x="240" y="561" text-anchor="middle" class="small">6 levels · solvability check</text>
+  <rect x="440" y="505" width="300" height="72" class="box"/>
+  <text x="590" y="537" text-anchor="middle" class="name">Stress System</text>
+  <text x="590" y="561" text-anchor="middle" class="small">Coffee &amp; Music recovery</text>
+  <rect x="780" y="505" width="320" height="72" class="box"/>
+  <text x="940" y="537" text-anchor="middle" class="name">Game Engine</text>
+  <text x="940" y="561" text-anchor="middle" class="small">board · tray · matching · undo</text>
+  <rect x="1140" y="505" width="360" height="72" class="box"/>
+  <text x="1320" y="537" text-anchor="middle" class="name">Repository Interfaces</text>
+  <text x="1320" y="561" text-anchor="middle" class="small">progress · settings · leaderboard · account</text>
+
+  <!-- Data -->
+  <rect x="60" y="645" width="1460" height="110" fill="#f0fdf4" stroke="#16a34a" class="band"/>
+  <text x="80" y="673" class="title" fill="#15803d">Data Layer</text>
+  <rect x="80" y="685" width="560" height="56" class="box"/>
+  <text x="360" y="719" text-anchor="middle" class="name">Progress Sync &amp; Transfer Codes</text>
+  <rect x="1000" y="685" width="500" height="56" class="box"/>
+  <text x="1250" y="719" text-anchor="middle" class="name">Repository Implementations</text>
+
+  <!-- Storage -->
+  <rect x="60" y="805" width="980" height="150" fill="#fff7ed" stroke="#ea580c" class="band"/>
+  <text x="80" y="833" class="title" fill="#c2410c">Firebase Cloud</text>
+  <rect x="80" y="850" width="290" height="85" class="box"/>
+  <text x="225" y="886" text-anchor="middle" class="name">Authentication</text>
+  <text x="225" y="910" text-anchor="middle" class="small">guest &amp; email accounts</text>
+  <rect x="390" y="850" width="320" height="85" class="box"/>
+  <text x="550" y="886" text-anchor="middle" class="name">Cloud Firestore</text>
+  <text x="550" y="910" text-anchor="middle" class="small">leaderboard · progress · profiles</text>
+  <rect x="730" y="850" width="290" height="85" class="box"/>
+  <text x="875" y="886" text-anchor="middle" class="name">Remote Config</text>
+  <text x="875" y="910" text-anchor="middle" class="small">gameplay balance</text>
+
+  <rect x="1090" y="805" width="430" height="150" fill="#f1f5f9" stroke="#475569" class="band"/>
+  <text x="1110" y="833" class="title" fill="#334155">On-device Storage</text>
+  <rect x="1110" y="850" width="390" height="85" class="box"/>
+  <text x="1305" y="886" text-anchor="middle" class="name">DataStore</text>
+  <text x="1305" y="910" text-anchor="middle" class="small">progress · Personal Bests · settings</text>
+
+  <!-- Arrows -->
+  <path class="line" d="M195,161 L195,193"/>
+  <path class="line" d="M780,161 L780,238"/>
+  <rect x="790" y="168" width="44" height="22" class="lblbg"/><text x="794" y="184" class="lbl">tap</text>
+
+  <path class="line" d="M330,378 L378,378"/>
+
+  <path class="line" d="M780,282 L780,343"/>
+  <rect x="790" y="302" width="60" height="22" class="lblbg"/><text x="794" y="318" class="lbl">events</text>
+  <path class="line" d="M1095,345 L1095,284"/>
+  <rect x="1105" y="302" width="70" height="22" class="lblbg"/><text x="1109" y="318" class="lbl">UI state</text>
+
+    <path class="line" d="M940,410 L940,503"/>
+  <rect x="950" y="424" width="110" height="22" class="lblbg"/><text x="954" y="440" class="lbl">game actions</text>
+  <path class="line" d="M1320,410 L1320,503"/>
+  <rect x="1330" y="424" width="90" height="22" class="lblbg"/><text x="1334" y="440" class="lbl">read / save</text>
+
+  <path class="line" d="M780,541 L742,541"/>
+  <path class="line" d="M400,560 L420,560 L420,590 L760,590 L760,566 L778,566"/>
+  <rect x="545" y="579" width="52" height="22" class="lblbg"/><text x="551" y="595" class="lbl">board</text>
+
+  <path class="line" d="M1320,577 L1320,683"/>
+  <rect x="1330" y="616" width="120" height="22" class="lblbg"/><text x="1334" y="632" class="lbl">implemented by</text>
+
+  <path class="dline" d="M642,713 L998,713"/>
+
+  <path class="line" d="M1305,741 L1305,848"/>
+  <rect x="1315" y="772" width="80" height="22" class="lblbg"/><text x="1319" y="788" class="lbl">local first</text>
+  <path class="dline" d="M1020,741 L1020,803"/>
+  <rect x="1030" y="761" width="52" height="22" class="lblbg"/><text x="1036" y="777" class="lbl">online</text>
+  <path class="dline" d="M360,741 L360,780 L550,780 L550,848"/>
+  <rect x="380" y="769" width="50" height="22" class="lblbg"/><text x="386" y="785" class="lbl">sync</text>
+
+  <text x="60" y="990" font-size="13" fill="#64748b">Arrows show calls and data flow. Sensors go through the ViewModels, so all game rules stay in the Domain Layer. Every level is playable offline.</text>
+</svg>
