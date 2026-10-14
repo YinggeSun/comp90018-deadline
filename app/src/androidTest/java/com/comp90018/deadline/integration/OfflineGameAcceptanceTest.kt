@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -22,6 +23,7 @@ import com.comp90018.deadline.data.remote.firebase.ProgressFields
 import com.comp90018.deadline.data.sync.NetworkWatcher
 import com.comp90018.deadline.data.sync.SyncResult
 import com.comp90018.deadline.domain.level.model.FixedLevels
+import com.comp90018.deadline.feature.game.components.GAME_TIMER_TAG
 import com.comp90018.deadline.feature.game.components.tileTestTag
 import com.comp90018.deadline.navigation.AppNavHost
 import com.comp90018.deadline.testing.TestLevels
@@ -63,45 +65,53 @@ class OfflineGameAcceptanceTest {
         val originalAirplane = Settings.Global.getInt(app.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0)
         val originalWifi = Settings.Global.getInt(app.contentResolver, Settings.Global.WIFI_ON, 0)
         val connectivity = app.getSystemService(ConnectivityManager::class.java)
-        // Each run owns a fresh guest so earlier UI tests/cached scores cannot satisfy the assertions.
-        val uid =
-            runBlocking {
-                container.authRepository.logout().getOrThrow()
-                container.authRepository.ensureSignedIn().getOrThrow()
-            }
         val originalSettings = runBlocking { container.settingsRepository.settings.first() }
-        val db = FirebaseFirestore.getInstance()
-        assertEquals("demo-deadline", db.app.options.projectId)
-        runBlocking {
-            container.settingsRepository.update { it.copy(nickname = "Offline UI QA") }
-            withTimeout(60_000) {
-                while (container.syncAccountProgress() !is SyncResult.Synced) delay(250)
-            }
-        }
-        val before = runBlocking { container.progressRepository.progress.first() }
-        // Observe the actual production watcher as well as cloud state: a delayed win task
-        // could otherwise upload successfully even if reconnect notifications were broken.
-        val networkEvents = AtomicInteger()
-        NetworkWatcher(app).start { networkEvents.incrementAndGet() }
-        rule.waitUntil(15_000) { networkEvents.get() >= 1 }
-        val initialNetworkEvents = networkEvents.get()
-        rule.setContent {
-            DeadlineTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    AppNavHost(modifier = Modifier.padding(padding), levelSource = TestLevels.source)
+        var networkRegistration: AutoCloseable? = null
+        try {
+            // Each run owns a fresh guest so earlier UI tests/cached scores cannot satisfy the assertions.
+            val uid =
+                runBlocking {
+                    container.authRepository.logout().getOrThrow()
+                    container.authRepository.ensureSignedIn().getOrThrow()
+                }
+            val db = FirebaseFirestore.getInstance()
+            assertEquals("demo-deadline", db.app.options.projectId)
+            runBlocking {
+                container.settingsRepository.update { it.copy(nickname = "Offline UI QA") }
+                withTimeout(60_000) {
+                    while (container.syncAccountProgress() !is SyncResult.Synced) delay(250)
                 }
             }
-        }
-        try {
+            val before = runBlocking { container.progressRepository.progress.first() }
+            // Observe the actual production watcher as well as cloud state: a delayed win task
+            // could otherwise upload successfully even if reconnect notifications were broken.
+            val networkEvents = AtomicInteger()
+            networkRegistration = NetworkWatcher(app).start { networkEvents.incrementAndGet() }
+            rule.waitUntil(15_000) { networkEvents.get() >= 1 }
+            rule.setContent {
+                DeadlineTheme {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                        AppNavHost(modifier = Modifier.padding(padding), levelSource = TestLevels.source)
+                    }
+                }
+            }
+
             shell("cmd connectivity airplane-mode enable")
             shell("svc wifi disable")
             rule.waitUntil(15_000) { connectivity.activeNetwork == null }
+            val offlineNetworkEvents = networkEvents.get()
             click("Play")
             click("Level 1")
             UiScreenshot.capture(rule, "offline-game")
             // This six-tile fixture is smaller than production's 18-tile Level 1.
-            // Allow real time to exceed the server's 4.5s anti-cheat floor before finishing it.
-            Thread.sleep(4_600)
+            // Observe the game clock, not a host sleep: the server requires at least 4.5s.
+            rule.waitUntil(15_000) {
+                val description =
+                    rule.onNodeWithTag(GAME_TIMER_TAG).fetchSemanticsNode()
+                        .config[SemanticsProperties.ContentDescription].joinToString()
+                val clock = Regex("(\\d+):(\\d{2})").find(description)
+                clock != null && clock.groupValues[1].toLong() * 60 + clock.groupValues[2].toLong() >= 5
+            }
             FixedLevels.LEVEL_1.board.tiles.forEach { tile ->
                 rule.onNodeWithTag(tileTestTag(tile.id)).performScrollTo().performClick()
                 rule.waitForIdle()
@@ -116,10 +126,11 @@ class OfflineGameAcceptanceTest {
             UiScreenshot.capture(rule, "offline-win")
             assertEquals(uid, FirebaseAuth.getInstance().currentUser?.uid)
 
+            assertEquals("No connection notifications expected during offline play", offlineNetworkEvents, networkEvents.get())
             shell("cmd connectivity airplane-mode disable")
             shell("svc wifi enable")
             rule.waitUntil(15_000) { connectivity.activeNetwork != null }
-            rule.waitUntil(15_000) { networkEvents.get() > initialNetworkEvents }
+            rule.waitUntil(15_000) { networkEvents.get() > offlineNetworkEvents }
             // No manual sync invocation here: exercise NetworkWatcher -> AppContainer wiring.
             runBlocking {
                 withTimeout(60_000) {
@@ -145,9 +156,19 @@ class OfflineGameAcceptanceTest {
             UiScreenshot.capture(rule, "reconnected-leaderboard")
             assertEquals(uid, FirebaseAuth.getInstance().currentUser?.uid)
         } finally {
-            shell("cmd connectivity airplane-mode ${if (originalAirplane == 0) "disable" else "enable"}")
-            shell("svc wifi ${if (originalWifi == 1) "enable" else "disable"}")
-            runBlocking { container.settingsRepository.update { originalSettings } }
+            try {
+                networkRegistration?.close()
+            } finally {
+                try {
+                    shell("cmd connectivity airplane-mode ${if (originalAirplane == 0) "disable" else "enable"}")
+                } finally {
+                    try {
+                        shell("svc wifi ${if (originalWifi == 1) "enable" else "disable"}")
+                    } finally {
+                        runBlocking { container.settingsRepository.update { originalSettings } }
+                    }
+                }
+            }
         }
     }
 }

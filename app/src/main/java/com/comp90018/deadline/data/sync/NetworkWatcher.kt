@@ -13,11 +13,24 @@ class NetworkWatcher(
 ) {
     private val connectivity = context.applicationContext.getSystemService(ConnectivityManager::class.java)
 
-    fun start(onAvailable: () -> Unit) {
-        connectivity.registerDefaultNetworkCallback(
+    /** The caller owns this registration; close it when its observing lifetime ends. */
+    fun start(onAvailable: () -> Unit): AutoCloseable {
+        val lock = Any()
+        var closed = false
+        val callback =
             object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) = onAvailable()
-            },
-        )
+                override fun onAvailable(network: Network) {
+                    synchronized(lock) { if (!closed) onAvailable() }
+                }
+            }
+        connectivity.registerDefaultNetworkCallback(callback)
+        return AutoCloseable {
+            synchronized(lock) {
+                if (!closed) {
+                    closed = true
+                    connectivity.unregisterNetworkCallback(callback)
+                }
+            }
+        }
     }
 }
