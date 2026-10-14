@@ -1,0 +1,11 @@
+{
+  "project_info": {"project_number": "1", "project_id": "demo-deadline"},
+  "client": [{
+    "client_info": {
+      "mobilesdk_app_id": "1:1:android:1",
+      "android_client_info": {"package_name": "com.comp90018.deadline.emulator"}
+    },
+    "api_key": [{"current_key": "emulator-only"}]
+  }],
+  "configuration_version": "1"
+}

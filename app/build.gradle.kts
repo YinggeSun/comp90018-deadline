@@ -34,8 +34,19 @@ android {
                 "proguard-rules.pro",
             )
         }
+        create("benchmark") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".emulator"
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+            matchingFallbacks += "release"
+        }
     }
     testBuildType = "emulator"
+    sourceSets.getByName("benchmark") {
+        java.srcDir("src/emulator/java")
+        res.srcDir("src/emulator/res")
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -84,4 +95,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     "emulatorImplementation"(libs.androidx.ui.test.manifest)
+    "benchmarkImplementation"(libs.androidx.profileinstaller)
+    "benchmarkImplementation"("androidx.compose.runtime:runtime-tracing:1.0.0-beta01")
 }
