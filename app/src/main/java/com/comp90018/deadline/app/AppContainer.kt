@@ -167,7 +167,10 @@ class AppContainer(
     private val networkWatcher = NetworkWatcher(context)
 
     /** Syncs progress whenever the device is or becomes online (#39). */
-    fun startProgressSync() = networkWatcher.start { syncProgress("network available") }
+    fun startProgressSync() {
+        // This observer intentionally lasts for the Application's entire process lifetime.
+        networkWatcher.start { syncProgress("network available") }
+    }
 
     /** Merges local progress with its cloud copy in the background; failures only wait for the next sync. */
     private fun syncProgress(reason: String) {
